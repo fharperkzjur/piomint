@@ -73,9 +73,10 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 			url := genEndpointsUrl(v.Name,v.ServiceName,run.Namespace,v.Port)
 			response = append(response,exports.ServiceEndpoint{
 				Name:      v.Name,
-				Port:      uint32(v.Port),
+				Port:      v.Port,
 				Url:       url,
 				SecretKey: v.SecureKey,
+				Status:    v.Status,
 			})
 			if len(v.SecureKey) > 0 {
 				response[idx].AccessKey=run.Creator
@@ -102,7 +103,7 @@ func ValidateUserEndpoints( req []exports.ServiceEndpoint) APIError {
 	 	return nil
 	 }
      names  := make(map[string]int,0)
-     ports  := make(map[uint32]int,0)
+     ports  := make(map[int]int,0)
 	 for idx,v := range(req) {
 	 		if _,ok := names[v.Name];ok {
 	 			return exports.ParameterError("duplicate endpoints name !!!")

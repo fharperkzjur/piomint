@@ -186,14 +186,15 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 			//@mark: convert user endpoints to k8s service
 			endpoints :=[]UserEndpoint{}
 			for _,v := range(req.Endpoints) {
-				if v.Name[0] == '$' {//@mark: replace $ to 0 to make k8s compatible
-					v.Name=v.Name[1:] + "-"
+				patchName := v.Name
+				if patchName[0] == '$' {//@mark: replace $ to - to make k8s compatible
+					patchName=patchName[1:] + "-"
 				}
 				endpoints=append(endpoints,UserEndpoint{
 					ContainerPort:JOB.ContainerPort{
 						Port:        int(v.Port),
 					    TargetPort:  int(v.Port),
-					    ServiceName: v.Name + "-" + run.RunId,
+					    ServiceName: patchName + "-" + run.RunId,
 					},
 					Name: v.Name,
 					SecureKey: v.SecretKey,

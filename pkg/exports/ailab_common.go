@@ -124,6 +124,13 @@ const (
 	AILAB_USER_ENDPOINT_MAX_NUM  = 10
 )
 
+const (
+	AILAB_USER_ENDPOINT_STATUS_INIT = "init"
+	AILAB_USER_ENDPOINT_STATUS_READY= "ready"
+	AILAB_USER_ENDPOINT_STATUS_STOP = "stop"
+	AILAB_USER_ENDPOINT_STATUS_ERROR= "error"
+)
+
 type SearchCond struct {
 	Offset     uint
 	TotalCount int64
@@ -175,10 +182,11 @@ type JobDistribute struct{
 
 type ServiceEndpoint struct{
 	Name     string `json:"name"`        // service name
-	Port     uint32 `json:"port"`        // service port
+	Port     int    `json:"port"`        // service port
 	Url      string `json:"url,omitempty"`
 	AccessKey string `json:"access_key,omitempty"`
 	SecretKey string `json:"secret_key,omitempty"`
+	Status    string `json:"status,omitempty"`
 }
 
 

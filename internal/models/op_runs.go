@@ -4,6 +4,7 @@ package models
 import (
 	"database/sql"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
+	JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"gorm.io/gorm"
 	"time"
 )
@@ -289,6 +290,7 @@ func CreateUserEndpoint(labId uint64,runId string,endpoint* exports.ServiceEndpo
 	      }
 	      if err == nil {
 	      	  count := 0
+	      	  port  := endpoint.Port
 	      	  for _,v := range(endpointList) {
 	      	  	  if v.Name == endpoint.Name {
 	      	  	  	  count = -1
@@ -297,16 +299,35 @@ func CreateUserEndpoint(labId uint64,runId string,endpoint* exports.ServiceEndpo
 		          }else if v.Name[0] != '$' {
 		          	  count++
 		          }
+		          if port != 0 && v.Port != 0 && port == v.Port {
+		          	 return exports.RaiseAPIError(exports.AILAB_ALREADY_EXISTS)
+		          }
 	          }
 	          if count < 0 {
 	          	 return nil
 	          }else if count >= exports.AILAB_USER_ENDPOINT_MAX_NUM {
 	          	 return exports.RaiseAPIError(exports.AILAB_EXCEED_LIMIT)
 	          }
-
 	      }
-	      return nil
+	      if err == nil {
+	      	  newEndpoint := JOB.ContainerPort{
+		              Port:        endpoint.Port,
+			          ServiceName: endpoint.Name + "-" + runId,
+		          }
+		      //@todo: allow user created nodePort ???
+		      status = exports.AILAB_USER_ENDPOINT_STATUS_INIT
+	      	  endpointList = append(endpointList,UserEndpoint{
+		          ContainerPort: newEndpoint,
+		          Name:          endpoint.Name,
+		          Status:        status,
+	          })
+	      	  endpointStore := &JsonMetaData{}
+	      	  endpointStore.Save(endpointList)
 
+	      	  err = wrapDBUpdateError(tx.Model(&Run{}).Where("run_id=?",runId).
+	      	  	   Update("endpoints",endpointStore),1)
+	      }
+	      return err
 	  })
 	  return
 }
