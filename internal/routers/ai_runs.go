@@ -394,7 +394,7 @@ func init(){
 }
 
 func validateEndpointName(name string)APIError {
-	if len(name) > exports.AILAB_USER_ENDPOINT_MAX_NUM{
+	if len(name) > exports.AILAB_USER_ENDPOINT_NAME_LEN{
 		return exports.ParameterError("user endpoint name lenght exceed limit !!!")
 	}
 	if !regexp_endpoint_name_validator.MatchString(name) {
