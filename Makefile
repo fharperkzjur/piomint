@@ -13,8 +13,11 @@ gosec-check-all: get-deps
 bin: get-deps
 	go build -o ai_lab cmd/ai_lab.go
 
-docker: get-deps
-	docker build -f Dockerfile . -t ai-lab:0.1
+docker:
+	docker build -f Dockerfile . -t ai-lab:v0.1.0
 
+dist: docker
+	docker tag ai-lab:v0.1.0 harbor.apulis.cn:8443/release/apulistech/ai-lab:v0.1.0
+	docker push harbor.apulis.cn:8443/release/apulistech/ai-lab:v0.1.0
 gen-swagger:
 	swag init -g cmd/ai_lab.go -o api

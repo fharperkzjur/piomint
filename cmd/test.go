@@ -3,7 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/apulis/bmod/ai-lab-backend/internal/services"
 )
+
+
 
 type LabRunStats struct{
 	RunStarting  int  `json:"start"`
@@ -31,6 +34,19 @@ func(d*JobStats)StatusChange(jobType string,from,to int){
 
 func main(){
 
+	 cmds,mounts := services.CheckResourceMounts([]string{
+      "iqi-laucnher","{{model/code}}",
+	 }, map[string]interface{}{
+	 	"model":map[string]interface{}{
+	 		"path":"pvc://abcd/1234",
+	 		"subResource":map[string]interface{}{
+	 			"dataset":"pvc://dddd",
+			},
+		},
+
+	 })
+
+	 fmt.Printf("cmds:%v mounts:%v",cmds,mounts)
 
 	 var sss interface{}
 

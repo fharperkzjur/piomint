@@ -47,10 +47,11 @@ func translateJobStatus(status JOB.JobStatus) int{
 
 func tryResourceMounts(name,path,rpath string,access int , subname,subpath string,maps map[string]int,
 	          mounts []JOB.MountPoint) ([]JOB.MountPoint,string){
-	  mount_name := name + "/" + subname
+	  mount_name := name
 	  pvc_path   := path
 	  if len(subpath) > 0 {
 	  	pvc_path = subpath
+	  	mount_name = name + "/" + subname
 	  }
 	  if maps[mount_name] == 0 && checkIsPVCURL(pvc_path) {
 		  mounts = append(mounts,JOB.MountPoint{
@@ -63,14 +64,18 @@ func tryResourceMounts(name,path,rpath string,access int , subname,subpath strin
 	  if(checkIsPVCURL(pvc_path)){
 		return mounts,getPVCMountPath(name,subname,rpath)
 	  }else if len(subname) > 0 {
-		return mounts,pvc_path + "/" + subname
+	  	if len(subpath) >0 {
+            return mounts,subpath
+		}else{
+			return mounts,pvc_path + "/" + subname
+		}
 	  }else{
 	  	return mounts,pvc_path
 	  }
 }
 
 //should never error here
-func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []JOB.MountPoint){
+func CheckResourceMounts(cmds []string,resources exports.GObject) ([]string, []JOB.MountPoint){
 	 action := make([]string,0,len(cmds))
 	 mounts := []JOB.MountPoint{}
 
@@ -103,6 +108,12 @@ func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 				 access     := int(safeToNumber(rsc["access"]))
 
 				 mounts,_ = tryResourceMounts(name,path,rpath,access,"","",maps,mounts)
+
+				 if subresource,_ := rsc["subResource"].(exports.GObject);len(subresource)>0{
+				 	for subname,subpath :=range(subresource) {
+				 		mounts,_=tryResourceMounts(name,path,rpath,access,subname,safeToString(subpath),maps,mounts)
+					}
+				 }
 
 			 }
 		 }
@@ -153,7 +164,7 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 if len(ports) > 0 {
 	 	job.SetContainerPorts(ports)
 	 }
-	 job.Cmd,job.MountPoints = checkResourceMounts(job.Cmd,resource)
+	 job.Cmd,job.MountPoints = CheckResourceMounts(job.Cmd,resource)
 	 //@todo:  add pre-start scripts ???
 	 job.MountPoints,job.PreStartScripts = checkNpuDriverMounts(&job.Quota,job.MountPoints)
 	 resp := &JOB.CreateJobRsp{}
