@@ -26,7 +26,9 @@ func genEndpointsUrl(name  ,service ,namespace string,port int) string{
 	 	"port":port,
 	 }
 	 vhost ,_:= json.Marshal(jsonInfo)
-
+	 if name[0] == '$'{
+	 	name=name[1:]
+	 }
 	 return fmt.Sprintf("%s/endpoints/%s/%s/",url,name, base64.StdEncoding.EncodeToString(vhost))
 }
 
@@ -90,14 +92,27 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 
 func CreateLabRunEndpoints(labId uint64,runId string,endpoint*exports.ServiceEndpoint) APIError {
 	// update db first
-	//err := models.
+	status,err := models.CreateUserEndpoint(labId,runId,endpoint)
+	if err != nil {
+		return err
+	}
+	if status == exports.AILAB_USER_ENDPOINT_STATUS_INIT || status == exports.AILAB_USER_ENDPOINT_STATUS_ERROR {//retry
+
+	}
+	switch(status){
+	case exports.AILAB_USER_ENDPOINT_STATUS_INIT: fallthrough
+	case exports.AILAB_USER_ENDPOINT_STATUS_STOP:
+	}
+
 
 	return exports.NotImplementError("CreateLabRunEndpoints")
 }
+
 func DeleteLabRunEndpoints(labId uint64,runId string,name string) (APIError){
 
 	return exports.NotImplementError("DeleteLabRunEndpoints")
 }
+
 func ValidateUserEndpoints( req []exports.ServiceEndpoint) APIError {
 	 if req == nil {
 	 	return nil
