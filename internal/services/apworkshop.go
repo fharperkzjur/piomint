@@ -107,10 +107,12 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,token string,resour
 		return err
 	}else{//compete new model
 		status := "commit"
+		query  := ""
 		if commitOrCancel == false {
 			status = "rollback"
+			query  = "?internal=1"
 		}
-		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioCommitModel?internal=1","PUT",map[string]string{
+		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioCommitModel" + query,"PUT",map[string]string{
 			"Authorization":"Bear " + token,
 		},
 			map[string]interface{}{
