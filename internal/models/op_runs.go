@@ -30,6 +30,10 @@ func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint6
 }
 
 func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
+
+	if run.IsRunOnCloud() {//@todo: how to kill remote run jobs ???
+		return 0,exports.NotImplementError("kill cloud run jobs not implement  !")
+	}
 	if !run.RunActive() || run.IsStopping(){// no need to kill
 		return 0,nil
 	}else if run.IsCompleting() {// wrap error

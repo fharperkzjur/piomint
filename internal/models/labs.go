@@ -77,6 +77,9 @@ func (job*JobStatusChange)EnableResume()bool{
 func (job*JobStatusChange)HasInitOK()bool{
 	return exports.IsJobPrepareSuccess(job.Flags)
 }
+func (job*JobStatusChange)IsRunOnCloud()bool{
+	return exports.IsJobRunWithCloud(job.Flags)
+}
 
 type JobStats  map[string]*LabRunStats
 
