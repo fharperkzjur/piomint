@@ -295,7 +295,7 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enable
 	})
 	return
 }
-func  QueryRunDetail(runId string,unscoped bool,status int) (run*Run,err APIError){
+func  QueryRunDetail(runId string,unscoped bool,status int,needChild bool) (run*Run,err APIError){
 	run  = &Run{}
 	inst := db
 	if unscoped {
@@ -309,6 +309,23 @@ func  QueryRunDetail(runId string,unscoped bool,status int) (run*Run,err APIErro
 	if err == nil {
 		err = checkDBQueryError(db.Table("labs").Select("namespace,user_group_id").
 			Where("id=?",run.LabId).Row().Scan(&run.Namespace,&run.UserGroupId))
+	}
+	if err == nil && needChild{
+		err = execDBQuerRows(db.Table("runs").Where("parent = ? and deleted_at=0 and flags&? != 0 ",
+			runId,exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE).
+			Select("status,job_type"), func(tx *gorm.DB, rows *sql.Rows) APIError {
+			status := 0
+			jobType := ""
+			if err:=checkDBQueryError(rows.Scan(&status,&jobType));err != nil{
+				return err
+			}
+			switch jobType {
+			case exports.AILAB_RUN_VISUALIZE:           run.ViewStatus=status
+			case exports.AILAB_RUN_MODEL_REGISTER:      run.RegisterStatus=status
+			case exports.AILAB_RUN_SCRATCH:             run.ScratchStatus=status
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		run = nil

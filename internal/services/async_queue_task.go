@@ -21,7 +21,7 @@ func getCleanupFlags(extra int,clean bool) (cleanFlags int){
 }
 
 func InitProcessor  (event *models.Event) APIError{
-	  run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_INIT)
+	  run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_INIT,false)
 	  if err == nil{
 	  	 return PrepareResources(run,nil,false)
 	  }else if err.Errno() == exports.AILAB_NOT_FOUND{
@@ -32,7 +32,7 @@ func InitProcessor  (event *models.Event) APIError{
 }
 
 func StartProcessor(event*models.Event) APIError{
-	run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_STARTING)
+	run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_STARTING,false)
 	if err != nil {
 		if err.Errno() == exports.AILAB_NOT_FOUND {
 			return nil
@@ -48,7 +48,7 @@ func StartProcessor(event*models.Event) APIError{
 }
 
 func KillProcessor(event*models.Event) APIError{
-	run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_KILLING)
+	run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_KILLING,false)
 	if err != nil {
 		if err.Errno() == exports.AILAB_NOT_FOUND {
 			return nil
@@ -91,7 +91,7 @@ func checkReleaseResources(run*models.Run,cleanFlags int,filterStatus int) (err 
 }
 
 func doCleanupResource(event*models.Event,status int) APIError {
-	run ,err := models.QueryRunDetail(event.Data,exports.IsRunStatusClean(status),status)
+	run ,err := models.QueryRunDetail(event.Data,exports.IsRunStatusClean(status),status,false)
 	if err == nil{
 		extra    := run.ExtStatus
 		if extra == 0 {//@mark: compatilbe with old data !!!
@@ -130,7 +130,7 @@ func CleanProcessor(event*models.Event) APIError{
 }
 
 func DiscardProcessor(event*models.Event) APIError{
-	run ,err := models.QueryRunDetail(event.Data,true,exports.AILAB_RUN_STATUS_DISCARDS)
+	run ,err := models.QueryRunDetail(event.Data,true,exports.AILAB_RUN_STATUS_DISCARDS,false)
 	if err == nil{
 		return models.DisposeRun(run)
 	}else if err.Errno() == exports.AILAB_NOT_FOUND{

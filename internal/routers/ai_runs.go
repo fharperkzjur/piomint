@@ -146,7 +146,7 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 		}
 	}
 
-	run, err := models.QueryRunDetail(runId,false,0)
+	run, err := models.QueryRunDetail(runId,false,0,true)
 	if err == nil && run.LabId != labId {
 		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
 	}
@@ -185,7 +185,7 @@ func deleteLabRunEndPoint(c*gin.Context)(interface{},APIError){
 
 func sysQueryLabRun(c*gin.Context)(interface{},APIError){
 	_,runId := parseLabRunId(c)
-	return models.QueryRunDetail(runId,true,0)
+	return models.QueryRunDetail(runId,true,0,true)
 }
 
 func getAllLabRuns(c*gin.Context) (interface{},APIError){

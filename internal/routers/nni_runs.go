@@ -53,7 +53,7 @@ func submitNNITrials(c*gin.Context) (interface{},APIError){
 }
 
 func forkChildRun(labId uint64,runId string,req*exports.CreateJobRequest) (interface{},APIError){
-	run,err := models.QueryRunDetail(runId,false,0)
+	run,err := models.QueryRunDetail(runId,false,0,false)
 	if err != nil {
 		return nil,err
 	}
