@@ -212,8 +212,10 @@ func PrepareResources(run * models.Run,resource exports.GObject, isRollback bool
 	if err == nil{
 		run.Resource.Save(resource)
 		//@add: save run data as output file if output dir exists
-		if len(run.Output) > 0 {
-			 err = models.WriteJsonFile(run.Output,exports.AILAB_OUTPUT_RUN_FILE,run)
+		if output := run.Output;output != "" {
+			 run.Output=""
+			 run.Token=""
+			 err = models.WriteJsonFile(output,exports.AILAB_OUTPUT_RUN_FILE,run)
 		}
 		if err == nil {
 			err = models.PrepareRunSuccess(run.RunId,run.Resource,isRollback)

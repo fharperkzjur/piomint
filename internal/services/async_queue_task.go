@@ -23,6 +23,7 @@ func getCleanupFlags(extra int,clean bool) (cleanFlags int){
 func InitProcessor  (event *models.Event) APIError{
 	  run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_INIT,false)
 	  if err == nil{
+	  	 notifyRunCreated(run.GetNotifierData())
 	  	 return PrepareResources(run,nil,false)
 	  }else if err.Errno() == exports.AILAB_NOT_FOUND{
 	  	 return nil
@@ -108,6 +109,10 @@ func doCleanupResource(event*models.Event,status int) APIError {
 			err = models.CleanupDone(run.RunId,extra,status)
 		}else if exports.IsRunStatusSuccess(extra&0xFF) && err.Errno() == exports.AILAB_CANNOT_COMMIT{
             err = models.CleanupDone(run.RunId,(extra & 0xFFFFFF00) | exports.AILAB_RUN_STATUS_SAVE_FAIL,status)
+		}
+		//@add: notify complete msg
+		if err == nil{
+			notifyRunComplete(run.GetNotifierData())
 		}
 		return err
 	}else if err.Errno() == exports.AILAB_NOT_FOUND{

@@ -17,7 +17,8 @@ type RunNotifyScope struct{
 
 type RunNotifyPayload struct{
 	CreatedAt UnixTime              `json:"createdAt"`
-	EndTime   UnixTime              `json:"-"`
+	StartTime *UnixTime             `json:"start,omitempty"`
+	EndTime   *UnixTime             `json:"end,omitempty"`
 	DeletedAt soft_delete.DeletedAt `json:"deletedAt,omitempty"`
 	Status    int                   `json:"status"`
 	Result *  JsonMetaData          `json:"result,omitempty"`

@@ -39,15 +39,11 @@ func (d*AsyncWSNotifier) Run() {
 	 		break
 	    }
 		if notifyData,err := models.QueryRunNotifierData(runId);err == nil{
-				if notifyData.DeletedAt > 0 {// run deleted
-                   notifyRunDeleted(notifyData)
-				}else if notifyData.Status == exports.AILAB_RUN_STATUS_INIT {// new run
-                   notifyRunCreated(notifyData)
-				}else if exports.IsRunStatusNonActive(notifyData.Status) {// run complete
-                   notifyRunComplete(notifyData)
-				}else{// run status change
-				   notifyRunStatusChange(notifyData,exports.AILAB_NOTIFY_CMD_STATUS_RUN)
-				}
+
+			    notifyRunStatusChange(notifyData,exports.AILAB_NOTIFY_CMD_STATUS_RUN)
+
+                //notifyRunDeleted(notifyData)
+
 		}else if err.Errno() == exports.AILAB_NOT_FOUND{//should not error
 			logger.Warnf("query runId %s for async notify not found !",runId)
 		}else{

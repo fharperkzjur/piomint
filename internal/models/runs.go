@@ -50,6 +50,7 @@ type Run struct{
 	 Token      string        `json:"token,omitempty"`   // @todo:  should not return to client user ???
 	 Namespace  string        `json:"-" gorm:"-"`
 	 UserGroupId uint64       `json:"-" gorm:"-"`
+	 LabBind     string       `json:"-" gorm:"-"`
 	 ViewStatus int           `json:"viewStatus,omitempty" gorm:"-"`
 	 RegisterStatus int       `json:"registerStatus,omitempty" gorm:"-"`
 	 ScratchStatus  int       `json:"scratchStatus,omitempty" gorm:"-"`
@@ -150,6 +151,31 @@ func (r*Run) StatusIsRunning() bool {
 }
 func (r*Run) StatusIsNonActive()bool {
 	return exports.IsRunStatusNonActive(r.Status)
+}
+
+func (r*Run) GetNotifierData() * RunStatusNotifier {
+	 return &RunStatusNotifier{
+		 RunNotifyScope:   RunNotifyScope{
+			 Bind:        r.LabBind,
+			 UserGroupId: r.UserGroupId,
+			 RunId:       r.RunId,
+			 Parent:      r.Parent,
+			 JobType:     r.JobType,
+		 },
+		 RunNotifyPayload: RunNotifyPayload{
+			 CreatedAt: r.CreatedAt,
+			 StartTime: r.StartTime,
+			 EndTime:   r.EndTime,
+			 DeletedAt: r.DeletedAt,
+			 Status:    r.Status,
+			 Result:    r.Result,
+			 Progress:  r.Progress,
+			 Msg:       r.Msg,
+			 Name:      r.Name,
+			 Creator:   r.Creator,
+			 UserId:    r.UserId,
+		 },
+	 }
 }
 
 type UserResourceQuota struct{
@@ -307,8 +333,8 @@ func  QueryRunDetail(runId string,unscoped bool,status int,needChild bool) (run*
 	err =  wrapDBQueryError(inst.First(run,"run_id=?",runId))
 	//if err == nil && exports.IsRunStatusStarting(status) {
 	if err == nil {
-		err = checkDBQueryError(db.Table("labs").Select("namespace,user_group_id").
-			Where("id=?",run.LabId).Row().Scan(&run.Namespace,&run.UserGroupId))
+		err = checkDBQueryError(db.Table("labs").Select("namespace,user_group_id,bind").
+			Where("id=?",run.LabId).Row().Scan(&run.Namespace,&run.UserGroupId,&run.LabBind))
 	}
 	if err == nil && needChild{
 		err = execDBQuerRows(db.Table("runs").Where("parent = ? and deleted_at=0 and flags&? != 0 ",
