@@ -230,3 +230,14 @@ func  AddRunReleaseFlags(runId string,flags uint64,filterStatus int) APIError{
 		UpdateColumn("flags",gorm.Expr("flags|?",flags)),1)
 
 }
+
+func GetLabRunStoragePath(labId uint64,runId string)(path string,err APIError) {
+	 labs := uint64(0)
+	 err = checkDBQueryError(db.Table("runs").Select("output,lab_id").Where("run_id=?",runId).
+	 	  Row().Scan(&path,&labs))
+	 if err == nil && labId !=0 && labId != labs {
+		 err = exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
+		 path= ""
+	 }
+	 return
+}

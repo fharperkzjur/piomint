@@ -22,7 +22,7 @@ rabbitmq:
   user:     admin # 用户名
   password: uk5C7CvsbNlyLbQD # 密码
   host:     192.168.1.217 # host地址
-  port:     5678 # mq端口 5672
+  port:     0 #5678 # mq端口 5672
 
 resources:
   model:          http://192.168.1.187:12335                #模型管理接口

@@ -5,6 +5,7 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/services"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strconv"
 )
 
@@ -20,6 +21,9 @@ func AddGroupTraining(r*gin.Engine){
 	group.GET("/runs", wrapper(getAllLabRuns))
 	group.GET("/runs/:runId",wrapper(queryLabRun))
 	group.GET("/stats",wrapper(queryLabRunStats))
+
+	group.GET( "/runs/:runId/files",   wrapper(listLabRunFiles))
+	group.GET("/runs/:runId/view",     viewLabRunFiles)
 
 	group.DELETE("/runs/:runId", wrapper(delLabRun))
     // following interfce should only be called by admin role users
@@ -229,4 +233,31 @@ func parseLabRunId(c*gin.Context) (labId uint64,runId string){
 	runId = c.Param("runId")
 	return
 }
+
+func listLabRunFiles(c*gin.Context)(interface{},APIError){
+	labId, runId := parseLabRunId(c)
+	if labId == 0 || len(runId) == 0{
+		return nil,exports.ParameterError("list run files invald labId or runId")
+	}
+	return services.ListRunFiles(labId,runId,c.Query("prefix"))
+}
+
+func viewLabRunFiles(c*gin.Context){
+
+		labId, runId := parseLabRunId(c)
+		if labId == 0 || len(runId) == 0{
+			c.JSON(http.StatusBadRequest,exports.CommResponse{
+				Code: exports.AILAB_PARAM_ERROR,
+				Msg:  "list run files invald labId or runId",
+			})
+			return
+		}
+		if err := services.ServeFile(labId,runId,c.Query("prefix"),c);err != nil {
+			c.JSON(http.StatusBadRequest,exports.CommResponse{
+				Code: err.Errno(),
+				Msg:  err.Error(),
+			})
+		}
+}
+
 

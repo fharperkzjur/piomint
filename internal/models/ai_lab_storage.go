@@ -7,6 +7,7 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/utils"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,3 +85,47 @@ func EnsureLabRunStgPath(runId string) (path string,err APIError){
 	return
 }
 
+func ListPathFiles(path ,prefix string)(interface{},APIError){
+
+	if strings.Contains(prefix,"../"){
+		return nil,exports.ParameterError("should not have ../ path in prefix !!!")
+	}
+	path = strings.TrimRight(path,"/")
+	prefix=strings.TrimLeft(prefix,"/")
+	filePath :=  mapPVCPath(path+"/"+prefix)
+	if len(filePath) == 0 {
+		return 	nil,exports.RaiseAPIError(exports.AILAB_PATH_NOT_FOUND,"pvc path cannot found !")
+	}
+	fileInfos,err := ioutil.ReadDir(filePath)
+	if err != nil{
+		return nil,exports.RaiseAPIError(exports.AILAB_OS_READ_DIR_ERROR,err.Error())
+	}
+	fileList := make([]exports.FileListItem,0,len(fileInfos))
+	for _,item := range fileInfos {
+		if item.Name()[0] != '.' {//@todo: supress hidden files & directories all ???
+			fileList = append(fileList, exports.FileListItem{
+				Name:      item.Name(),
+				UpdatedAt: item.ModTime().UnixNano() / 1e6,
+				Size:      item.Size(),
+				IsDir:     item.IsDir(),
+			})
+		}
+	}
+	return fileList,nil
+}
+
+func GetRealFilePath(path string,prefix string)(string,APIError){
+	path = strings.TrimRight(path,"/")
+	prefix=strings.TrimLeft(prefix,"/")
+	path =  mapPVCPath(path+"/"+prefix)
+	if len(path) == 0 {
+		return "",exports.RaiseAPIError(exports.AILAB_FILE_NOT_FOUND,"pvc file path not found !")
+	}
+	if s,err := os.Stat(path);err != nil {
+		return "",exports.RaiseAPIError(exports.AILAB_FILE_NOT_FOUND,err.Error())
+	}else if(!s.Mode().IsRegular()){
+		return "",exports.RaiseAPIError(exports.AILAB_NO_AUTH,"cannot access none regular files!")
+	}else{
+		return path,nil
+	}
+}

@@ -163,7 +163,7 @@ type FileListItem struct{
 	//CreatedAt int64     `json:"createdAt"`
 	UpdatedAt int64       `json:"createdAt"`
 	Size      int64      `json:"size"`
-	IsDir     int8       `json:"isDir"`
+	IsDir     bool       `json:"isDir"`
 }
 
 

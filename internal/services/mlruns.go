@@ -1,8 +1,13 @@
 package services
 
 import (
+	"encoding/csv"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
+	"github.com/gin-gonic/gin"
+	"net/http"
+	"os"
+	"path"
 )
 
 type APIError = exports.APIError
@@ -157,6 +162,61 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 	return run,err
 }
 
+func ListRunFiles(labId uint64 ,runId string,prefix string)(interface{},APIError){
+	path,err := models.GetLabRunStoragePath(labId,runId)
+	if err != nil {
+		return nil,err
+	}
+	return models.ListPathFiles(path,prefix)
+}
 
+func ServeFile(labId uint64,runId string,prefix string,c*gin.Context) APIError{
+	targetPath,err := models.GetLabRunStoragePath(labId,runId)
+	if err != nil {
+		return err
+	}
+	targetPath,err = models.GetRealFilePath(targetPath,prefix)
+	if err != nil {
+		return err
+	}
+	ext := path.Ext(targetPath)
+	if ext == ".csv" && c.Query("format") == "1"{// automatically parse csv file into json object
+		fs, err := os.Open(targetPath)
+		if err != nil {
+			return exports.RaiseAPIError(exports.AILAB_OS_IO_ERROR,err.Error())
+		}
+		defer fs.Close()
+		r1 := csv.NewReader(fs)
+		content, err := r1.ReadAll()
+		if err != nil {
+			return exports.RaiseAPIError(exports.AILAB_OS_IO_ERROR,err.Error())
+		}
+		c.JSON(http.StatusOK,content)
+	}else{
+		c.Writer.WriteHeader(http.StatusOK)
+		c.Writer.Header().Add("Content-Type", MapMimeContentType(ext))
+		c.File(targetPath)
+	}
+	return nil
 
+}
 
+func MapMimeContentType(ext string) string{
+	switch(ext){
+	case ".csv": return "text/plain"
+	case ".txt": return "text/plain"
+	case ".htm": return "text/html"
+	case ".html":return "text/html"
+	case ".css": return "text/css"
+	case ".xml": return "text/xml"
+	case ".json":return "application/json"
+	case ".js":  return "application/x-javascript"
+	case ".png": return "image/png"
+	case ".gif": return "image/gif"
+	case ".jpeg":return "image/jpeg"
+	case ".jpg": return "image/jpeg"
+	case ".ico": return "image/x-icon"
+	case ".bmp": return "image/x-ms-bmp"
+	default:     return "application/octet-stream"
+	}
+}
