@@ -99,7 +99,7 @@ func (d*RunStatusNotifier)GetPublishMsg(msgType string)*wsmsg.ReqPublishMessage 
 
 const (
 	 select_notifier_fields         = "labs.bind,user_group_id,run_id,parent,job_type,runs.created_at,runs.deleted_at,status,result,progress,msg,runs.name,runs.creator,runs.user_id,start_time,end_time"
-	 select_status_notifier_fields  = "labs.bind,user_group_id,parent,deleted_at,status,job_type"
+	 select_status_notifier_fields  = "labs.bind,user_group_id,parent,runs.deleted_at,status,job_type"
 )
 
 func QueryRunNotifierData(runId string) (*RunStatusNotifier,APIError){
