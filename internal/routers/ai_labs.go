@@ -10,7 +10,7 @@ import (
 
 func AddGroupAILab(r *gin.Engine){
 
-	group := r.Group("/api/v1/labs")
+	group := r.Group( exports.AILAB_API_VERSION +  "/labs")
 
 	group.GET("", wrapper(getAllLabs))
 	group.GET("/:lab", wrapper(queryLab))

@@ -19,6 +19,11 @@ const (
 	AISutdio_labs_discard = "**"
 )
 const (
+	AILAB_API_VERSION = "/api/v1"
+	AILAB_ENV_ADDR   = "AILAB_ADDR"
+	AILAB_ENV_LAB_ID = "AILAB_LAB_ID"
+)
+const (
 	AILAB_RUN_STATUS_INVALID  = iota
 	AILAB_RUN_STATUS_INIT
 	AILAB_RUN_STATUS_STARTING  // wait for started , can kill only

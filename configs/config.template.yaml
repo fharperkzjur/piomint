@@ -25,11 +25,11 @@ rabbitmq:
   port:     5672 # mq端口
 
 resources:
-  model:          http://workshop.bmod:6110                #模型管理接口
-  dataset:        http://adhub.bmod:6120                   #数据集管理接口
-  jobsched:       http://job-sched.bmod:6130   #job调度管理接口
-  engine:         http://adharbor.bmod:6140                #镜像管理接口
-  code:                                                    #代码管理暂时由模型工厂托管
+  code:
+  dataset: http://adhub-backend.default:80/api/v1                  #数据集管理接口
+  engine:
+  jobsched: http://job-scheduler.default:80/api/v1                #job调度管理接口
+  model: http://apworkshop-backend-svc.default:80/api/v1          #模型管理接口
 
 storage: pvc://aiplatform-ailab-data-pvc
 

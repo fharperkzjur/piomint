@@ -140,9 +140,14 @@ func checkNpuDriverMounts(quota * JOB.ResourceQuota,mounts []JOB.MountPoint) ( [
 	 }
 }
 
+func checkAILabEnvs(run*models.Run,envs map[string]string ){
+    envs[exports.AILAB_ENV_ADDR]   = fmt.Sprintf("http://ai-lab.default:%d%s",configs.GetAppConfig().Port,exports.AILAB_API_VERSION)
+    envs[exports.AILAB_ENV_LAB_ID] = fmt.Sprintf("%d",run.LabId)
+}
+
 func SubmitJob(run*models.Run) (int, APIError) {
 
-	 url  := configs.GetAppConfig().Resources.Jobsched+"/api/v1/jobs"
+	 url  := configs.GetAppConfig().Resources.Jobsched+"/jobs"
 
 	 job := &JOB.Job{
 		 ModId:       exports.AILAB_MODULE_ID,
@@ -165,6 +170,7 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 	job.SetContainerPorts(ports)
 	 }
 	 job.Cmd,job.MountPoints = CheckResourceMounts(job.Cmd,resource)
+	 checkAILabEnvs(run,job.Envs)
 	 //@todo:  add pre-start scripts ???
 	 job.MountPoints,job.PreStartScripts = checkNpuDriverMounts(&job.Quota,job.MountPoints)
 	 resp := &JOB.CreateJobRsp{}
@@ -213,7 +219,7 @@ func KillJob(run*models.Run) (int,APIError) {
 }
 
 func DeleteJob(runId string) APIError{
-	 url  := fmt.Sprintf("%s/api/v1/jobs/%s",configs.GetAppConfig().Resources.Jobsched,runId)
+	 url  := fmt.Sprintf("%s/jobs/%s",configs.GetAppConfig().Resources.Jobsched,runId)
 	 err  := Request(url,"DELETE",nil,nil,nil)
 	 if err == nil || err.Errno() == JOB.ERR_CODE_RESOURCE_NOT_EXIST {//should never error
 		return nil

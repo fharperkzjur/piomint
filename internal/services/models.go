@@ -52,7 +52,7 @@ func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObje
 			   ModelVersion: resource["version"],
 		   }
 		   result := make(map[string]interface{})
-		   err := Request(configs.GetAppConfig().Resources.Model + "/api/v1/ref","POST",nil,req, &result)
+		   err := Request(configs.GetAppConfig().Resources.Model + "/ref","POST",nil,req, &result)
 		   if err != nil {
 		   	  return nil,err
 		   }
@@ -66,7 +66,7 @@ func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObje
 		   req.Scope,_     =resource["scope"].(string)
 		   req.ModelName,_ =resource["name"].(string)
 		   result := make(map[string]interface{})
-		   err := Request(configs.GetAppConfig().Resources.Model + "/api/v1/prepareModel","POST",nil,req, &result)
+		   err := Request(configs.GetAppConfig().Resources.Model + "/prepareModel","POST",nil,req, &result)
 		   if err != nil {
 			  return nil,err
 		   }
@@ -87,7 +87,7 @@ func (d ModelResourceSrv) CompleteResource(runId string,resource exports.GObject
 				ModelID:      resource["id"],
 				ModelVersion: resource["version"],
 			}
-			err := Request(configs.GetAppConfig().Resources.Model + "/api/v1/unref","POST",nil,req, nil)
+			err := Request(configs.GetAppConfig().Resources.Model + "/unref","POST",nil,req, nil)
 			if err != nil && err.Errno() == MODEL_REF_NOT_EXISTS {// unref not exists supress not found error
                  err = nil
 			}
@@ -97,7 +97,7 @@ func (d ModelResourceSrv) CompleteResource(runId string,resource exports.GObject
 			if commitOrCancel == false {
 				status = "rollback"
 			}
-			err := Request(configs.GetAppConfig().Resources.Model + "/api/v1/commitModel","PUT",nil,
+			err := Request(configs.GetAppConfig().Resources.Model + "/commitModel","PUT",nil,
 				  map[string]interface{}{
 				      "lock" : resource["lock"],
 				      "status":status,

@@ -85,10 +85,10 @@ config:
       host:     rabbitmq.default
       port:     5672
    resources:
-      model:          http://workshop.bmod:6110                #模型管理接口
-      dataset:        http://adhub.bmod:6120                   #数据集管理接口
-      jobsched:       http://job-scheduler.default:10100/api/v1   #job调度管理接口
-      engine:         http://adharbor.bmod:6140                #镜像管理接口
+      model:          http://apworkshop-backend-svc.default:80/api/v1                #模型管理接口
+      dataset:        http://adhub-backend.default:80/api/v1                   #数据集管理接口
+      jobsched:       http://job-scheduler.default:80/api/v1        #job调度管理接口
+      engine:                                                      #镜像管理接口
       code:                                                    #代码管理暂时由模型工厂托管
 
 storage:  

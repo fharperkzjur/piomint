@@ -11,7 +11,7 @@ import (
 
 func AddGroupTraining(r*gin.Engine){
 
-	group := r.Group("/api/v1/labs/:lab")
+	group := r.Group(exports.AILAB_API_VERSION + "/labs/:lab")
 
 	group.POST("/runs", wrapper(submitLabRun))
 	group.POST("/runs/:runId/evaluates", wrapper(submitLabEvaluate))
@@ -27,7 +27,7 @@ func AddGroupTraining(r*gin.Engine){
 
 	group.DELETE("/runs/:runId", wrapper(delLabRun))
     // following interfce should only be called by admin role users
-	group = r.Group("/api/v1/runs")
+	group = r.Group(exports.AILAB_API_VERSION +"/runs")
 	group.GET("",wrapper(sysGetAllLabRuns))
 	group.GET("/:runId",wrapper(sysQueryLabRun))
 	group.GET("/stats",wrapper(sysQueryLabRunStats))

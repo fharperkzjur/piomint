@@ -38,7 +38,7 @@ func (d DatasetResourceSrv) PrepareResource(runId string,  resource exports.GObj
 	  }
 	  result := make(map[string]interface{})
 
-	  err := Request(configs.GetAppConfig().Resources.Dataset + "/api/v1/apps/app_code_dataset/bind","POST",nil,req, &result)
+	  err := Request(configs.GetAppConfig().Resources.Dataset + "/apps/app_code_dataset/bind","POST",nil,req, &result)
 	  if err != nil {
 		return nil,err
   	  }
@@ -60,7 +60,7 @@ func (d DatasetResourceSrv) CompleteResource(runId string,resource exports.GObje
 			Context:      runId,
 			DatasetID:    resource["id"],
 		}
-		err := Request(configs.GetAppConfig().Resources.Dataset + "/api/v1/apps/app_code_dataset/unbind","POST",nil,req, nil)
+		err := Request(configs.GetAppConfig().Resources.Dataset + "/apps/app_code_dataset/unbind","POST",nil,req, nil)
 		if err != nil && (err.Errno() == DATASET_NOT_EXISTS || err.Errno() ==  DATASET_CONTEXT_NOT_EXISTS){// unref not exists supress not found error
 		    err = nil
   	   }
