@@ -131,7 +131,7 @@ func checkNpuDriverMounts(quota * JOB.ResourceQuota,mounts []JOB.MountPoint) ( [
 
 func SubmitJob(run*models.Run) (int, APIError) {
 
-	 url  := configs.GetAppConfig().Resources.Jobsched+"/jobs"
+	 url  := configs.GetAppConfig().Resources.Jobsched+"/api/v1/jobs"
 
 	 job := &JOB.Job{
 		 ModId:       exports.AILAB_MODULE_ID,
@@ -202,7 +202,7 @@ func KillJob(run*models.Run) (int,APIError) {
 }
 
 func DeleteJob(runId string) APIError{
-	 url  := fmt.Sprintf("%s/jobs/%s",configs.GetAppConfig().Resources.Jobsched,runId)
+	 url  := fmt.Sprintf("%s/api/v1/jobs/%s",configs.GetAppConfig().Resources.Jobsched,runId)
 	 err  := Request(url,"DELETE",nil,nil,nil)
 	 if err == nil || err.Errno() == JOB.ERR_CODE_RESOURCE_NOT_EXIST {//should never error
 		return nil
