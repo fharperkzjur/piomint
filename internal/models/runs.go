@@ -81,6 +81,9 @@ func (ctx*BasicMLRunContext) PrepareJobStatusChange() *JobStatusChange {
 func (ctx*BasicMLRunContext) StatusIsSuccess() bool {
 	 return exports.IsRunStatusSuccess(ctx.Status)
 }
+func (ctx*BasicMLRunContext) StatusIsRunning() bool {
+	return exports.IsRunStatusRunning(ctx.Status)
+}
 func (ctx*BasicMLRunContext) StatusIsActive() bool {
 	 return exports.IsRunStatusActive(ctx.Status)
 }

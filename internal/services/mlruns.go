@@ -31,7 +31,7 @@ func genEndpointsUrl(name string,service string,port int) string{
 
 
 func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},APIError){
-	 if mlrun.StatusIsSuccess() {
+	 if mlrun.StatusIsRunning() {
 	 	 if mlrun.Endpoints == nil {
 	 	 	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"no endpoints created for run:"+mlrun.RunId)
 	     }

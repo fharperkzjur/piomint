@@ -254,6 +254,9 @@ func IsRunStatusError(status int) bool{
 func  IsRunStatusActive(status int)      bool {
 	return status > AILAB_RUN_STATUS_INVALID && status < AILAB_RUN_STATUS_MIN_NON_ACTIVE
 }
+func  IsRunStatusRunning(status int)  bool {
+	return status == AILAB_RUN_STATUS_RUN
+}
 func  IsRunStatusNonActive(status int)   bool{
 	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE
 }
