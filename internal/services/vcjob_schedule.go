@@ -216,6 +216,8 @@ func CreateVcJobTask(run*models.Run) ([]JOB.VcJobTask,APIError){
 	run.Resource.Fetch(&resource)
 	container.Cmd,container.MountPoints = CheckResourceMounts(container.Cmd,resource)
 	TagAILabEnvs(run,container.Envs)
+    //@add: add AILAB_DEVICE_NUM env for all job
+	container.Envs[exports.AILAB_ENV_DEVICE_NUM] = quota.Request.Device.DeviceNum
 	task.Container=container
 
 	checkAppUsage(run,&task)
