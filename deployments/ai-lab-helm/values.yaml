@@ -95,12 +95,12 @@ storage:
     persistentVolumeType: nfs
     nfsServer: 192.168.3.9
     persistentVolumes:
-      - name:     ai-labs-data
+      - name:     aiplatform-ailab-data-pvc
         capacity: 20Gi
         claimCapacity: 5Gi
-        path:     /mnt/disk-c/data/nfs/pvc/ai-labs-data
+        path:     /mnt/disk-c/data/nfs/pvc/aiplatform-ailab-data-pvc
     mounts: #first pvc mounted as main storage
-        - name:       ai-labs-data
+        - name:       aiplatform-ailab-data-pvc
           mountPath:  /app/ai-labs-data
     configs:
         - name:       ai-lab-cm

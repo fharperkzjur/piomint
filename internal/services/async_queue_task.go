@@ -2,6 +2,7 @@
 package services
 
 import (
+	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"strconv"
@@ -71,7 +72,7 @@ func checkReleaseJobSched(run*models.Run,cleanFlags int,filterStatus int) APIErr
 	return nil
 }
 func checkReleaseResources(run*models.Run,cleanFlags int,filterStatus int) (err APIError) {
-	if exports.IsJobNeedSave(run.Flags) && needReleaseSave(cleanFlags) && !exports.HasJobCleanupWithSaving(run.Flags){
+	if !configs.GetAppConfig().Debug && exports.IsJobNeedSave(run.Flags) && needReleaseSave(cleanFlags) && !exports.HasJobCleanupWithSaving(run.Flags){
 		err = BatchReleaseResource(run, cleanFlags & resource_release_save )
 		if err == nil {
 			err = models.AddRunReleaseFlags(run.RunId,exports.AILAB_RUN_FLAGS_RELEASED_SAVING,filterStatus)

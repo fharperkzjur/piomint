@@ -15,17 +15,20 @@ import (
 func checkIsPVCURL(path string)bool{
 	return strings.HasPrefix(path,"pvc://")
 }
-func getPVCMountPath(mount_name,rpath string) string{
+func getPVCMountPath(name,subname,rpath string) string{
+	if strings.HasPrefix(name,exports.AILAB_OUTPUT_NAME) {
+		name = exports.AILAB_OUTPUT_MOUNT
+	}else if name[0] =='#'{// mount to refer parent resource
+		name = exports.AILAB_PIPELINE_REFER_PREFIX + name[1:]
+	}
 	if len(rpath) == 0 {//use default mount path
-		rpath = exports.AILAB_DEFAULT_MOUNT
+		rpath = exports.AILAB_DEFAULT_MOUNT + "/" + name
 	}
-	if strings.HasPrefix(mount_name,exports.AILAB_OUTPUT_NAME) {
-		mount_name = exports.AILAB_OUTPUT_MOUNT + mount_name[len(exports.AILAB_OUTPUT_NAME):]
-	}else if mount_name[0] =='#'{// mount to refer parent resource
-        mount_name = exports.AILAB_PIPELINE_REFER_PREFIX + mount_name[1:]
+	if len(subname) == 0 {
+		return rpath
+	}else{
+		return rpath + "/" + subname
 	}
-	rpath += "/" + mount_name
-	return strings.TrimRight(rpath,"/")
 }
 
 func translateJobStatus(status JOB.JobStatus) int{
@@ -52,13 +55,13 @@ func tryResourceMounts(name,path,rpath string,access int , subname,subpath strin
 	  if maps[mount_name] == 0 && checkIsPVCURL(pvc_path) {
 		  mounts = append(mounts,JOB.MountPoint{
 			  Path:          pvc_path,
-			  ContainerPath: getPVCMountPath(mount_name,rpath),
+			  ContainerPath: getPVCMountPath(name,subname,rpath),
 			  ReadOnly:      access == 0,
 		  })
 		  maps[mount_name]=1//track resource mounted
 	  }
 	  if(checkIsPVCURL(pvc_path)){
-		return mounts,getPVCMountPath(mount_name,rpath)
+		return mounts,getPVCMountPath(name,subname,rpath)
 	  }else if len(subname) > 0 {
 		return mounts,pvc_path + "/" + subname
 	  }else{
@@ -107,6 +110,25 @@ func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 	 return action,mounts
 }
 
+func checkNpuDriverMounts(quota * JOB.ResourceQuota,mounts []JOB.MountPoint) ( []JOB.MountPoint,string)  {
+
+	 if strings.Contains(quota.Request.Device.DeviceType,"npu") {
+	 	 mounts = append(mounts,JOB.MountPoint{
+			 Path:          "/usr/local/Ascend/driver",
+			 ContainerPath: "/usr/local/Ascend/driver",
+			 ReadOnly:      true,
+		 })
+		 mounts = append(mounts,JOB.MountPoint{
+			 Path:          "/usr/local/Ascend/add-ons",
+			 ContainerPath: "/usr/local/Ascend/add-ons",
+			 ReadOnly:      true,
+		 })
+		 return mounts,"*"
+	 }else{
+		 return mounts,""
+	 }
+}
+
 func SubmitJob(run*models.Run) (int, APIError) {
 
 	 url  := configs.GetAppConfig().Resources.Jobsched+"/jobs"
@@ -133,7 +155,7 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 }
 	 job.Cmd,job.MountPoints = checkResourceMounts(job.Cmd,resource)
 	 //@todo:  add pre-start scripts ???
-	 job.PreStartScripts="*"
+	 job.MountPoints,job.PreStartScripts = checkNpuDriverMounts(&job.Quota,job.MountPoints)
 	 resp := &JOB.CreateJobRsp{}
 
 	 err  := Request(url,"POST",nil,job,resp)
@@ -205,8 +227,9 @@ func  MonitorJobStatus(event broker.Event) error{
 	  if json.Unmarshal(event.Message().Body,jobs) == nil {
 		  statusTo := translateJobStatus(jobs.JobState.Status)
 		  if statusTo < 0 {
-		  	logger.Warnf("receive unknown job state from mq:%s",event.Message().Body)
+		  	logger.Warnf("receive unknown job state from mq:%s",string(event.Message().Body))
 		  }else{
+		  	logger.Info("receive mq message:%s",string(event.Message().Body))
 		  	return models.ChangeJobStatus(jobs.JobId,-1,statusTo,jobs.JobState.Msg)
 		  }
 

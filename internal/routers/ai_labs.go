@@ -169,8 +169,14 @@ func checkBatchCreateLab(req*exports.ReqBatchCreateLab)(labs []models.Lab,err AP
 	  	 	 lab.Name = item.Name
 	  	 	 lab.Classify = item.Classify
 	  	 	 lab.Type = item.Type
-
-
+	  	 	 if len(item.Tags) > 0 {
+	  	 	 	lab.Tags = &models.JsonMetaData{}
+	  	 	 	lab.Tags.Save(item.Tags)
+			 }
+			 if len(item.Meta) > 0 {
+				 lab.Meta = &models.JsonMetaData{}
+				 lab.Meta.Save(item.Meta)
+			 }
 			 if len(lab.Name) == 0 {
 			 	return exports.ParameterError("invalid lab name")
 			 }

@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
+	JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"gorm.io/gorm"
 	"gorm.io/plugin/soft_delete"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -45,7 +46,7 @@ type Run struct{
 }
 
 const (
-	list_runs_fields="run_id,lab_id,runs.name,num,job_type,runs.creator,runs.created_at,runs.deleted_at,start_time,end_time,runs.description,status,runs.tags,msg"
+	list_runs_fields="run_id,lab_id,runs.name,num,job_type,runs.creator,runs.created_at,runs.deleted_at,start_time,end_time,runs.description,status,runs.tags,runs.flags,msg,parent"
 	select_run_status_change = "run_id,status,flags,job_type"
 )
 
@@ -149,7 +150,16 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  }
 	  if len(req.Endpoints) > 0{
 			run.Endpoints=&JsonMetaData{}
-			run.Endpoints.Save(req.Endpoints)
+			//@mark: convert user endpoints to k8s service
+			endpoints :=[]JOB.ContainerPort{}
+			for _,v := range(req.Endpoints) {
+				endpoints=append(endpoints,JOB.ContainerPort{
+					Port:        int(v.Port),
+					TargetPort:  int(v.Port),
+					ServiceName: v.Name + "-" + run.RunId,
+				})
+			}
+			run.Endpoints.Save(endpoints)
 	  }
 
 		run.Quota=&JsonMetaData{}

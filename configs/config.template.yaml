@@ -31,10 +31,10 @@ resources:
   engine:         http://adharbor.bmod:6140                #镜像管理接口
   code:                                                    #代码管理暂时由模型工厂托管
 
-storage: pvc://aiplatform-app-data-pvc
+storage: pvc://aiplatform-ailab-data-pvc
 
 mounts:
-  ai-labs-data:                /ai-labs/app
-  aiplatform-app-data-pvc:     /ai-labs/test
+  aiplatform-ailab-data-pvc:   /app/ai-labs-data
+
 
 

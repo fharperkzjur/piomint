@@ -26,7 +26,7 @@ const (
  	Evt_start_run   = "start"
 	Evt_kill_run    = "kill"
 	// check whether can clean actually
-	Evt_save_run    = "save"
+	Evt_complete_run    = "complete"
 	// should be deleted status
 	Evt_clean_run       = "clean"
 	Evt_discard_run       = "discard"
@@ -106,7 +106,7 @@ func logKillRun(tx*gorm.DB,runId string,events EventsTrack) APIError{
 }
 
 func logSaveRun(tx*gorm.DB,runId string,extra int, events EventsTrack)APIError{
-	return LogBackendEvent(tx,Evt_save_run,runId,extra,events)
+	return LogBackendEvent(tx,Evt_complete_run,runId,extra,events)
 }
 
 func logCleanRun(tx*gorm.DB,runId string,extra int, events EventsTrack) APIError {

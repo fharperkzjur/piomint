@@ -294,3 +294,6 @@ func  HasJobCleanupWithSaving(flags uint64)  bool{
 func  HasJobCleanupWithRefs(flags uint64)  bool{
 	return (flags &  AILAB_RUN_FLAGS_RELEASED_REFS) != 0
 }
+func  IsJobRunWithCloud(flags uint64) bool {
+	return (flags & AILAB_RUN_FLAGS_USE_CLOUD) != 0
+}
