@@ -3,6 +3,7 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/utils"
@@ -10,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -129,4 +131,17 @@ func GetRealFilePath(path string,prefix string)(string,APIError){
 	}else{
 		return path,nil
 	}
+}
+
+func WriteJsonFile(dir string,file string,v interface{}) APIError {
+	rpath := mapPVCPath(dir)
+	if rpath == "" {
+		return exports.RaiseAPIError(exports.AILAB_FILE_NOT_FOUND,"pvc file path not found !")
+	}
+	rpath =  path.Join(rpath,file)
+	content,_ := json.Marshal(v)
+	if err := ioutil.WriteFile(rpath,content,0440) ;err != nil {
+		return exports.RaiseAPIError(exports.AILAB_OS_CREATE_FILE)
+	}
+	return nil
 }
