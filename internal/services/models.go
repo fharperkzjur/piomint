@@ -93,9 +93,14 @@ func (d ModelResourceSrv) CompleteResource(runId string,resource exports.GObject
 			}
 			return err
 		}else{//compete new model
+			status := "commit"
+			if commitOrCancel == false {
+				status = "rollback"
+			}
 			err := Request(configs.GetAppConfig().Resources.Model + "/commitModel","PUT",nil,
 				  map[string]interface{}{
 				      "lock" : resource["lock"],
+				      "status":status,
 				  }, nil)
 			if err != nil && err.Errno() == MODEL_COMMIT_FAIL {
 				err = exports.RaiseAPIError(exports.AILAB_CANNOT_COMMIT,"commit saved model error:"+err.Error())
