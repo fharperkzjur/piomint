@@ -97,6 +97,11 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask)   {
 	task.Container.Envs["JOB_CMD"]=strings.Join(task.Container.Cmd," ")
 	task.Container.Envs["PRESTART_SCRIPTS"] = preStart
 	task.Container.Cmd=[]string{"bash","-c","/prestart/prestart.sh && /start/start.sh"}
+	task.InitContainer.ResourceQuota = task.Container.ResourceQuota
+	//@mark: init container use same qutoa as container without any device !
+	task.InitContainer.ResourceQuota.Request.Device = JOB.Device{}
+	task.InitContainer.ResourceQuota.Limit.Device   = JOB.Device{}
+
 	for _,v := range(task.InitContainer.MountPoints) {
 		v.ReadOnly=true
 		task.Container.MountPoints=append(task.Container.MountPoints,v)
@@ -173,10 +178,10 @@ func CreateVcWorkerTask(task*JOB.VcJobTask, node int,compactMaster bool ) []JOB.
           task.Container.ResourceQuota.Request.Device = JOB.Device{}
 		  task.Container.ResourceQuota.Limit.Device = JOB.Device{}
 
-		  if task.InitContainer != nil {
-			  task.InitContainer.ResourceQuota.Request.Device = JOB.Device{}
-			  task.InitContainer.ResourceQuota.Limit.Device = JOB.Device{}
-		  }
+		  //if task.InitContainer != nil {
+			//  task.InitContainer.ResourceQuota.Request.Device = JOB.Device{}
+			 // task.InitContainer.ResourceQuota.Limit.Device = JOB.Device{}
+		  //}
 	 }
 
 	 tasks := []JOB.VcJobTask{
@@ -324,7 +329,7 @@ func SubmitJobV2(run*models.Run) (int, APIError) {
 		return exports.AILAB_RUN_STATUS_FAIL,err
 	}
 	//@todo:  `default` ???
-	//run.Namespace="default"
+	run.Namespace="default"
 	if len(tasks) > 1 {
 		return SubmitVcJob(run,tasks)
 	}else {
@@ -338,7 +343,7 @@ func CreateJobEndpointImpl(mlrun * models.BasicMLRunContext,userEndPoint * model
 		Namespace:     mlrun.Namespace,
 		ContainerPort: userEndPoint.ToSchedulerPort(),
 	}
-	//serviceReq.Namespace="default"
+	serviceReq.Namespace="default"
 	url  := configs.GetAppConfig().Resources.Jobsched+"/services"
 	serviceRsp := &JOB.CreateServiceRsp{}
 	err  := Request(url,"POST",nil,serviceReq,serviceRsp)
@@ -352,7 +357,7 @@ func CreateJobEndpointImpl(mlrun * models.BasicMLRunContext,userEndPoint * model
 }
 
 func DeleteJobEndPointImpl(mlrun * models.BasicMLRunContext,serviceName string) (APIError,string) {
-	//mlrun.Namespace = "default"
+	mlrun.Namespace = "default"
 	url  := fmt.Sprintf("%s/services?jobId=%s&namespace=%s&serviceName=%s",configs.GetAppConfig().Resources.Jobsched,
 		mlrun.RunId,mlrun.Namespace,serviceName)
 	err   :=Request(url,"DELETE",nil,nil,nil)
