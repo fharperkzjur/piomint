@@ -60,6 +60,7 @@ func (d*RunStatusNotifier)getMsgSubject(msgType string)string{
 		  switch d.Status {
 		  case  exports.AILAB_RUN_STATUS_SUCCESS:   return fmt.Sprintf("成功结束-%s-任务-%s",jobType,d.RunId)
 		  case  exports.AILAB_RUN_STATUS_ABORT:     return fmt.Sprintf("已停止-%s-任务-%s",jobType,d.RunId)
+		  case  exports.AILAB_RUN_STATUS_ERROR:     return fmt.Sprintf("错误-%s-任务-%s",jobType,d.RunId)
 		  case  exports.AILAB_RUN_STATUS_FAIL:      return fmt.Sprintf("失败-%s-任务-%s",jobType,d.RunId)
 		  case  exports.AILAB_RUN_STATUS_SAVE_FAIL: return fmt.Sprintf("保存失败-%s-任务-%s",jobType,d.RunId)
 		  default://should never happen

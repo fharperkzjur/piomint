@@ -52,7 +52,7 @@ func publishMsg(topic string,data interface{}) APIError{
 	bytes,_ := json.Marshal(data)
 
 	err := mq_broker.Publish(topic,&broker.Message{
-		Header: nil,
+		Header: make(map[string]string),
 		Body:   bytes,
 	})
 	if err != nil {
