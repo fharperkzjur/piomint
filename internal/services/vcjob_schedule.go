@@ -37,10 +37,7 @@ func checkUserEndpointInits(run*models.Run, container * JOB.Container) (helper s
 
 func checkAppUsage(run*models.Run,task* JOB.VcJobTask)   {
 
-	//@todo: affinity support ???
-	if exports.IsJobNeedAffinity(run.Flags) {
-		//task.Affinity = run.Parent
-	}
+
 
 	if run.Image == exports.AILAB_ENGINE_DEFAULT {// use init-container as target logic run container
 		task.Container.ImageName = configs.GetAppConfig().InitToolImage
@@ -290,7 +287,11 @@ func SubmitSingleJob(run*models.Run,task * JOB.VcJobTask) (int,APIError){
 	if len(task.Container.Ports) > 0 {
 		job.SetContainerPorts(task.Container.Ports)
 	}
-
+	if exports.IsJobNeedAffinity(run.Flags) {
+		job.SetAffinity(&JOB.JobAffinity{
+			JobId: run.Parent,
+		})
+	}
 	url  := configs.GetAppConfig().Resources.Jobsched+"/jobs"
 	return submitJobInternal(run,url,job)
 }
