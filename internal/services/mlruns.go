@@ -88,6 +88,15 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 	if len(req.Cmd) == 0 {
 		return nil,exports.ParameterError("invalid run cmd !!!")
 	}
+	if  len(req.Engine) == 0{
+		return nil,exports.ParameterError("invalid run engine name !!!")
+	}
+	if len(req.Creator) == 0 {
+		return nil,exports.ParameterError("run creator cannot be empty !!!")
+	}
+	if  len(req.Name) == 0 {
+		return nil,exports.ParameterError("run name cannot be empty !!!")
+	}
 
 	//@mark: validate JobRequest fields
 	if req.Resource == nil{
