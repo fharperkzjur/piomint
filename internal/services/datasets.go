@@ -12,7 +12,7 @@ type DatasetResourceSrv struct{
 
 type DatasetRefInfo struct{
 	Context      string         `json:"appCode"`
-	DatasetID    interface{}    `json:"datasetId"`
+	DatasetID    int64            `json:"datasetId"`
 }
 
 const DATASET_MGR_MODULE_ID = 2200
@@ -32,9 +32,13 @@ func (d DatasetResourceSrv) PrepareResource(runId string,  resource exports.GObj
 	  if norefs := checkDebugNoRefPath(resource) ; norefs != nil{
 		return norefs,nil
 	  }
+	  datasetId := safeToNumber(resource["id"])
+	  if datasetId == 0 {
+	  	return nil, exports.ParameterError("invalid integer dataset id !!!")
+	  }
 	  req :=  &DatasetRefInfo{
 			Context:      runId,
-		    DatasetID:    resource["id"],
+		    DatasetID:    datasetId,
 	  }
 	  result := make(map[string]interface{})
 
@@ -56,9 +60,13 @@ func (d DatasetResourceSrv) CompleteResource(runId string,resource exports.GObje
 		if checkDebugNoRefs(resource) {
 			return nil
 		}
+	    datasetId := safeToNumber(resource["id"])
+	    if datasetId == 0 {
+	    	return nil
+	    }
 		req :=  &DatasetRefInfo{
 			Context:      runId,
-			DatasetID:    resource["id"],
+			DatasetID:    datasetId,
 		}
 		err := Request(configs.GetAppConfig().Resources.Dataset + "/apps/app_code_dataset/unbind","POST",nil,req, nil)
 		if err != nil && (err.Errno() == DATASET_NOT_EXISTS || err.Errno() ==  DATASET_CONTEXT_NOT_EXISTS){// unref not exists supress not found error
