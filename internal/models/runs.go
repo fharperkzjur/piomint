@@ -573,7 +573,7 @@ func  CleanupDone(runId string,extra int,filterStatus int) APIError{
 
 func  CheckIsDistributeJob(runId string) (bool ,APIError){
        quota := &JsonMetaData{}
-	   if err := checkDBScanError(db.Model(Run{}).Select("quota").Where("run_id=?",runId).Row().Scan(quota));err != nil {
+	   if err := checkDBQueryError(db.Model(Run{}).Select("quota").Where("run_id=?",runId).Row().Scan(quota));err != nil {
 	   	  return false,err
 	   }else{
 		  q := UserResourceQuota{}
