@@ -99,7 +99,7 @@ const (
 
 func QueryRunNotifierData(runId string) (*RunStatusNotifier,APIError){
 	var notifyData RunStatusNotifier
-	err := wrapDBQueryError(db.Table("runs").Select(select_notifier_fields).Joins("labs on lab_id=labs.id").
+	err := wrapDBQueryError(db.Table("runs").Select(select_notifier_fields).Joins("left join labs on lab_id=labs.id").
 		First(&notifyData,"run_id=?",runId))
 	if err != nil {
 		return nil,err
