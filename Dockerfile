@@ -30,6 +30,6 @@ RUN  GO111MODULE=${GO111MODULE} go build  -o /go/bin/ai_lab cmd/ai_lab.go
 
 FROM alpine:3.11
 RUN apk --no-cache add ca-certificates libdrm
-WORKDIR /root/
+WORKDIR /app/
 COPY --from=0 /go/bin/ai_lab .
 CMD ["./ai_lab"]

@@ -1,0 +1,41 @@
+{{- $setNfs := (eq .Values.storage.persistentVolumeType "nfs") }}
+{{- if $setNfs }}
+{{- range .Values.storage.persistentVolumes }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .name }}-pv
+spec:
+  capacity:
+    storage: {{ .capacity }}
+  accessModes:
+    - ReadWriteMany
+  storageClassName: {{ .name }}-sc
+  mountOptions:
+    - timeo=20
+    - tcp
+  nfs:
+    {{- if not (empty $.Values.storage.nfsServer) }}
+    server: {{ $.Values.storage.nfsServer }}
+    {{- end }}
+    {{- if not (empty .path) }}
+    path: {{ .path }}
+    {{- end }}
+{{- end }}
+{{- range .Values.storage.persistentVolumes }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ .name  }}
+spec:
+  storageClassName: {{ .name }}-sc
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .claimCapacity }}
+
+{{- end }}
+{{- end }}

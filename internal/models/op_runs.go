@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"gorm.io/gorm"
+	"time"
 )
 
 func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
-	if run.IsStopping() || run.IsSaving(){
+	if run.IsStopping() || run.IsCompleting(){
 		return 0,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"runs is busy cannot resume !")
 	}else if run.RunActive() {//already running or started
 		return 0,nil
@@ -20,7 +21,7 @@ func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint6
 	}else{
 		run.StatusTo = exports.AILAB_RUN_STATUS_INIT
 	}
-	_,err := change_run_status(tx,run.RunId,run.StatusTo,0,mlrun.events,false)
+	err := change_run_status(tx,run.RunId,&run.StatusTo,0,mlrun.events)
 
 	if err == nil {
 		mlrun.JobStatusChange(run)
@@ -31,7 +32,7 @@ func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint6
 func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
 	if !run.RunActive() || run.IsStopping(){// no need to kill
 		return 0,nil
-	}else if run.IsSaving() {// wrap error
+	}else if run.IsCompleting() {// wrap error
 		return 0,nil
 	}
 	if run.IsIniting() {// kill to abort immediatley
@@ -39,7 +40,7 @@ func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,
 	}else{
 		run.StatusTo = exports.AILAB_RUN_STATUS_KILLING
 	}
-	_,err := change_run_status(tx,run.RunId,run.StatusTo,0,mlrun.events,run.NeedSave())
+	err := change_run_status(tx,run.RunId,&run.StatusTo,0,mlrun.events)
 	if err == nil {
 		mlrun.JobStatusChange(run)
 	}
@@ -48,7 +49,7 @@ func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,
 
 func tryDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
 	if  run.RunActive() {//cannot delete a active run
-		return 0,exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE)
+		return 0,exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE,"delete run still active !")
 	}
 	err := wrapDBUpdateError(tx.Delete(&Run{},"run_id=?",run.RunId),1)
 	if err == nil {
@@ -61,7 +62,7 @@ func tryDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint6
 func tryForceDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext)(uint64,APIError){
 	counts,err := tryDeleteRun(tx,run,mlrun)
 	if err == nil {
-		_,err = change_run_status(tx,run.RunId,run.Status,Evt_clean_and_discard,mlrun.events,run.NeedSave())
+		err = change_run_status(tx,run.RunId,&run.Status,Evt_clean_discard,mlrun.events)
 	}
 	return counts,err
 }
@@ -70,7 +71,7 @@ func tryCleanRunWithDeleted(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunConte
 	if  run.RunActive() {//cannot delete a active run , should never happen
 		return 0,exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE,"clean run is still active !")
 	}
-	_,err :=change_run_status(tx,run.RunId,run.Status,Evt_clean_and_discard,mlrun.events,false)
+	err :=change_run_status(tx,run.RunId,&run.Status,Evt_clean_discard,mlrun.events)
 	return 1,err
 }
 
@@ -123,9 +124,10 @@ func  ChangeJobStatus(runId string,from,to int,msg string) APIError{
 	case exports.AILAB_RUN_STATUS_INIT,
 	     exports.AILAB_RUN_STATUS_STARTING,
 	     exports.AILAB_RUN_STATUS_KILLING,
-	     exports.AILAB_RUN_STATUS_SAVEING,
+	     exports.AILAB_RUN_STATUS_COMPLETING,
 	     exports.AILAB_RUN_STATUS_CLEAN,
-	     exports.AILAB_RUN_STATUS_DISCARDS:
+	     exports.AILAB_RUN_STATUS_DISCARDS,
+	     exports.AILAB_RUN_STATUS_LAB_DISCARD:
 		logger.Warnf("ChangeJobStatus runId:%s to:%d logic error!!!",runId,to)
 		return exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR)
 	}
@@ -144,11 +146,21 @@ func  ChangeJobStatus(runId string,from,to int,msg string) APIError{
 			if mlrun.StatusIsStopping() && exports.IsRunStatusError(to) {// stop with complete error
 				to = exports.AILAB_RUN_STATUS_ABORT
 			}
-			statusTo := 0
-			statusTo,err = change_run_status(tx,mlrun.RunId,to,0,events,mlrun.NeedSave())
+			err = change_run_status(tx,mlrun.RunId,&to,0,events)
 			if err == nil{
-				mlrun.ChangeStatusTo(statusTo)
+				mlrun.ChangeStatusTo(to)
 				err = mlrun.Save(tx)
+			}
+			if err == nil{
+				updates := map[string]interface{}{
+					"msg":msg,
+				}
+				if exports.IsRunStatusStopping(from) {
+					updates["flags"] = gorm.Expr("flags|?",exports.AILAB_RUN_FLAGS_RELEASED_JOB_SCHED)
+				}
+				err = wrapDBUpdateError(tx.Table("runs").
+					 Where("run_id=?",runId).
+					 UpdateColumns(updates),1)
 			}
 			return err
 		}else if err.Errno() == exports.AILAB_NOT_FOUND{//supress not found runs
@@ -159,43 +171,62 @@ func  ChangeJobStatus(runId string,from,to int,msg string) APIError{
 	})
 }
 
-func change_run_status(tx*gorm.DB,runId string,status int,cleanFlags int,track EventsTrack,needSave bool ) ( int,  APIError){
+func change_run_status(tx*gorm.DB,runId string,status *int,cleanFlags int,track EventsTrack) APIError{
 
 	extra := 0
 	var err APIError
 
-	if status == exports.AILAB_RUN_STATUS_DISCARDS{//should never happen
-		return status,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"change_run_status:"+runId)
-	}
-	if cleanFlags == 0 {// no clean
+	if *status == exports.AILAB_RUN_STATUS_DISCARDS{
+		return wrapDBUpdateError(tx.Table("runs").Where("run_id=? and deleted_at != 0",runId).
+			          UpdateColumn("status",*status),1)
+	}else if cleanFlags == 0 {// no clean
 
-		if exports.IsRunStatusNonActive(status) && needSave {
-			extra,status = status | (Evt_clean_only<<8),exports.AILAB_RUN_STATUS_SAVEING
+		if exports.IsRunStatusNonActive(*status)  {
+			extra,*status = *status | (Evt_clean_only<<8),exports.AILAB_RUN_STATUS_COMPLETING
 		}
-		err = wrapDBUpdateError(tx.Table("runs").Where("run_id=? and deleted_at = 0",runId).
-				UpdateColumn("status",status),1)
+		updates := map[string]interface{}{
+			"status":*status,
+		}
+		switch *status {
+		  case exports.AILAB_RUN_STATUS_COMPLETING:
+		  	      updates["flags"] = gorm.Expr("flags&?",^uint32(exports.AILAB_RUN_FLAGS_PREPARE_OK))
+		  case exports.AILAB_RUN_STATUS_INIT:
+		  	      updates["flags"] = gorm.Expr("flags&?",^uint32(exports.AILAB_RUN_FLAGS_RELEASED_DONE))
+		  case exports.AILAB_RUN_STATUS_STARTING:
+		  	      updates["start_time"]= &UnixTime{time.Now()}
+		  	      updates["end_time"]  = nil
+		}
+ 		  err = wrapDBUpdateError(tx.Table("runs").Where("run_id=? and deleted_at = 0",runId).
+				UpdateColumns(updates),1)
 	}else{
-		if exports.IsRunStatusActive(status){
-			return status,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"active runs cannot clean :" + runId)
+		if exports.IsRunStatusActive(*status){
+			return exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"active runs cannot clean :" + runId)
 		}
-		extra,status = status | (cleanFlags<<8),exports.AILAB_RUN_STATUS_CLEAN
-		err = wrapDBUpdateError(tx.Table("runs").Where("run_id=? and deleted_at !=0 ",runId).
+		extra,*status = *status | (cleanFlags<<8),exports.AILAB_RUN_STATUS_CLEAN
+		err = wrapDBUpdateError(tx.Table("runs").Where("run_id=? and deleted_at != 0",runId).
 			UpdateColumns(map[string]interface{}{
-				"status": status,
-				"flags" : gorm.Expr("flags&?",^exports.AILAB_RUN_FLAGS_PREPARE_OK),
+				"status": *status,
+				"flags" : gorm.Expr("flags&?",^uint32(exports.AILAB_RUN_FLAGS_PREPARE_OK)),
 			}),1)
 	}
 	if err == nil {
-		switch(status) {
+		switch(*status) {
 		case exports.AILAB_RUN_STATUS_INIT, exports.AILAB_RUN_STATUS_STARTING:
-			err = logStartingRun(tx, runId, status, track)
+			err = logStartingRun(tx, runId, *status, track)
 		case exports.AILAB_RUN_STATUS_KILLING:
 			err = logKillRun(tx, runId, track)
-		case exports.AILAB_RUN_STATUS_SAVEING:
+		case exports.AILAB_RUN_STATUS_COMPLETING:
 			err = logSaveRun(tx, runId, extra, track)
 		case exports.AILAB_RUN_STATUS_CLEAN:
 			err = logCleanRun(tx, runId, extra, track)
 		}
 	}
-	return status,err
+	return err
+}
+
+func  AddRunReleaseFlags(runId string,flags uint64,filterStatus int) APIError{
+
+	return wrapDBUpdateError(db.Table("runs").Where("run_id=? and status=? ",runId,filterStatus).
+		UpdateColumn("flags",gorm.Expr("flags|?",flags)),1)
+
 }

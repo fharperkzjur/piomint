@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-cm
+data:
+  config.yaml: |+
+    {{- with .Values.config }}
+        # 服务端口
+        port:  {{ .port }}
+        grpc:  {{ .grpc }}
+        debug: {{ .debug }}  true # gin debug模式
+        # 数据库设置
+        db:
+          {{- toYaml .db | nindent 10 }} 
+        rabbitmq:
+          {{- toYaml .rabbitmq | nindent 10 }} 
+        resources:
+          {{- toYaml .resources | nindent 10 }} 
+        storage: pvc://{{   $.Values.storage.root  }}
+        mounts:
+          {{- range $.Values.storage.mounts }}
+             {{ .name }} : {{ .mountPath }}
+          {{- end }}
+    {{- end }}

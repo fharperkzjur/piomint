@@ -14,7 +14,7 @@ import (
 
 func allocateLabStg(lab* Lab) (APIError){
 
-      lab.Location = fmt.Sprintf("%s/%s/%s/%d",exports.AILAB_STORAGE_ROOT,
+      lab.Location = fmt.Sprintf("%s/%s/%s/%d",configs.GetAppConfig().Storage,
       	  lab.Namespace,lab.App,lab.ID)
 
       return nil

@@ -30,6 +30,7 @@ func getPVCMountPath(mount_name,rpath string) string{
 
 func translateJobStatus(status JOB.JobStatus) int{
 	switch(status){
+	    case JOB.JOB_STATUS_UNAPPROVE:   return exports.AILAB_RUN_STATUS_QUEUE
 	    case JOB.JOB_STATUS_QUEUEING:    return exports.AILAB_RUN_STATUS_QUEUE
 	    case JOB.JOB_STATUS_SCHEDULING:  return exports.AILAB_RUN_STATUS_SCHEDULE
 	    case JOB.JOB_STATUS_RUNNING:     return exports.AILAB_RUN_STATUS_RUN
@@ -67,7 +68,7 @@ func tryResourceMounts(name,path,rpath string,access int , subname,subpath strin
 
 //should never error here
 func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []JOB.MountPoint){
-	 action := make([]string,len(cmds))
+	 action := make([]string,0,len(cmds))
 	 mounts := []JOB.MountPoint{}
 
 	 maps   := make(map[string]int)
@@ -78,7 +79,7 @@ func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 	 		path,_    := rsc["path"].(string)
 	 		rpath,_   := rsc["rpath"].(string)
 	 		subpath   := ""
-	 		access,_  := rsc["access"].(int)
+			access    := int(safeToNumber(rsc["access"]))
 
 	 		if len(subname) > 0 {// has subsource
 	 			subresource,_ := rsc["subResource"].(exports.GObject)
@@ -96,7 +97,7 @@ func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 	 	 if rsc,ok := value.(exports.GObject);ok {
 	 	 	 if path,_ := rsc["path"].(string);checkIsPVCURL(path){
 				 rpath,_    := rsc["rpath"].(string)
-				 access,_  := rsc["access"].(int)
+				 access     := int(safeToNumber(rsc["access"]))
 
 				 mounts,_ = tryResourceMounts(name,path,rpath,access,"","",maps,mounts)
 
@@ -108,7 +109,7 @@ func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 
 func SubmitJob(run*models.Run) (int, APIError) {
 
-	 url  := configs.GetAppConfig().Resources.Jobsched
+	 url  := configs.GetAppConfig().Resources.Jobsched+"/jobs"
 
 	 job := &JOB.Job{
 		 ModId:       exports.AILAB_MODULE_ID,
@@ -155,16 +156,16 @@ func SubmitJob(run*models.Run) (int, APIError) {
 			if err == nil {
 				return translateJobStatus(resp.JobState.Status),nil
 			}else if err.Errno() == JOB.ERR_CODE_INVALID_PARAM{
-				return exports.AILAB_RUN_STATUS_FAILED,err
+				return exports.AILAB_RUN_STATUS_FAIL,err
 			}else{
 				return -1,err
 			}
 		 }else{//should not change run status here
 		 	logger.Warnf("try submit job:%s already exists!",run.RunId)
-            return exports.AILAB_RUN_STATUS_FAILED,err
+            return exports.AILAB_RUN_STATUS_FAIL,err
 		 }
 	 }else if err.Errno() == JOB.ERR_CODE_INVALID_PARAM{
-	 	 return exports.AILAB_RUN_STATUS_FAILED,err
+	 	 return exports.AILAB_RUN_STATUS_FAIL,err
 	 }else{
 	 	 return -1,err
 	 }
@@ -179,7 +180,7 @@ func KillJob(run*models.Run) (int,APIError) {
 }
 
 func DeleteJob(runId string) APIError{
-	 url  := fmt.Sprintf("%s/%s",configs.GetAppConfig().Resources.Jobsched,runId)
+	 url  := fmt.Sprintf("%s/jobs/%s",configs.GetAppConfig().Resources.Jobsched,runId)
 	 err  := Request(url,"DELETE",nil,nil,nil)
 	 if err == nil || err.Errno() == JOB.ERR_CODE_RESOURCE_NOT_EXIST {//should never error
 		return nil

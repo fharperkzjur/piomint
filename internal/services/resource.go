@@ -2,7 +2,6 @@
 package services
 
 import (
-	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"strconv"
@@ -13,7 +12,20 @@ const (
 	resource_release_commit = 0x1
 	resource_release_rollback=0x2
 	resource_release_readonly=0x4
+	resource_release_job_sched=0x8
+
+	resource_release_save = resource_release_commit | resource_release_rollback
 )
+
+func needReleaseJobSched(flags int) bool {
+	return (flags & resource_release_job_sched) != 0
+}
+func needReleaseSave(flags int) bool{
+    return (flags & (resource_release_commit|resource_release_rollback)) != 0
+}
+func needReleaseRefs(flags int) bool{
+    return (flags & resource_release_readonly) != 0
+}
 
 type ResourceUsage interface {
 	// cannot be error
@@ -26,7 +38,7 @@ type ResourceMgr struct{
 	 resources map[string]ResourceUsage
 }
 
-func (d ResourceMgr)AddResource(name string,usage ResourceUsage){
+func (d *ResourceMgr)AddResource(name string,usage ResourceUsage){
 	 if d.resources == nil{
 	 	d.resources = make(map[string]ResourceUsage)
 	 }
@@ -86,7 +98,12 @@ func fetchCmdResource(value string)(string,string,string){
 	return "","",""
 }
 func safeToString(v interface{})string{
-	return fmt.Sprintf("%v",v)
+	switch n:=v.(type){
+	   case string: return n
+	   case  int64: return strconv.FormatInt(n,10)
+	   case float64:return strconv.FormatInt(int64(n),10)
+	   default:     return ""
+	}
 }
 func safeToNumber(v interface{}) (value int64){
 	 switch n:=v.(type){
@@ -138,7 +155,7 @@ func BatchUseResource(runId string,resource exports.GObject) APIError {
 }
 
 func BatchReleaseResource(run* models.Run,commitFlags int) APIError {
-	if run.Resource == nil || exports.IsJobCleanupDone(run.Flags){
+	if run.Resource == nil || commitFlags == 0{
 		return nil
 	}
 	resource := exports.GObject{}
@@ -195,11 +212,11 @@ func PrepareResources(run * models.Run,resource exports.GObject, isRollback bool
 	if err == nil {//success return
 		return nil
 	}else if isRollback {//return original error
-		models.PrepareRunFailed(run.RunId,isRollback)
+		models.PrepareRunFailed(run.RunId,err.Error(),isRollback)
 		return err
 	}else if err.Errno() == exports.AILAB_REMOTE_NETWORK_ERROR{// call from backend events queue, try next timer
 		return err
 	}else{
-		return models.PrepareRunFailed(run.RunId,isRollback)
+		return models.PrepareRunFailed(run.RunId,err.Error(),isRollback)
 	}
 }

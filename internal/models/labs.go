@@ -64,8 +64,8 @@ func (job*JobStatusChange)RunActive()bool{
 func (job*JobStatusChange)IsStopping()bool{
 	return exports.IsRunStatusStopping(job.Status)
 }
-func (job*JobStatusChange)IsSaving()bool{
-	return exports.IsRunStatusSaving(job.Status)
+func (job*JobStatusChange)IsCompleting()bool{
+	return exports.IsRunStatusCompleting(job.Status)
 }
 func (job*JobStatusChange)IsIniting()bool{
 	return exports.IsRunStatusIniting(job.Status)
@@ -75,9 +75,6 @@ func (job*JobStatusChange)EnableResume()bool{
 }
 func (job*JobStatusChange)HasInitOK()bool{
 	return exports.IsJobPrepareSuccess(job.Flags)
-}
-func (job*JobStatusChange)NeedSave()bool{
-	return exports.IsJobNeedSave(job.Flags)
 }
 
 type JobStats  map[string]*LabRunStats
@@ -117,10 +114,10 @@ func(d*JobStats)StatusChange(jobType string,from,to int){
 			  exports.AILAB_RUN_STATUS_QUEUE,
 			  exports.AILAB_RUN_STATUS_SCHEDULE:  jobs.RunStarting--
 	     case exports.AILAB_RUN_STATUS_RUN,
-	          exports.AILAB_RUN_STATUS_SAVEING:   jobs.Running--
+	          exports.AILAB_RUN_STATUS_COMPLETING:   jobs.Running--
 	     case exports.AILAB_RUN_STATUS_KILLING,
 	          exports.AILAB_RUN_STATUS_STOPPING:  jobs.Stopping--
-	     case exports.AILAB_RUN_STATUS_FAILED:    jobs.Fails --
+	     case exports.AILAB_RUN_STATUS_FAIL,exports.AILAB_RUN_STATUS_SAVE_FAIL:	jobs.Fails --
 	     case exports.AILAB_RUN_STATUS_ERROR:     jobs.Errors --
 	     case exports.AILAB_RUN_STATUS_ABORT:     jobs.Aborts --
 	     case exports.AILAB_RUN_STATUS_SUCCESS:   jobs.Success --
@@ -131,10 +128,10 @@ func(d*JobStats)StatusChange(jobType string,from,to int){
 			 exports.AILAB_RUN_STATUS_QUEUE,
 			 exports.AILAB_RUN_STATUS_SCHEDULE:   jobs.RunStarting++
 		 case exports.AILAB_RUN_STATUS_RUN,
-			 exports.AILAB_RUN_STATUS_SAVEING:     jobs.Running++
+			 exports.AILAB_RUN_STATUS_COMPLETING:     jobs.Running++
 		 case exports.AILAB_RUN_STATUS_KILLING,
 			 exports.AILAB_RUN_STATUS_STOPPING:   jobs.Stopping ++
-		 case exports.AILAB_RUN_STATUS_FAILED:    jobs.Fails    ++
+		 case exports.AILAB_RUN_STATUS_FAIL,exports.AILAB_RUN_STATUS_SAVE_FAIL:    jobs.Fails    ++
 		 case exports.AILAB_RUN_STATUS_ERROR:     jobs.Errors   ++
 		 case exports.AILAB_RUN_STATUS_ABORT:     jobs.Aborts   ++
 		 case exports.AILAB_RUN_STATUS_SUCCESS:   jobs.Success  ++
@@ -323,7 +320,7 @@ func CleanLabRunByGroup(group string,labId uint64) (interface{},APIError){
 	counts := uint64(0)
 	err := execDBTransaction(func(tx *gorm.DB,events EventsTrack) APIError {
 
-		labs ,err := getLabsByGroup(tx,group,labId)
+		labs ,err := getLabsByGroup(tx.Unscoped(),group,labId)
 		if err == nil {
 			if len(labs) == 0{
 				return nil

@@ -3,13 +3,14 @@ package services
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"encoding/json"
+	"time"
 )
 
 var logger *logrus.Logger
@@ -52,6 +53,7 @@ func doHttpRequest(url, method string, headers map[string]string, rawBody interf
 	}
 
 	client := http.DefaultClient
+	client.Timeout= time.Duration(default_task_fail_delay)*time.Millisecond
 	resp, err := client.Do(req)
 
 	if err != nil {

@@ -7,7 +7,7 @@ buildPlugin ( {
         [
             'compileContainer': '',
             'preBuild':[],
-            'imageName': 'apulistech/ai-lab-backend',
+            'imageName': 'apulistech/ai-lab',
             'directory': '.',
             'dockerfilePath': '',
             'arch': ['amd64','arm64']

@@ -68,7 +68,7 @@ func RefParentResource(runId string,name string)(id string,path string,err APIEr
 		if err == nil {
 			if pr.JobType == name {//find it
 				if len(pr.Output) == 0 {
-					err=exports.RaiseAPIError(exports.AILAB_REFER_PARENT_ERROR)
+					err=exports.RaiseAPIError(exports.AILAB_REFER_PARENT_ERROR,"parent run no output data !!!")
 				}
 				id = runId
 				path = pr.Output
@@ -76,7 +76,7 @@ func RefParentResource(runId string,name string)(id string,path string,err APIEr
 			}
 			runId= pr.Parent
 		}else if err.Errno() == exports.AILAB_NOT_FOUND{
-			err = exports.RaiseAPIError(exports.AILAB_REFER_PARENT_ERROR)
+			err = exports.RaiseAPIError(exports.AILAB_REFER_PARENT_ERROR,"cannot find parent run !!!")
 			return
 		}else{
 			return

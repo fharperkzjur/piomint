@@ -20,17 +20,22 @@ db:
 
 rabbitmq:
   user:     admin # 用户名
-  password: apulis123 # 密码
-  host:     127.0.0.1 # host地址
-  port:     0 # mq端口 5672
+  password: uk5C7CvsbNlyLbQD # 密码
+  host:     192.168.1.217 # host地址
+  port:     5678 # mq端口 5672
 
 resources:
   model:          http://workshop.bmod:6110                #模型管理接口
   dataset:        http://adhub.bmod:6120                   #数据集管理接口
-  jobsched:       http://job-sched.bmod:6130/api/v1/jobs   #job调度管理接口
+  jobsched:       http://119.147.212.162:51080/job_scheduler/api/v1   #job调度管理接口
   engine:         http://adharbor.bmod:6140                #镜像管理接口
   code:                                                    #代码管理暂时由模型工厂托管
 
+storage: pvc://ai-labs-data
+
 mounts:
-  ai-lab-data:   /app
+  ai-labs-data:                /ai-labs/app
+  aiplatform-app-data-pvc:     /ai-labs/test
+
+
 

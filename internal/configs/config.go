@@ -20,6 +20,7 @@ type AppConfig struct {
 	Rabbitmq    RabbitmqConfig
 	Debug       bool
 	Mounts      map[string]string
+	Storage     string
 }
 
 type DbConfig struct {

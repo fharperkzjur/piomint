@@ -101,22 +101,42 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 			continue
 		}
 		rsc := addResource(req.Resource,name)
-		//validate id
-		id  := safeToString(rsc["id"])
-		if len(id) == 0{
-			if name[0] == '#' { // refer to parent runs
-				var err APIError
-				rsc["id"],rsc["path"],err = models.RefParentResource(parent,name[1:])
-				if err != nil {
-					return nil,err
-				}
-			}else if(name == exports.AILAB_OUTPUT_NAME){//auto allocate output from cmds
-				rsc["id"]="*"
-				rsc["access"]=1
-				req.OutputPath="*"
-			}else{
-				return nil,exports.ParameterError("invalid cmd refered resource name:" + name)
+		if name == exports.AILAB_OUTPUT_NAME {
+			rsc["id"]     ="*"
+			rsc["access"] =1
+			req.OutputPath="*"
+		}
+	}
+	for name,v := range(req.Resource){
+		if len(name) == 0 {
+			return nil,exports.ParameterError("resource name cannot be empty !!!")
+		}
+		rsc,_ := v.(exports.GObject)
+		if rsc == nil {
+			return nil,exports.ParameterError("invalid resource definition with name:"+name)
+		}
+		ty,_ := rsc["type"].(string)
+		if len(ty) == 0 { ty = name }
+		if ty[0] == '#' {
+			var err APIError
+			rsc["id"],rsc["path"],err = models.RefParentResource(parent,ty[1:])
+			if err != nil {
+				return nil,err
 			}
+		}else if ty != exports.AILAB_OUTPUT_NAME {
+
+			if id:= safeToString(rsc["id"]);len(id) == 0{
+				return nil,exports.ParameterError("invalid resource id with name:" + name)
+			}else if safeToNumber(rsc["access"]) != 0{
+				req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_SAVE
+			}else{
+				req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
+			}
+		}else{//@todo:  pseudo output as a refered resource ???
+			req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
+			req.OutputPath = "*"
+			rsc["access"]  = 1
+			rsc["id"]      = "*"
 		}
 	}
 	if len(req.Resource) == 0 {

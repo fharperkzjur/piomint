@@ -41,9 +41,8 @@ const (
 )
 
 const (
-	Evt_clean_only            =  1
-	Evt_clean_and_discard     =  2
-	Evt_clean_create_rollback =  3
+	Evt_clean_only            = 1
+	Evt_clean_discard         = 2
 )
 
 type JobEvent struct{

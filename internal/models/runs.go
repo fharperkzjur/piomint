@@ -25,6 +25,7 @@ type Run struct{
 	 Description string       `json:"description"`
 	 StartTime      *UnixTime `json:"start,omitempty"`
 	 EndTime        *UnixTime `json:"end,omitempty"`
+	 Deadline   int64         `json:"deadline"`    // seconds , 0 no limit
 	 Status     int           `json:"status"`
 	 Msg        string        `json:"msg"`
 	 Arch       string        `json:"arch" gorm:"type:varchar(32)"`
@@ -87,12 +88,6 @@ func (ctx*BasicMLRunContext) StatusIsIniting() bool{
 func (ctx*BasicMLRunContext) StatusIsClean() bool{
     return exports.IsRunStatusClean(ctx.Status)
 }
-func (ctx*BasicMLRunContext) StatusIsSave() bool{
-	return exports.IsRunStatusSaving(ctx.Status)
-}
-func (ctx*BasicMLRunContext) NeedSave() bool {
-	return exports.IsJobNeedSave(ctx.Flags)
-}
 func (ctx*BasicMLRunContext) ShouldDiscard() bool{
 	return exports.IsRunStatusDiscard(ctx.Status)
 }
@@ -114,7 +109,7 @@ func (r*Run) EnableResume() bool{
 }
 func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  run := &Run{
-		  RunId:       string(uuid.NewUUID()),
+		  RunId:       req.JobType + "-" + string(uuid.NewUUID()),
 		  LabId:       mlrun.ID,
 		  Bind:        req.JobGroup,
 		  Name:        req.Name,
@@ -186,9 +181,10 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enable
 			err  = allocateLabRunStg(run,mlrun)
 			if err == nil{
 				//@mark: no resource request !!!
-				if run.Resource == nil || run.Resource.Empty(){
+				if !exports.IsJobNeedPrepare(run.Flags){
                     run.Flags |= exports.AILAB_RUN_FLAGS_PREPARE_OK
                     run.Status = exports.AILAB_RUN_STATUS_STARTING
+                    run.StartTime = &UnixTime{time.Now()}
 				}else if syncPrepare {//@mark: synchronoulsy prepare create deleted run first , then change to starting when prepare success
 					run.DeletedAt = soft_delete.DeletedAt(time.Now().Unix())
 				}
@@ -218,6 +214,13 @@ func  QueryRunDetail(runId string,unscoped bool,status int) (run*Run,err APIErro
 		inst = inst.Where("status=?",status)
 	}
 	err =  wrapDBQueryError(inst.First(run,"run_id=?",runId))
+	if err == nil && exports.IsRunStatusStarting(status) {
+		err = checkDBQueryError(db.Table("labs").Select("namespace").
+			Where("id=?",run.LabId).Row().Scan(&run.Namespace))
+	}
+	if err != nil {
+		run = nil
+	}
 	return
 }
 func QueryRunStarting(runId string) (run*Run,err APIError){
@@ -324,8 +327,9 @@ func  RollBackAllPrepareFailed() (counts uint64,err APIError){
 		   if err != nil {
 		   	  return err
 		   }
+		   statusTo := exports.AILAB_RUN_STATUS_FAIL
 		   for _,runId := range(fail_runs) {
-			   _,err = change_run_status(tx,runId,exports.AILAB_RUN_STATUS_FAILED,Evt_clean_create_rollback,track,false)
+			   err = change_run_status(tx,runId,&statusTo,Evt_clean_discard,track)
                 if err != nil {
                 	return err
 				}
@@ -355,6 +359,8 @@ func  PrepareRunSuccess(runId string,resource* JsonMetaData,isRollback bool) API
 				UpdateColumns(map[string]interface{}{
 					"status" :   exports.AILAB_RUN_STATUS_STARTING,
 					"deleted_at":0,
+					"start_time":&UnixTime{time.Now()},
+					"end_time"  :nil,
 					"flags": gorm.Expr("flags|?",exports.AILAB_RUN_FLAGS_PREPARE_OK),
 					"resource":resource,}) ,1)
 			if err == nil {
@@ -375,6 +381,8 @@ func  PrepareRunSuccess(runId string,resource* JsonMetaData,isRollback bool) API
 				runId,exports.AILAB_RUN_STATUS_INIT).
 				UpdateColumns(map[string]interface{}{
 					"status" : exports.AILAB_RUN_STATUS_STARTING,
+				    "start_time":&UnixTime{time.Now()},
+				    "end_time"  :nil,
 					"flags": gorm.Expr("flags|?",exports.AILAB_RUN_FLAGS_PREPARE_OK),
 					"resource":resource,}) ,1)
 			if err != nil && err.Errno() == exports.AILAB_DB_UPDATE_UNEXPECT {// context not exists
@@ -388,7 +396,7 @@ func  PrepareRunSuccess(runId string,resource* JsonMetaData,isRollback bool) API
 	}
 }
 
-func PrepareRunFailed(runId string,isRollback bool) APIError {
+func PrepareRunFailed(runId string,msg string, isRollback bool) APIError {
 	if isRollback {
 		return execDBTransaction(func(tx*gorm.DB,events EventsTrack)APIError{
 
@@ -403,7 +411,8 @@ func PrepareRunFailed(runId string,isRollback bool) APIError {
 			if mlrun.DeletedAt == 0 || !mlrun.StatusIsIniting() {
 				return nil
 			}
-			_,err =change_run_status(tx,mlrun.RunId,exports.AILAB_RUN_STATUS_FAILED,Evt_clean_create_rollback,mlrun.events,false)
+			statusTo := exports.AILAB_RUN_STATUS_FAIL
+			err =change_run_status(tx,mlrun.RunId,&statusTo,Evt_clean_discard,mlrun.events)
 			return err
 		})
 	}else{
@@ -420,8 +429,13 @@ func PrepareRunFailed(runId string,isRollback bool) APIError {
 			if !mlrun.StatusIsIniting() {
 				return nil
 			}
-			_,err = tryKillRun(tx,mlrun.PrepareJobStatusChange(),mlrun)
-			if err == nil{
+			statusTo := exports.AILAB_RUN_STATUS_FAIL
+			err = change_run_status(tx,mlrun.RunId,&statusTo,0,mlrun.events)
+			if err == nil {
+				err = wrapDBUpdateError(tx.Model(&Run{RunId: runId}).Update("msg",msg),1)
+			}
+			if err == nil {
+				mlrun.ChangeStatusTo(statusTo)
 				err = mlrun.Save(tx)
 			}
 			return err
@@ -430,7 +444,7 @@ func PrepareRunFailed(runId string,isRollback bool) APIError {
 }
 
 
-func  CleanupDone(runId string,extra int) APIError{
+func  CleanupDone(runId string,extra int,filterStatus int) APIError{
 
 	  status,clean := extra&0xFF,extra>>8
 
@@ -443,24 +457,30 @@ func  CleanupDone(runId string,extra int) APIError{
 				  return err
 			  }
 		  }
-		  if clean > Evt_clean_only {
-               status = exports.AILAB_RUN_STATUS_DISCARDS
+		  if mlrun.Status != filterStatus {
+		  	  return nil
 		  }
-		  updates := map[string]interface{}{
-			  "status":status,
-		  }
-		  if mlrun.DeletedAt == 0 {
-		  	updates["flags"] = gorm.Expr("flags&?",exports.AILAB_RUN_FLAGS_PREPARE_OK)
+		  if clean == Evt_clean_discard {
+		  	  status = exports.AILAB_RUN_STATUS_DISCARDS
+		  	  err = change_run_status(tx,runId,&status,0,track)
+		  	  if err == nil{
+		  	  	err = tryDiscardRun(tx,runId,track)
+			  }
+		  }else if status == exports.AILAB_RUN_STATUS_SAVE_FAIL {
+			  err = change_run_status(tx,runId,&status,0,track)
+		  }else if mlrun.DeletedAt == 0{
+		  	  err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",runId).
+		  	  	 UpdateColumns(map[string]interface{}{
+				  "status":   status,
+				  "end_time": &UnixTime{time.Now()},
+			    }),1)
 		  }else{
-		  	updates["flags"] = gorm.Expr("(flags&?)|?",exports.AILAB_RUN_FLAGS_PREPARE_OK,exports.AILAB_RUN_FLAGS_RELEASE_DONE)
+			  err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",runId).
+				  UpdateColumn("status",status),1)
 		  }
-		  err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",runId).UpdateColumns(updates),1)
-		  if mlrun.DeletedAt == 0 && err == nil{
-		  	mlrun.ChangeStatusTo(status)
-		  	err = mlrun.Save(tx)
-		  }
-		  if err == nil {
-		  	err = logDiscardRun(tx,runId,track)
+		  if err == nil && mlrun.DeletedAt == 0 && mlrun.Status != status{
+		  	  mlrun.ChangeStatusTo(status)
+		  	  err = mlrun.Save(tx)
 		  }
 		  return err
 	  })
@@ -497,7 +517,7 @@ func tryClearLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError {
 	runId := ""
 
 	err := checkDBQueryError(tx.Model(&Run{}).Unscoped().Select("run_id").Limit(1).
-		Where("lab_id in ? and status < ?",labs,exports.AILAB_RUN_STATUS_FAILED).Row().Scan(&runId))
+		Where("lab_id in ? and status < ?",labs,exports.AILAB_RUN_STATUS_MIN_NON_ACTIVE).Row().Scan(&runId))
 	if err == nil {
 		return exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE,"still have runs active !")
 	}else if err.Errno() == exports.AILAB_NOT_FOUND{
@@ -505,7 +525,7 @@ func tryClearLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError {
 		return wrapDBUpdateError(tx.Model(&Run{}).Where("lab_id in ?",labs).UpdateColumns(
 			  map[string]interface{}{//@todo: clear lab directly without preclean ???
                   "deleted_at" : time.Now().Unix(),
-                  "status":      exports.AILAB_RUN_STATUS_CLEAN,
+                  "status":      exports.AILAB_RUN_STATUS_LAB_DISCARD,
 			  }),0)
 	}else{
 		return err
@@ -513,22 +533,33 @@ func tryClearLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError {
 }
 func tryCleanLabRunsByGroup(tx*gorm.DB,labs [] uint64,events EventsTrack) (counts uint64,err APIError){
 	var mlrun *BasicMLRunContext
+	jobs := []*JobStatusChange{}
 	for _,id := range (labs) {
-		mlrun,err = getBasicMLRunInfoEx(tx,id,"",events)
+		mlrun,err = getBasicMLRunInfoEx(tx.Unscoped(),id,"",events)
 		if err != nil {
 			return
 		}
 		err = execDBQuerRows(tx.Table("runs").Unscoped().Where("lab_id=? and status >= ? and deleted_at !=0",
-			id,exports.AILAB_RUN_STATUS_FAILED).Select(select_run_status_change),
+			id,exports.AILAB_RUN_STATUS_MIN_NON_ACTIVE).Select(select_run_status_change),
 			        func(tx*gorm.DB,rows *sql.Rows) APIError {
-			stats := &JobStatusChange{}
-			if err   := checkDBScanError(tx.ScanRows(rows,stats));err != nil {
-				return err
-			}
-			cnt,err := tryCleanRunWithDeleted(tx,stats,mlrun)
-			counts += cnt
-			return err
+						stats := &JobStatusChange{}
+						if err := checkDBScanError(tx.ScanRows(rows,stats));err != nil {
+							return err
+						}
+						jobs = append(jobs,stats)
+						return nil
+
 		})
+		if err == nil{
+			for _,v := range(jobs){
+
+				cnt,err := tryCleanRunWithDeleted(tx,v,mlrun)
+				if err != nil {
+					return 0,err
+				}
+				counts += cnt
+			}
+		}
 		if err == nil {	err =  mlrun.Save(tx)}
 		if err != nil {	return	}
 	}
@@ -536,19 +567,28 @@ func tryCleanLabRunsByGroup(tx*gorm.DB,labs [] uint64,events EventsTrack) (count
 }
 func tryKillLabRunsByGroup(tx*gorm.DB,labs []uint64,events EventsTrack) (counts uint64,err APIError){
 	  var mlrun *BasicMLRunContext
+	  jobs := []*JobStatusChange{}
 	  for _,id := range (labs) {
 	  	  mlrun,err = getBasicMLRunInfoEx(tx,id,"",events)
 	  	  if err != nil { return }
 		  err = execDBQuerRows(tx.Model(&Run{}).Where("lab_id=? and status < ?",
-		  	  id,exports.AILAB_RUN_STATUS_FAILED).Select(select_run_status_change),func(tx*gorm.DB,rows *sql.Rows) APIError {
+		  	  id,exports.AILAB_RUN_STATUS_COMPLETING).Select(select_run_status_change),func(tx*gorm.DB,rows *sql.Rows) APIError {
 		  	  	stats := &JobStatusChange{}
 		  	  	if err := checkDBScanError(tx.ScanRows(rows,stats));err != nil {
 		  	  		return err
 				}
-				cnt,err := tryKillRun(tx,stats,mlrun)
-				counts += cnt
-				return err
+				jobs = append(jobs,stats)
+				return nil
 		  })
+		  if err == nil{
+		  	  for _,v := range(jobs) {
+		  	  	cnt,err := tryKillRun(tx,v,mlrun)
+		  	  	if err != nil {
+		  	  		return 0,err
+				}
+				counts += cnt
+			  }
+		  }
 		  if err == nil { err =  mlrun.Save(tx) }
 		  if err != nil { return}
 	  }
@@ -559,7 +599,7 @@ func tryDeleteLabRuns(tx*gorm.DB,labId uint64) APIError{
 	 runId := ""
 
 	 err := checkDBQueryError(tx.Model(&Run{}).Select("run_id").Limit(1).
-	 	Where("lab_id=? and status < ?",labId,exports.AILAB_RUN_STATUS_FAILED).Row().Scan(&runId))
+	 	Where("lab_id=? and status < ?",labId,exports.AILAB_RUN_STATUS_MIN_NON_ACTIVE).Row().Scan(&runId))
 	 if err == nil {
 	 	return exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE,"still have runs active !")
 	 }else if err.Errno() == exports.AILAB_NOT_FOUND{
@@ -573,7 +613,7 @@ func tryDeleteLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError{
 	runId := ""
 
 	err := checkDBQueryError(tx.Model(&Run{}).Select("run_id").Limit(1).
-		Where("lab_id in ? and status < ?",labs,exports.AILAB_RUN_STATUS_FAILED).Row().Scan(&runId))
+		Where("lab_id in ? and status < ?",labs,exports.AILAB_RUN_STATUS_MIN_NON_ACTIVE).Row().Scan(&runId))
 	if err == nil {
 		return exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE,"still have runs active !")
 	}else if err.Errno() == exports.AILAB_NOT_FOUND{

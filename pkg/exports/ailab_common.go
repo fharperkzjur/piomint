@@ -26,40 +26,64 @@ const (
 	AILAB_RUN_STATUS_KILLING   // request kill job , cannot break
 	AILAB_RUN_STATUS_STOPPING  // wait for stopped,  cannot break
 	AILAB_RUN_STATUS_RUN
-	AILAB_RUN_STATUS_SAVEING    // saving status , pseudo end status ,cannot break
-	AILAB_RUN_STATUS_FAILED   = 100
-	AILAB_RUN_STATUS_ERROR    = 101
-	AILAB_RUN_STATUS_ABORT    = 102
-	AILAB_RUN_STATUS_SUCCESS  = 103
-	AILAB_RUN_STATUS_CLEAN    = 104 // pseudo end status , cannot break
-	AILAB_RUN_STATUS_DISCARDS = 111 // should discard any data
+	AILAB_RUN_STATUS_COMPLETING    // saving status , pseudo end status ,cannot break
+	AILAB_RUN_STATUS_SUCCESS  = 100
+	AILAB_RUN_STATUS_ABORT    = 101
+	AILAB_RUN_STATUS_ERROR    = 102
+	AILAB_RUN_STATUS_FAIL     = 103
+	AILAB_RUN_STATUS_SAVE_FAIL= 104
+
+	// following status is internal ,no need expose to end user
+	AILAB_RUN_STATUS_CLEAN      = 110  // pseudo end status , cannot break
+	AILAB_RUN_STATUS_DISCARDS   = 111  // should discard any data
+	AILAB_RUN_STATUS_LAB_DISCARD= 112   // should discard with lab
+
+	AILAB_RUN_STATUS_MIN_NON_ACTIVE = AILAB_RUN_STATUS_SUCCESS
 )
 
 const (
-	// all resource has been prepared successfully
+	// has saved resource
 	AILAB_RUN_FLAGS_NEED_SAVE       = 0x1
+	// has refs resource
+	AILAB_RUN_FLAGS_NEED_REFS       = 0x2
 	// default runs will be multi-instance support
-	AILAB_RUN_FLAGS_SINGLE_INSTANCE = 0x2
+	AILAB_RUN_FLAGS_SINGLE_INSTANCE = 0x4
 	// default runs will not deleted automatially when success
-	AILAB_RUN_FLAGS_AUTO_DELETED = 0x4
+	AILAB_RUN_FLAGS_AUTO_DELETED = 0x8
 	// support paused&resume semantics
-	AILAB_RUN_FLAGS_RESUMEABLE = 0x8
+	AILAB_RUN_FLAGS_RESUMEABLE = 0x10
 	// support graceful stop semantics ?
-	AILAB_RUN_FLAGS_GRACE_STOP = 0x10
+	AILAB_RUN_FLAGS_GRACE_STOP = 0x20
+	// [experimental] need run on cloud
+	AILAB_RUN_FLAGS_USE_CLOUD  = 0x40
 
 	// have prepare all resource complete
-	AILAB_RUN_FLAGS_PREPARE_OK      = 0x10000
-	// has done for release all resources
-	AILAB_RUN_FLAGS_RELEASE_DONE    = 0x20000
+	AILAB_RUN_FLAGS_PREPARE_OK           = 0x10000
+	// has delete job sched
+	AILAB_RUN_FLAGS_RELEASED_JOB_SCHED   = 0x20000
+	// has done for save all resources
+	AILAB_RUN_FLAGS_RELEASED_SAVING      = 0x40000
+	// has done for release all referenced resources
+	AILAB_RUN_FLAGS_RELEASED_REFS        = 0x80000
 
+	AILAB_RUN_FLAGS_RELEASED_DONE= AILAB_RUN_FLAGS_RELEASED_JOB_SCHED|AILAB_RUN_FLAGS_RELEASED_SAVING|AILAB_RUN_FLAGS_RELEASED_REFS
 )
 
 const (
-	AILAB_STORAGE_ROOT = "pvc://ai-labs-data"
+	//AILAB_STORAGE_ROOT = "pvc://ai-labs-data"
 	AILAB_DEFAULT_MOUNT= "/home/AppData"
 	AILAB_OUTPUT_NAME  = "*"
 	AILAB_OUTPUT_MOUNT = "_out_"
 	AILAB_PIPELINE_REFER_PREFIX = "pln_"
+)
+
+const (
+	AILAB_RESOURCE_TYPE_MODEL   = "model"
+	AILAB_RESOURCE_TYPE_DATASET = "dataset"
+	AILAB_RESOURCE_TYPE_MLRUN   = "mlrun"
+	AILAB_RESOURCE_TYPE_OUTPUT  = AILAB_OUTPUT_NAME
+	AILAB_RESOURCE_TYPE_CODE    = "code"
+	AILAB_RESOURCE_TYPE_ENGINE  = "engine"
 )
 
 const (
@@ -118,30 +142,7 @@ type JobDistribute struct{
 	NumPs        uint32 `json:"numPs"`
 	NumPsWorker  uint32 `json:"numPsWorker"`
 }
-// resource quota
-type ResourceQuota struct {
-	Request  ResourceData
-	Limit 	 ResourceData
-}
 
-// device info
-type Device struct {
-	DeviceType 	string
-	DeviceNum   string
-}
-
-type ResourceData struct {
-	CPU  		string
-	Memory      string
-	// device info
-	Device      Device
-}
-type JobQuota struct{
-	Request   ResourceData
-	Limit     ResourceData
-	// if not null will use it as distributation parameters
-	Distribute  *JobDistribute `json:"dist,omitempty"`
-}
 
 type ServiceEndpoint struct{
 	Name     string `json:"name"`    // service name
@@ -217,7 +218,7 @@ type CreateJobRequest struct{
 	Name     string                   `json:"name"`        // varchar[255]
 	Engine   string                   `json:"engine"`
 	Arch     string                   `json:"arch"`        // user expected arch , empty match all os
-	Quota    JobQuota                 `json:"quota"`       // user specified device type and number
+	Quota    interface{}              `json:"quota"`       // user specified device type and number
 	// if * will allocate output path automatically and override output resource
 	OutputPath  string                `json:"output"`
 	Creator     string                `json:"creator"`      // user specified creator
@@ -245,16 +246,16 @@ func IsRunStatusError(status int) bool{
 	return status == AILAB_RUN_STATUS_ERROR
 }
 func  IsRunStatusActive(status int)      bool {
-	return status < AILAB_RUN_STATUS_FAILED
+	return status < AILAB_RUN_STATUS_MIN_NON_ACTIVE
 }
 func  IsRunStatusNonActive(status int)   bool{
-	return status >= AILAB_RUN_STATUS_FAILED
+	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE
 }
 func  IsRunStatusStopping(status int)    bool{
 	return status == AILAB_RUN_STATUS_KILLING || status == AILAB_RUN_STATUS_STOPPING
 }
-func  IsRunStatusSaving(status int)bool{
-	return status == AILAB_RUN_STATUS_SAVEING
+func  IsRunStatusCompleting(status int)bool{
+	return status == AILAB_RUN_STATUS_COMPLETING
 }
 func  IsRunStatusClean(status int) bool {
 	return status == AILAB_RUN_STATUS_CLEAN
@@ -262,20 +263,34 @@ func  IsRunStatusClean(status int) bool {
 func  IsRunStatusDiscard(status int) bool{
 	return status == AILAB_RUN_STATUS_DISCARDS
 }
+func  IsRunStatusStarting(status int) bool{
+	return status == AILAB_RUN_STATUS_STARTING
+}
 func  IsJobResumable(flags uint64)       bool{
 	return (flags & AILAB_RUN_FLAGS_RESUMEABLE) != 0
 }
-func  IsJobNeedSave(flags uint64)  bool {
-	return (flags & AILAB_RUN_FLAGS_NEED_SAVE) != 0
-}
 func  IsJobSingleton(flags uint64)       bool{
 	return (flags & AILAB_RUN_FLAGS_SINGLE_INSTANCE) != 0
+}
+func  IsJobNeedSave(flags uint64)    bool{
+	return (flags & AILAB_RUN_FLAGS_NEED_SAVE) != 0
+}
+func  IsJobNeedRefs(flags uint64)    bool{
+	return (flags & AILAB_RUN_FLAGS_NEED_REFS) != 0
+}
+func  IsJobNeedPrepare(flags uint64) bool{
+	return (flags & (AILAB_RUN_FLAGS_NEED_REFS | AILAB_RUN_FLAGS_NEED_SAVE)) != 0
 }
 
 func  IsJobPrepareSuccess(flags uint64)  bool{
 	return (flags & AILAB_RUN_FLAGS_PREPARE_OK)!= 0
 }
-func  IsJobCleanupDone(flags uint64)  bool{
-     return (flags & AILAB_RUN_FLAGS_RELEASE_DONE) != 0
+func  HasJobCleanupWithJobSched(flags uint64)  bool{
+     return (flags &  AILAB_RUN_FLAGS_RELEASED_JOB_SCHED) != 0
 }
-
+func  HasJobCleanupWithSaving(flags uint64)  bool{
+	return (flags &  AILAB_RUN_FLAGS_RELEASED_SAVING) != 0
+}
+func  HasJobCleanupWithRefs(flags uint64)  bool{
+	return (flags &  AILAB_RUN_FLAGS_RELEASED_REFS) != 0
+}

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-lab.fullname" . }}
+  labels:
+    {{- include "ai-lab.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "ai-lab.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ai-lab.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "ai-lab.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: check-postgres-ready
+          image: { { util.image_fullname('busybox', 'third') } }
+          command: [ 'sh', '-c', "until nc -vz {{ .Values.config.db.host }} {{ .Values.config.db.port }}; do echo 'Waiting for postgres service'; sleep 2; done;" ]
+      containers:
+        - name: {{ .Chart.Name }}
+          command:
+            - sleep 
+            - infinity
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.storage.mounts | nindent 12 }}
+            {{- toYaml .Values.storage.configs | nindent 12 }}
+      volumes:
+      {{- range .Values.storage.mounts }}
+           - name: {{ .name }}
+             persistentVolumeClaim:
+                claimName: {{ .name }}
+      {{- end }}
+      {{- range .Values.storage.configs }}
+           - name: {{ .name }}
+             configMap:
+                name: {{ .name }}
+      {{- end }}      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
