@@ -94,7 +94,10 @@ func doCleanupResource(event*models.Event,status int) APIError {
 	run ,err := models.QueryRunDetail(event.Data,exports.IsRunStatusClean(status),status)
 	if err == nil{
 		extra    := run.ExtStatus
-		//event.Fetch(&extra)
+		if extra == 0 {//@mark: compatilbe with old data !!!
+			event.Fetch(&extra)
+		}
+
 		cleanFlags :=getCleanupFlags(extra,exports.IsRunStatusClean(status))
 
 		err = checkReleaseJobSched(run,cleanFlags,status)

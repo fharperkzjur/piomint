@@ -27,7 +27,6 @@ func checkUserEndpointInits(run*models.Run, container * JOB.Container) (helper s
 				continue
 			}
 			if v.Name == exports.AILAB_SYS_ENDPOINT_NNI{
-				container.Envs["AILAB_NNI_ENDPOINT"] = fmt.Sprintf("%s:%d",v.ServiceName,v.Port)
 				helper += " 04.patch_nni.sh"
 			}
 		}
@@ -110,6 +109,10 @@ func TagAILabEnvs(run*models.Run,envs map[string]string ){
 	envs[exports.AILAB_ENV_CLUSTER_ID] = configs.GetAppConfig().ClusterId
 	envs[exports.AILAB_ENV_JOB_TYPE]   = run.JobType
 	envs[exports.AILAB_ENV_USER_TOKEN] = run.Token
+	envs[exports.AILAB_ENV_USER_ID]    = fmt.Sprintf("%d",run.UserId)
+	if len(run.Output) > 0 {
+		envs[exports.AILAB_ENV_OUTPUT]     = getPVCMappedPath(exports.AILAB_OUTPUT_NAME,"","")
+	}
 }
 
 func CloneTaskEnv(envs map[string]string)map[string]string{
@@ -122,7 +125,7 @@ func CloneTaskEnv(envs map[string]string)map[string]string{
 
 func CreateVcWorkerTask(task*JOB.VcJobTask, node int,compactMaster bool ) []JOB.VcJobTask {
 
-	 task.Container.Envs["VCJOB_TASK_NAME"] = task.TaskName
+	 task.Container.Envs[exports.AILAB_ENV_JOB_TASK_NAME] = task.TaskName
 
 	 if task.ArchType == "" {//@todo: here must specify arch type ???
 	 	task.ArchType="amd64"
@@ -146,14 +149,13 @@ func CreateVcWorkerTask(task*JOB.VcJobTask, node int,compactMaster bool ) []JOB.
 	 	worker.Replicas --
 	 }
 	 delete(worker.Container.Envs,"SSH_PASSWD")
-	 delete(worker.Container.Envs,"AILAB_NNI_ENDPOINT")
-	 worker.Container.Envs["VCJOB_TASK_NAME"] = worker.TaskName
+	 worker.Container.Envs[exports.AILAB_ENV_JOB_TASK_NAME] = worker.TaskName
 	 //@add: change container name when deal with vcjob ???
 	 task.Container.ContainerName   += "-" + task.TaskName
 	 worker.Container.ContainerName += "-" + worker.TaskName
 
 	 if task.InitContainer != nil {//copy init-container also
-	 	 task.InitContainer.Envs["VCJOB_TASK_NAME"] = task.TaskName
+	 	 task.InitContainer.Envs[exports.AILAB_ENV_JOB_TASK_NAME] = task.TaskName
 	 	 worker.InitContainer=&JOB.Container{
 		     ContainerName: task.InitContainer.ContainerName,
 		     ImageName:     task.InitContainer.ImageName,
@@ -164,7 +166,7 @@ func CreateVcWorkerTask(task*JOB.VcJobTask, node int,compactMaster bool ) []JOB.
 		     Ports:         nil,
 	     }
 
-	     worker.InitContainer.Envs["VCJOB_TASK_NAME"]=worker.TaskName
+	     worker.InitContainer.Envs[exports.AILAB_ENV_JOB_TASK_NAME]=worker.TaskName
 	 }
 
 	 if !compactMaster {//purge device info from master

@@ -4,7 +4,7 @@ port: 6100
 
 grpc: 6101
 
-debug: true # gin debug模式
+debug: false # gin debug模式
 
 time:
   timezoneStr: Asia/Shanghai # 时区名称

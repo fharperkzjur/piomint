@@ -23,10 +23,14 @@ const (
 	AILAB_ENV_ADDR   = "AILAB_ADDR"
 	AILAB_ENV_LAB_ID = "AILAB_LAB_ID"
 	AILAB_ENV_USER_TOKEN = "AILAB_TOKEN"
+	AILAB_ENV_USER_ID    = "AILAB_USER_ID"
 	AILAB_ENV_CLUSTER_ID = "APULIS_CLUSTER_ID"
 	AILAB_ENV_JOB_TYPE   = "AILAB_JOB_TYPE"
 	AILAB_ENV_AFFINITY_JOB_ID    = "AILAB_AFFINITY_JOB_ID"
 	AILAB_ENV_AFFINITY_TASK_NAME = "AILAB_AFFINITY_TASK_NAME"
+	AILAB_ENV_OUTPUT     = "AILAB_OUTPUT"
+
+    AILAB_ENV_JOB_TASK_NAME = "VCJOB_TASK_NAME"
 )
 const (
 	AILAB_RUN_STATUS_INVALID  = iota
@@ -131,7 +135,8 @@ const (
 
 const (
 	AILAB_SYS_ENDPOINT_SSH = "$ssh"
-	AILAB_SYS_ENDPOINT_NNI = "$nni"
+	AILAB_SYS_ENDPOINT_NNI = "$nni"          // nni reset service
+	AILAB_SYS_ENDPOINT_NNI_UI = "$nni-ui"    // nni webui service
 	AILAB_SYS_ENDPOINT_JUPYTER = "$jupyter"
 	AILAB_USER_ENDPOINT_NAME_LEN = 20
 	AILAB_USER_ENDPOINT_MAX_NUM  = 10
@@ -196,9 +201,10 @@ type JobDistribute struct{
 
 
 type ServiceEndpoint struct{
-	Name     string `json:"name"`        // service name
-	Port     int    `json:"port"`        // service port
-	NodePort int    `json:"nodePort,omitempty"`    // if non-zero , request for nodePort service
+	Name     string `json:"name"`                     // service name
+	Port     int    `json:"port"`                     // service port
+	ServiceName string `json:"serviceName,omitempty"` // internally used service name
+	NodePort int    `json:"nodePort,omitempty"`       // if non-zero , request for nodePort service
 	Url      string `json:"url,omitempty"`
 	AccessKey string `json:"access_key,omitempty"`
 	SecretKey string `json:"secret_key,omitempty"`

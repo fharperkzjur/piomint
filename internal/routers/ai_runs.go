@@ -118,7 +118,7 @@ func registerLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (i
 
 func scratchLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
 	req.JobType  = exports.AILAB_RUN_SCRATCH
-	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_SCHEDULE_AFFINITY
+	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_SCHEDULE_AFFINITY | exports.AILAB_RUN_FLAGS_WAIT_CHILD
 	req.Engine   = exports.AILAB_ENGINE_DEFAULT
 	if len(runId) == 0 {
 		return nil,exports.ParameterError("scratch JOB must have parent job id !!!")
@@ -149,7 +149,7 @@ func queryLabRunEndpoints(c*gin.Context)(interface{},APIError){
 	if labId == 0 || len(runId) == 0 {
 		return nil,exports.ParameterError("queryLabRunEndpoints invalid lab id or run id")
 	}
-	return services.GetLabRunEndpoints(labId,runId)
+	return services.GetLabRunEndpoints(labId,runId,c.Query("all") == "1")
 }
 func createLabRunEndPoint(c*gin.Context)(interface{},APIError){
 	labId,runId := parseLabRunId(c)
@@ -264,6 +264,9 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 	  	  return models.ResumeLabRun(labId,runId)
 	  case "clean":
 	  	  return models.CleanLabRun(labId,runId)
+	  case "$change":
+	  	  statusTo,_ := strconv.ParseInt(c.Query("to"),0,32)
+	  	  return models.ChangeJobStatus(runId,exports.AILAB_RUN_STATUS_INVALID,int(statusTo),"[warn]debug change status to !"),nil
 	  default:
 	  	  return nil,exports.NotImplementError("unsupport mlrun action:"+action)
 	}

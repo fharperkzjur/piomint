@@ -26,7 +26,7 @@ func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},API
 		return "",exports.RaiseReqWouldBlock("wait to starting job ...")
 	}
 }
-func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
+func GetLabRunEndpoints(labId uint64,runId string,fetchInternal bool) (interface{},APIError){
 	run, err := models.QueryRunDetail(runId,false,0)
 	if err != nil {
 		return nil,err
@@ -36,7 +36,7 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 	}
 	if run.StatusIsNonActive() {
 		return nil,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"lab run is non-active yet !")
-	}else if run.StatusIsRunning() {
+	}else if fetchInternal || run.StatusIsRunning() {
 		if run.Endpoints == nil {
 			return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"no endpoints created for run:"+run.RunId)
 		}
@@ -46,7 +46,11 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 		}
 		response := []exports.ServiceEndpoint{}
 		for _,v := range(endpoints) {
-			response=append(response,v.GetAccessEndpoint(run.Namespace))
+			svc := v.GetAccessEndpoint(run.Namespace)
+			if fetchInternal {
+				svc.ServiceName=v.ServiceName
+			}
+			response=append(response,svc)
 		}
 		return response,nil
 	}else{

@@ -20,7 +20,7 @@ func createNNIDevExperiment(c*gin.Context) (interface{},APIError){
 	req.JobType = exports.AILAB_RUN_NNI_DEV
 	req.Token=getUserToken(c)
 	req.JobFlags = exports.AILAB_RUN_FLAGS_IDENTIFY_NAME | exports.AILAB_RUN_FLAGS_VIRTUAL_EXPERIMENT |
-		exports.AILAB_RUN_FLAGS_WAIT_CHILD
+		exports.AILAB_RUN_FLAGS_WAIT_CHILD | exports.AILAB_RUN_FLAGS_RESUMEABLE
 	return forkChildRun(labId,runId,req)
 }
 func submitNNIExperimentRun(c*gin.Context)  (interface{},APIError){
@@ -74,32 +74,54 @@ func forkChildRun(labId uint64,runId string,req*exports.CreateJobRequest) (inter
 		req.Arch = run.Arch
 	}
 	if req.Quota == nil {
-		run.Quota.Fetch(&req.Quota)
+		quota := &models.UserResourceQuota{}
+		run.Quota.Fetch(quota)
+		if quota != nil {      //@todo:  cannot fork distribute vcjobs !!!
+			quota.Node = 0
+			req.Quota = quota
+		}
 	}
 	if len(req.Creator) == 0 {
 		req.Creator = run.Creator
 	}
+	if req.UserId == 0 {
+		req.UserId = run.UserId
+	}
 	// @todo: forked child run dont inherit output path ???
 	req.OutputPath = ""
-	run.Resource.Fetch(&req.Resource)
+	checkForkedEnvs(req,run)
 	// @todo: traverse all resource and trim `path` fields when necessary ???
-	checkForkedResources(req.Resource)
+	checkForkedResources(req,run)
 	if run, err := services.ReqCreateRun(labId,runId,req,false,false) ;err == nil {
-		return nil,exports.RaiseReqWouldBlock("wait to start forked child job ...")
-	}else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {// exists old job
+		return run,exports.RaiseReqWouldBlock("wait to start forked child job ...")
+	}else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS || err.Errno() == exports.AILAB_STILL_ACTIVE{// exists old job
 		job := run.(*models.JobStatusChange)
-		return job.RunId,err
+		return  models.ResumeLabRun(labId,job.RunId)
 	}else{
 		return nil,err
 	}
 }
 
-func checkForkedResources(resource exports.RequestObject) {
-	for name,v := range(resource){
+func checkForkedEnvs(req*exports.CreateJobRequest,run*models.Run) {
+	run.Envs.Fetch(&req.Envs)
+}
+
+func checkForkedResources(req*exports.CreateJobRequest,run*models.Run) {
+
+	run.Resource.Fetch(&req.Resource)
+
+	for name,v := range(req.Resource){
 		rsc,_ := v.(exports.GObject)
 		ty,_ := rsc["type"].(string)
 		if len(ty) == 0 { ty = name }
 		//@mark:  forked child runs always use parent resources as `store` directory !
 		rsc["type"] = exports.AILAB_RESOURCE_TYPE_STORE
+		//@mark:  forked job use parent output path
+		if ty == exports.AILAB_OUTPUT_NAME {
+           if req.Envs == nil {
+           	  req.Envs=make(exports.RequestTags)
+		   }
+		   req.Envs[exports.AILAB_ENV_OUTPUT]=rsc["rpath"].(string)
+		}
 	}
 }

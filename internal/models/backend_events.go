@@ -17,9 +17,9 @@ type Event struct{
 	Extra     []byte     // compound informations for this event
 }
 
-//func(evt*Event)Fetch(v interface{})error{
-//	return json.Unmarshal(evt.Extra,v)
-//}
+func(evt*Event)Fetch(v interface{})error{
+	return json.Unmarshal(evt.Extra,v)
+}
 
 const (
 	Evt_init_run    = "init"

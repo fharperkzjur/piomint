@@ -37,12 +37,12 @@ type Lab struct{
 }
 
 type BasicLabInfo struct{
-	ID        uint64
+	ID        uint64      `json:"id"`
 	// track how many times lab run started
-	Starts    uint64
-	Location  string
-	Namespace string
-	Statistics*JsonMetaData
+	Starts    uint64      `json:"-"`
+	Location  string      `json:"-"`
+	Namespace string      `json:"namespace"`
+	Statistics*JsonMetaData `json:"-"`
 
 	stats *   JobStats
 }

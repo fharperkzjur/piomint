@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+type GormDBScopeHandler = func (db*gorm.DB)*gorm.DB
+
 func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
 	if run.IsStopping() || run.IsCompleting() || run.IsWaitChild(){
 		return 0,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"runs is busy cannot resume !")
@@ -79,14 +81,27 @@ func tryCleanRunWithDeleted(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunConte
 	return 1,err
 }
 
-func  tryRecursiveOpRuns(tx*gorm.DB, mlrun*BasicMLRunContext,jobType string,deepScan bool ,applySelf bool,
+func tryRecursiveOpRunsSelector(jobType string,handler GormDBScopeHandler)  GormDBScopeHandler  {
+	return func (db *gorm.DB) *gorm.DB {
+		if len(jobType) > 0 {
+			db = db.Where("job_type=?",jobType)
+		}
+		if handler != nil {
+			db = handler(db)
+		}
+		return db.Model(&Run{}).Select(select_run_status_change)
+	}
+}
+
+func  tryRecursiveOpRuns(tx*gorm.DB, selector GormDBScopeHandler, mlrun*BasicMLRunContext,jobType string,deepScan bool ,applySelf bool,
 	executor func(*gorm.DB,*JobStatusChange,*BasicMLRunContext) (uint64,APIError)) (counts uint64,err APIError){
 
-	inst := tx.Model(&Run{}).Select(select_run_status_change)
-	if len(jobType) > 0 {
-		inst = inst.Where("job_type=?",jobType)
-	}
-	inst    = inst.Session(&gorm.Session{})
+	//inst := tx.Model(&Run{}).Select(select_run_status_change)
+	//if len(jobType) > 0 {
+	//	inst = inst.Where("job_type=?",jobType)
+	//}
+	//inst    = inst.Session(&gorm.Session{})
+	inst := tx.Scopes(tryRecursiveOpRunsSelector(jobType,selector)).Session(&gorm.Session{})
 	result := []JobStatusChange{}
 	if mlrun.IsLabRun() {
 		err = wrapDBQueryError(inst.Find(&result,"lab_id=?",mlrun.ID))
@@ -134,7 +149,7 @@ func  ChangeJobStatus(runId string,from,to int,msg string) APIError{
 	     exports.AILAB_RUN_STATUS_DISCARDS,
 	     exports.AILAB_RUN_STATUS_LAB_DISCARD:
 		logger.Warnf("ChangeJobStatus runId:%s to:%d logic error!!!",runId,to)
-		return exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR)
+		return exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"[error] cannot change status to pending state by external !!!")
 	}
 
 	return execDBTransaction(func(tx*gorm.DB,events EventsTrack)APIError{
