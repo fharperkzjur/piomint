@@ -114,6 +114,7 @@ func TagAILabEnvs(run*models.Run,envs map[string]string ){
 	envs[exports.AILAB_ENV_CLUSTER_ID] = configs.GetAppConfig().ClusterId
 	envs[exports.AILAB_ENV_JOB_TYPE]   = run.JobType
 	envs[exports.AILAB_ENV_USER_TOKEN] = run.Token
+	envs[exports.AILAB_ENV_NAMESPACE]  = run.Namespace
 	envs[exports.AILAB_ENV_USER_ID]    = fmt.Sprintf("%d",run.UserId)
 	if len(run.Output) > 0 {
 		envs[exports.AILAB_ENV_OUTPUT]     = getPVCMappedPath(exports.AILAB_OUTPUT_NAME,"","")
