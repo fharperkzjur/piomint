@@ -136,26 +136,25 @@ func CheckResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 	 return action,mounts
 }
 
-func checkNpuDriverMounts(run*models.Run, quota * JOB.ResourceQuota,mounts []JOB.MountPoint) ( []JOB.MountPoint,string)  {
+func checkNpuDriverMounts(run*models.Run,job *JOB.Job)   {
 
 	 if exports.IsJobRunWithCloud(run.Flags) {//does not need any local devices
-	 	 quota.Request.Device=JOB.Device{}
-		 quota.Limit.Device  =JOB.Device{}
-         return mounts,"01.init_user.sh"
-	 }else if quota.Request.Device.ComputeType == "huawei_npu" {
-	 	 mounts = append(mounts,JOB.MountPoint{
+	 	 job.Quota.Request.Device=JOB.Device{}
+		 job.Quota.Limit.Device  =JOB.Device{}
+		 job.PreStartScripts="01.init_user.sh"
+	 }else if job.Quota.Request.Device.ComputeType == "huawei_npu" {
+	 	 job.MountPoints = append(job.MountPoints,JOB.MountPoint{
 			 Path:          "file:///usr/local/Ascend/driver",
 			 ContainerPath: "/usr/local/Ascend/driver",
 			 ReadOnly:      true,
-		 })
-		 mounts = append(mounts,JOB.MountPoint{
-			 Path:          "file:///usr/local/Ascend/add-ons",
-			 ContainerPath: "/usr/local/Ascend/add-ons",
-			 ReadOnly:      true,
-		 })
-		 return mounts,"*"
-	 }else{
-		 return mounts,""
+		 },JOB.MountPoint{
+		     Path:          "file:///usr/local/Ascend/add-ons",
+		     ContainerPath: "/usr/local/Ascend/add-ons",
+		     ReadOnly:      true,
+	     })
+		 job.PreStartScripts="*"
+	 }else if strings.HasSuffix(job.Cmd[0],"_launcher"){
+	 	 job.PreStartScripts="*"
 	 }
 }
 
@@ -196,7 +195,7 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 }
 	 checkAILabEnvs(run,job.Envs)
 	 //@todo:  add pre-start scripts ???
-	 job.MountPoints,job.PreStartScripts = checkNpuDriverMounts(run, &job.Quota,job.MountPoints)
+	 checkNpuDriverMounts(run, job)
 	 resp := &JOB.CreateJobRsp{}
 
 	 err  := Request(url,"POST",nil,job,resp)
