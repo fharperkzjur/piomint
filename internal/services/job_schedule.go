@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
+	"github.com/apulis/bmod/ai-lab-backend/internal/utils"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
     JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"github.com/apulis/sdk/go-utils/broker"
@@ -136,13 +137,31 @@ func CheckResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 	 return action,mounts
 }
 
-func checkNpuDriverMounts(run*models.Run,job *JOB.Job)   {
+func checkEnableSSH(run*models.Run,job * JOB.Job) bool {
+	  ports := []models.UserEndpoint{}
+	  if  err := run.Endpoints.Fetch(&ports) ; err == nil  {
+	  	 for _,v := range(ports) {
+	  	 	if v.Name == "ssh"{
+	  	 		job.Envs["SSH_PASSWD"] = utils.GenerateRandomStr(6)
 
+	  	 		return true
+		    }
+	     }
+	  }
+	  return false
+}
+
+func checkSpeciaEnvs(run*models.Run,job *JOB.Job)   {
+
+	 if !strings.HasSuffix(job.Cmd[0],"_launcher"){// cmd not launcher , start target container directly !!!
+		return
+	 }
+	 preStart := "01.init_user.sh"
 	 if exports.IsJobRunWithCloud(run.Flags) {//does not need any local devices
 	 	 job.Quota.Request.Device=JOB.Device{}
 		 job.Quota.Limit.Device  =JOB.Device{}
-		 job.PreStartScripts="01.init_user.sh"
-	 }else if job.Quota.Request.Device.ComputeType == "huawei_npu" {
+	 }
+	 if job.Quota.Request.Device.ComputeType == "huawei_npu" {
 	 	 job.MountPoints = append(job.MountPoints,JOB.MountPoint{
 			 Path:          "file:///usr/local/Ascend/driver",
 			 ContainerPath: "/usr/local/Ascend/driver",
@@ -152,10 +171,12 @@ func checkNpuDriverMounts(run*models.Run,job *JOB.Job)   {
 		     ContainerPath: "/usr/local/Ascend/add-ons",
 		     ReadOnly:      true,
 	     })
-		 job.PreStartScripts="*"
-	 }else if strings.HasSuffix(job.Cmd[0],"_launcher"){
-	 	 job.PreStartScripts="01.init_user.sh"
+	 	 preStart += " 02.setup_mindspore.sh"
 	 }
+	 if checkEnableSSH(run,job) {
+	 	 preStart += " 03.setup_ssh.sh"
+	 }
+	 job.PreStartScripts=preStart
 }
 
 func checkAILabEnvs(run*models.Run,envs map[string]string ){
@@ -195,7 +216,7 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 }
 	 checkAILabEnvs(run,job.Envs)
 	 //@todo:  add pre-start scripts ???
-	 checkNpuDriverMounts(run, job)
+	 checkSpeciaEnvs(run, job)
 	 resp := &JOB.CreateJobRsp{}
 
 	 err  := Request(url,"POST",nil,job,resp)
