@@ -309,7 +309,7 @@ func ResumeLabRun(labId uint64,runId string) (mlrun *BasicMLRunContext,err APIEr
 
 	err = execDBTransaction(func(tx *gorm.DB,events EventsTrack) APIError {
 		assertCheck(len(runId)>0,"ResumeLabRun must have runId")
-		mlrun ,err := getBasicMLRunInfoEx(tx,labId,runId,events)
+		mlrun ,err = getBasicMLRunInfoEx(tx,labId,runId,events)
 		if err == nil{
 			_, err = tryRecursiveOpRuns(tx,mlrun,"",false,true,tryResumeRun)
 		}
