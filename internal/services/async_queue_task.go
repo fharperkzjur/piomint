@@ -115,17 +115,8 @@ func doCleanupResource(event*models.Event,status int) APIError {
 }
 
 func WaitChildProcessor(event*models.Event) APIError {
-
-	run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_WAIT_CHILD)
-	if err == nil{
-		return CheckW(run,nil,false)
-	}else if err.Errno() == exports.AILAB_NOT_FOUND{
-		return nil
-	}else{
-		return err
-	}
+	  return models.CheckWaitChildRuns(event.Data)
 }
-
 
 func SaveProcessor(event*models.Event) APIError{
 	  return doCleanupResource(event,exports.AILAB_RUN_STATUS_COMPLETING)

@@ -259,6 +259,9 @@ func SubmitJob(run*models.Run) (int, APIError) {
 }
 */
 func KillJob(run*models.Run) (int,APIError) {
+	 if exports.IsJobVirtualExperiment(run.Flags) {
+	 	return exports.AILAB_RUN_STATUS_SUCCESS,nil
+	 }
 	 if err := DeleteJob(run.RunId);err == nil{
 	 	//return exports.AILAB_RUN_STATUS_ABORT,nil
 	 	return exports.AILAB_RUN_STATUS_STOPPING,nil

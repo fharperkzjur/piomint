@@ -321,7 +321,7 @@ func  IsRunStatusNeedComplete(status int) bool {
 	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE && status != AILAB_RUN_STATUS_SAVE_FAIL
 }
 func  IsRunStatusNeedWaitChild(status int ,flags uint64) bool{
-	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE && IsJobNeedWaitForChilds(flags)
+	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE && IsJobNeedWaitForChilds(flags) && status != AILAB_RUN_STATUS_SAVE_FAIL
 }
 func  IsRunStatusStopping(status int)    bool{
 	return status == AILAB_RUN_STATUS_KILLING || status == AILAB_RUN_STATUS_STOPPING

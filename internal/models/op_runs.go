@@ -9,7 +9,7 @@ import (
 )
 
 func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
-	if run.IsStopping() || run.IsCompleting(){
+	if run.IsStopping() || run.IsCompleting() || run.IsWaitChild(){
 		return 0,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"runs is busy cannot resume !")
 	}else if run.RunActive() {//already running or started
 		return 0,nil
@@ -36,7 +36,7 @@ func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,
 	}
 	if !run.RunActive() || run.IsStopping(){// no need to kill
 		return 0,nil
-	}else if run.IsCompleting() {// wrap error
+	}else if run.IsCompleting() || run.IsWaitChild() {// wrap error
 		return 0,nil
 	}
 	if run.IsIniting() {// kill to abort immediatley
@@ -128,6 +128,7 @@ func  ChangeJobStatus(runId string,from,to int,msg string) APIError{
 	case exports.AILAB_RUN_STATUS_INIT,
 	     exports.AILAB_RUN_STATUS_STARTING,
 	     exports.AILAB_RUN_STATUS_KILLING,
+	     exports.AILAB_RUN_STATUS_WAIT_CHILD,
 	     exports.AILAB_RUN_STATUS_COMPLETING,
 	     exports.AILAB_RUN_STATUS_CLEAN,
 	     exports.AILAB_RUN_STATUS_DISCARDS,

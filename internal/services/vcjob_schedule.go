@@ -298,6 +298,11 @@ func SubmitSingleJob(run*models.Run,task * JOB.VcJobTask) (int,APIError){
 }
 
 func SubmitJobV2(run*models.Run) (int, APIError) {
+
+	if exports.IsJobVirtualExperiment(run.Flags) {// virtual experiment always run
+        return exports.AILAB_RUN_STATUS_RUN,nil
+	}
+
 	tasks , err := CreateVcJobTask(run)
 	if err != nil {
 		return exports.AILAB_RUN_STATUS_FAIL,err

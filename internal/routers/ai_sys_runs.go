@@ -54,6 +54,7 @@ func sysGetRunMetaInfo(c*gin.Context) (interface{},APIError){
 		{"label": "关闭中" ,"value": exports.AILAB_RUN_STATUS_KILLING },
 		{"label": "结束中" ,"value": exports.AILAB_RUN_STATUS_STOPPING },
 		{"label": "运行" ,"value": exports.AILAB_RUN_STATUS_RUN },
+		{"label": "等待子任务" ,"value": exports.AILAB_RUN_STATUS_WAIT_CHILD },
 		{"label": "保存中" ,"value": exports.AILAB_RUN_STATUS_COMPLETING },
 		{"label": "成功" ,"value": exports.AILAB_RUN_STATUS_SUCCESS },
 		{"label": "终止" ,"value": exports.AILAB_RUN_STATUS_ABORT },

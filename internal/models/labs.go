@@ -73,6 +73,9 @@ func (job*JobStatusChange)IsStopping()bool{
 func (job*JobStatusChange)IsCompleting()bool{
 	return exports.IsRunStatusCompleting(job.Status)
 }
+func (job*JobStatusChange)IsWaitChild()bool{
+	return exports.IsRunStatusWaitChild(job.Status)
+}
 func (job*JobStatusChange)IsIniting()bool{
 	return exports.IsRunStatusIniting(job.Status)
 }
@@ -104,7 +107,8 @@ func (d*LabRunStats)Collect(status int) {
 			 exports.AILAB_RUN_STATUS_QUEUE,
 			 exports.AILAB_RUN_STATUS_SCHEDULE:     d.RunStarting++
 		 case exports.AILAB_RUN_STATUS_RUN,
-			 exports.AILAB_RUN_STATUS_COMPLETING:   d.RunStarting++
+		      exports.AILAB_RUN_STATUS_WAIT_CHILD,
+			 exports.AILAB_RUN_STATUS_COMPLETING:   d.Running++
 		 case exports.AILAB_RUN_STATUS_KILLING,
 			 exports.AILAB_RUN_STATUS_STOPPING:     d.Stopping++
 		 case exports.AILAB_RUN_STATUS_FAIL,exports.AILAB_RUN_STATUS_SAVE_FAIL:	d.Fails++
@@ -143,6 +147,7 @@ func(d*JobStats)StatusChange(jobType string,from,to int){
 			  exports.AILAB_RUN_STATUS_QUEUE,
 			  exports.AILAB_RUN_STATUS_SCHEDULE:  jobs.RunStarting--
 	     case exports.AILAB_RUN_STATUS_RUN,
+	          exports.AILAB_RUN_STATUS_WAIT_CHILD,
 	          exports.AILAB_RUN_STATUS_COMPLETING:   jobs.Running--
 	     case exports.AILAB_RUN_STATUS_KILLING,
 	          exports.AILAB_RUN_STATUS_STOPPING:  jobs.Stopping--
@@ -157,6 +162,7 @@ func(d*JobStats)StatusChange(jobType string,from,to int){
 			 exports.AILAB_RUN_STATUS_QUEUE,
 			 exports.AILAB_RUN_STATUS_SCHEDULE:   jobs.RunStarting++
 		 case exports.AILAB_RUN_STATUS_RUN,
+		     exports.AILAB_RUN_STATUS_WAIT_CHILD,
 			 exports.AILAB_RUN_STATUS_COMPLETING:     jobs.Running++
 		 case exports.AILAB_RUN_STATUS_KILLING,
 			 exports.AILAB_RUN_STATUS_STOPPING:   jobs.Stopping ++

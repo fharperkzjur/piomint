@@ -56,6 +56,7 @@ type Run struct{
 const (
 	list_runs_fields="run_id,lab_id,runs.name,num,job_type,runs.creator,runs.created_at,runs.deleted_at,start_time,end_time,runs.description,status,runs.tags,runs.flags,msg,parent"
 	select_run_status_change = "run_id,status,flags,job_type"
+	select_mlrun_context = "run_id,status,ext_status,parent,job_type,output,started,flags,lab_id as id,deleted_at,endpoints"
 )
 
 type BasicMLRunContext struct{
@@ -71,6 +72,8 @@ type BasicMLRunContext struct{
 	  //track endpoints if exists
 	  Endpoints *JsonMetaData
 	  events    EventsTrack
+	  Parent  string
+	  ExtStatus int
 }
 
 func (ctx*BasicMLRunContext) IsLabRun() bool {
@@ -121,7 +124,7 @@ func (ctx*BasicMLRunContext) ShouldDiscard() bool{
 func (ctx*BasicMLRunContext) IsNativeLocalJob() bool{
 	return len(ctx.RunId) > 0 && !exports.IsJobRunWithCloud(ctx.Flags)
 }
-func (ctx*BasicMLRunContext) IsWaitChildJob() bool{
+func (ctx*BasicMLRunContext) IsNeedJoinJob() bool{
 	return len(ctx.RunId) > 0 && exports.IsJobNeedWaitForChilds(ctx.Flags)
 }
 
@@ -333,7 +336,7 @@ func KillLabRun(labId uint64,runId string,deepScan bool) (counts uint64,err APIE
 		mlrun,err := getBasicMLRunInfoEx(tx,labId,runId,events)
 		if err == nil {
 
-			if deepScan || !mlrun.IsWaitChildJob(){
+			if deepScan || !mlrun.IsNeedJoinJob(){
 				counts,err = tryRecursiveOpRuns(tx,mlrun,"",deepScan,true,tryKillRun)
 			}else {//@add: support for `WAITCHILD` jobs
 				counts,err = tryRecursiveOpRuns(tx.Where("flags&? != 0",exports.AILAB_RUN_FLAGS_WAIT_CHILD),
@@ -556,14 +559,19 @@ func PrepareRunFailed(runId string,msg string, isRollback bool) APIError {
 	}
 }
 
-func  checkWaitChild(tx*gorm.DB,mlrun*BasicMLRunContext) APIError {
-
-	if mlrun.Status != exports.AILAB_RUN_STATUS_WAIT_CHILD {
-		return nil
-	}
-
-
+func checkNotifyParentWait(tx*gorm.DB,parent string,track EventsTrack) APIError {
+	 if len(parent) == 0 {
+	 	return nil
+	 }
+	 child := ""
+	 err := checkDBQueryError(tx.Model(Run{}).Where("parent=? and flags&? != 0 and status < ?",parent,
+		 	exports.AILAB_RUN_STATUS_WAIT_CHILD,exports.AILAB_RUN_STATUS_MIN_NON_ACTIVE).Select("run_id").Limit(1).Row().Scan(&child))
+	 if err == nil || err.Errno() != exports.AILAB_NOT_FOUND{// this is the final quit `WAIT RUN`
+	 	return err
+	 }
+	 return logWaitChildRun(tx,parent,track)
 }
+
 
 func  CheckWaitChildRuns(runId string) APIError {
 
@@ -576,32 +584,24 @@ func  CheckWaitChildRuns(runId string) APIError {
 				return err
 			}
 		}
-
-		if clean == Evt_clean_discard {
-			status = exports.AILAB_RUN_STATUS_DISCARDS
-			err = change_run_status(tx,runId,&status,0,mlrun.Flags,track)
-			if err == nil{
-				err = tryDiscardRun(tx,runId,track)
-			}
-		}else if status == exports.AILAB_RUN_STATUS_SAVE_FAIL {
-			err = change_run_status(tx,runId,&status,0,mlrun.Flags,track)
-		}else if mlrun.DeletedAt == 0{
-			err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",runId).
-				UpdateColumns(map[string]interface{}{
-					"status":   status,
-					"end_time": &UnixTime{time.Now()},
-				}),1)
-		}else{
-			err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",runId).
-				UpdateColumn("status",status),1)
+		if mlrun.Status != exports.AILAB_RUN_STATUS_WAIT_CHILD {
+			return nil
 		}
-		if err == nil && mlrun.DeletedAt == 0 && mlrun.Status != status{
-			mlrun.ChangeStatusTo(status)
+		child := ""
+		err = checkDBQueryError(tx.Model(Run{}).Where("parent=? and flags&? != 0 and status < ?",mlrun.RunId,
+			exports.AILAB_RUN_STATUS_WAIT_CHILD,exports.AILAB_RUN_STATUS_MIN_NON_ACTIVE).Select("run_id").Limit(1).Row().Scan(&child))
+		if err == nil || err.Errno() != exports.AILAB_NOT_FOUND{
+			return err
+		}
+		orignalStatus := mlrun.ExtStatus & 0xFF
+
+		err = change_run_status(tx,mlrun.RunId,&orignalStatus,0,0,mlrun.events)
+		if err == nil{
+			mlrun.ChangeStatusTo(orignalStatus)
 			err = mlrun.Save(tx)
 		}
 		return err
 	})
-
 }
 
 
@@ -635,6 +635,9 @@ func  CleanupDone(runId string,extra int,filterStatus int) APIError{
 				  "status":   status,
 				  "end_time": &UnixTime{time.Now()},
 			    }),1)
+		  	  if err == nil && mlrun.IsNeedJoinJob() {
+		  	  	  err = checkNotifyParentWait(tx, mlrun.Parent,track)
+		      }
 		  }else{
 			  err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",runId).
 				  UpdateColumn("status",status),1)
@@ -657,7 +660,7 @@ func  getBasicMLRunInfoEx(tx*gorm.DB,labId uint64,runId string,events EventsTrac
 		  }
 		  mlrun.BasicLabInfo=*lab
 	  }else{
-		  err = wrapDBQueryError(tx.Model(&Run{}).Select("run_id,status,job_type,output,started,flags,lab_id as id,deleted_at,endpoints").
+		  err = wrapDBQueryError(tx.Model(&Run{}).Select(select_mlrun_context).
 		  	First(mlrun,"run_id=?",runId))
 
 		  if err == nil && labId != 0 && labId != mlrun.ID {
@@ -733,7 +736,7 @@ func tryKillLabRunsByGroup(tx*gorm.DB,labs []uint64,events EventsTrack) (counts 
 	  	  mlrun,err = getBasicMLRunInfoEx(tx,id,"",events)
 	  	  if err != nil { return }
 		  err = execDBQuerRows(tx.Model(&Run{}).Where("lab_id=? and status < ?",
-		  	  id,exports.AILAB_RUN_STATUS_COMPLETING).Select(select_run_status_change),func(tx*gorm.DB,rows *sql.Rows) APIError {
+		  	  id,exports.AILAB_RUN_STATUS_WAIT_CHILD).Select(select_run_status_change),func(tx*gorm.DB,rows *sql.Rows) APIError {
 		  	  	stats := &JobStatusChange{}
 		  	  	if err := checkDBScanError(tx.ScanRows(rows,stats));err != nil {
 		  	  		return err
