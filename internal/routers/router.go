@@ -19,6 +19,8 @@ func InitRouter() *gin.Engine {
 
 	if !configs.GetAppConfig().Debug {
 		gin.SetMode(gin.ReleaseMode)
+	}else{
+		gin.SetMode(gin.DebugMode)
 	}
 	//@todo: init common user identity authentication logic here
 	r := gin.New()

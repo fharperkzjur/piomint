@@ -116,11 +116,11 @@ func Request(url, method string, headers map[string]string, rawBody interface{},
 		Data: output,
 	}
 	if err := json.Unmarshal(rspData,response);err != nil {
-		logger.Warnf("Request:%s with req:%v invalid response json data !!!",url,rawBody)
+		logger.Warnf("[%s] :%s with req:%v invalid response json data !!!",method,url,rawBody)
 		return exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"invalid response data format")
 	}
 	if response.Code != 0 {
-		logger.Warnf("Request:%s with req:%v error response:%v",url,rawBody,response)
+		logger.Warnf("[%s] :%s with req:%v error response:%v",method,url,rawBody,response)
         return exports.RaiseAPIError(response.Code,response.Msg)
 	}else{// may return http error code
 		return err
