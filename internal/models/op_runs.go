@@ -241,3 +241,11 @@ func GetLabRunStoragePath(labId uint64,runId string)(path string,err APIError) {
 	 }
 	 return
 }
+
+func GetLabRunDefaultSaveModelName(runId string) (scope string,name string,err APIError){
+
+	err = checkDBQueryError(db.Table("runs").Select("labs.bind,labs.name").Joins("left join labs on runs.lab_id=labs.id").
+		Where("run_id=?",runId).Row().Scan(&scope,&name))
+
+	return
+}

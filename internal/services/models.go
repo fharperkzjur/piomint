@@ -3,6 +3,7 @@ package services
 
 import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
+	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 )
 
@@ -65,6 +66,19 @@ func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObje
 		   }
 		   req.Scope,_     =resource["scope"].(string)
 		   req.ModelName,_ =resource["name"].(string)
+		   if len(req.ModelName) == 0 ||  len(req.Scope) == 0{
+		   	  scope,name,err := models.GetLabRunDefaultSaveModelName(runId)
+		   	  if err != nil {
+		   	  	return nil,err
+		      }
+		      if len(req.Scope) == 0 {
+		      	req.Scope=scope
+		      }
+		      if len(req.ModelName) == 0{
+		      	req.ModelName=name
+		      }
+		   }
+
 		   result := make(map[string]interface{})
 		   err := Request(configs.GetAppConfig().Resources.Model + "/prepareModel","POST",nil,req, &result)
 		   if err != nil {
