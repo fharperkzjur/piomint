@@ -81,10 +81,7 @@ func submitCodeLabRun(c*gin.Context)(interface{},APIError){
 		return nil,exports.ParameterError("invalid json data")
 	}
 	req.JobType = exports.AILAB_RUN_CODE_DEVELOP
-	if req.UseModelArts {
-		req.JobFlags = exports.AILAB_RUN_FLAGS_USE_CLOUD
-	}
-	req.JobFlags |= exports.AILAB_RUN_FLAGS_SINGLETON_USER
+	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLETON_USER | exports.AILAB_RUN_FLAGS_WAIT_CHILD
 	req.Token=getUserToken(c)
 	return services.ReqCreateRun(labId,"",req,true,false)
 }
