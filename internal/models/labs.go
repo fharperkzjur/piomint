@@ -15,15 +15,15 @@ type Lab struct{
 	CreatedAt UnixTime       `json:"createdAt"`
 	UpdatedAt UnixTime       `json:"updatedAt"`
 	Description string       `json:"description"`
-    App       string         `json:"app" gorm:"type:varchar(64)"`
-	Bind      string         `json:"group" gorm:"uniqueIndex:lab_name_idx;not null"`                      // user defined group
+    App       string         `json:"app,omitempty" gorm:"type:varchar(64)"`
+	Bind      string         `json:"group,omitempty" gorm:"uniqueIndex:lab_name_idx;not null"`                      // user defined group
 	Name      string         `json:"name"  gorm:"uniqueIndex:lab_name_idx;not null;type:varchar(255)"`    // user defined name
 	DeletedAt soft_delete.DeletedAt `json:"deletedAt,omitempty" gorm:"uniqueIndex:lab_name_idx"`
     Classify  string         `json:"classify,omitempty" gorm:"type:varchar(255)"`    // user defined classify
     Type      string         `json:"type" gorm:"type:varchar(32)"`                  // system defined type preset,visual,expert,autodl,scenes
     Creator   string         `json:"creator" gorm:"type:varchar(255)"`
-	Starts    uint64         `json:"starts"`
-	Statistics*JsonMetaData   `json:"stats" `     // internal statistics data snapshot
+	Starts    uint64         `json:"starts,omitempty"`
+	Statistics*JsonMetaData   `json:"stats,omitempty" `     // internal statistics data snapshot
 	Tags      *JsonMetaData   `json:"tags,omitempty"  `      // user defined tags
 	Meta      *JsonMetaData   `json:"meta,omitempty"  `
 	Location   string         `json:"location,omitempty"`                           // storage url identify for experiments output data

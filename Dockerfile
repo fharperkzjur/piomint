@@ -26,7 +26,9 @@ ADD . .
 RUN go mod download
 
 #RUN swag init --parseDependency --parseInternal && GO111MODULE=${GO111MODULE} go build cmd/ai_lab.go -o /go/bin/ai_lab
-RUN  GO111MODULE=${GO111MODULE} go build  -o /go/bin/ai_lab cmd/ai_lab.go
+RUN  GO111MODULE=${GO111MODULE} go build -buildmode=pie  -o /go/bin/ai_lab cmd/ai_lab.go
+RUN  strip /go/bin/ai_lab
+
 
 FROM alpine:3.13.5
 RUN apk --no-cache add ca-certificates libdrm

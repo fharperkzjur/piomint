@@ -6,7 +6,7 @@ replicaCount: 1
 
 image:
   #harbor.internal.cn/apulistech/ai-lab
-  repository: ubuntu:18.04
+  repository: harbor.apulis.cn:8443/develop/apulistech/ai-lab/amd64:master
   pullPolicy: Always
 
 imagePullSecrets: []
@@ -86,7 +86,7 @@ config:
    resources:
       model:          http://workshop.bmod:6110                #模型管理接口
       dataset:        http://adhub.bmod:6120                   #数据集管理接口
-      jobsched:       http://job-scheduler.bmod:10100/api/v1   #job调度管理接口
+      jobsched:       http://job-scheduler.default:10100/api/v1   #job调度管理接口
       engine:         http://adharbor.bmod:6140                #镜像管理接口
       code:                                                    #代码管理暂时由模型工厂托管
 
