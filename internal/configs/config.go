@@ -31,6 +31,7 @@ type AppConfig struct {
 	ExtranetAddress string
 	ClusterId   string
 	VersionControl VCSConfigTable
+	EnableNamespace bool
 }
 
 type DbConfig struct {

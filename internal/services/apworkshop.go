@@ -13,6 +13,8 @@ type APWorkshopResourceSrv struct{
 
 const APWORKSHOP_MGR_MODULE_ID = 2400
 
+const AISTUDIO_AUTH_FAILED = 500030013
+
 const (
 	APWORKSHOP_ERROR_CODE_BEGIN    = APWORKSHOP_MGR_MODULE_ID*100000 + iota
     APWORKSHOP_MODEL_NOT_EXISTS    = APWORKSHOP_MGR_MODULE_ID*100000 + 20101
@@ -116,7 +118,7 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,token string,resour
 				"status":   status,
 			}, nil)
 		if err != nil {
-			if commitOrCancel == true && err.Errno() == APWORKSHOP_COMMIT_FAIL{
+			if commitOrCancel == true && (err.Errno() == APWORKSHOP_COMMIT_FAIL || err.Errno() == AISTUDIO_AUTH_FAILED){
 				err = exports.RaiseAPIError(exports.AILAB_CANNOT_COMMIT,"cannot commit register model :"+err.Error())
 			}else if commitOrCancel == false && (err.Errno() == APWORKSHOP_ROLLBACK_NOT_EXISTS ||
 				 err.Errno() == APWORKSHOP_REF_NOT_EXISTS || err.Errno() == APWORKSHOP_MODEL_NOT_EXISTS ){

@@ -6,6 +6,8 @@ grpc: 6101
 
 debug: false # gin debug模式
 
+enableNamespace: true
+
 time:
   timezoneStr: Asia/Shanghai # 时区名称
 
