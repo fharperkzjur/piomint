@@ -39,7 +39,8 @@ func sysGetRunList(c*gin.Context) (interface{},APIError){
 	  if len(cond.Sort) == 0 {
 		cond.Sort = "runs.created_at desc"
 	  }
-	  data,err := models.SysGetAllRuns(cond)
+	  var data interface{}
+	  data,err  = models.SysGetAllRuns(cond)
 	  return makePagedQueryResult(cond,data,err)
 }
 

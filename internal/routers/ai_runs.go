@@ -224,7 +224,8 @@ func getAllLabRuns(c*gin.Context) (interface{},APIError){
 	if len(cond.Sort) == 0 {
 		cond.Sort = "runs.created_at desc"
 	}
-	data,err := models.ListAllLabRuns(cond,labId,true)
+	var data interface{}
+	data,err  = models.ListAllLabRuns(cond,labId,true)
 	return makePagedQueryResult(cond,data,err)
 }
 func sysGetAllLabRuns(c*gin.Context)(interface{},APIError){
@@ -240,7 +241,8 @@ func sysGetAllLabRuns(c*gin.Context)(interface{},APIError){
 	if len(cond.Sort) == 0 {
 		cond.Sort = "runs.created_at desc"
 	}
-	data,err := models.ListAllLabRuns(cond,0,true)
+	var data interface{}
+	data,err  = models.ListAllLabRuns(cond,0,true)
 	return makePagedQueryResult(cond,data,err)
 }
 

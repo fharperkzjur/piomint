@@ -32,7 +32,8 @@ func getAllLabs(c*gin.Context)(interface{},APIError){
 	 if err != nil {
 	 	return nil,err
 	 }
-	 data,err := models.ListAllLabs(cond)
+	 var data interface{}
+	 data,err = models.ListAllLabs(cond)
 	 return makePagedQueryResult(cond,data,err)
 }
 

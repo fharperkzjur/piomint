@@ -31,7 +31,8 @@ func getAllRepos(c*gin.Context)(interface{},APIError){
 	if err != nil {
 		return nil,err
 	}
-	data,err := services.ListAppRepos(cond,bind,c.Query("extranet") == "1")
+	var data interface{}
+	data,err  = services.ListAppRepos(cond,bind,c.Query("extranet") == "1")
 	return makePagedQueryResult(cond,data,err)
 }
 
