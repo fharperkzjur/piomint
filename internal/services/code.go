@@ -48,12 +48,12 @@ func ValidateEngineUrl(token string, engine string,arch string)(string, string, 
 	 	return engine,arch,nil
 	 }else if engineId,err := strconv.ParseUint(engine,10,64);err == nil && engineId > 0 {//resolve id to full name by apharbor
         return getAPHarborImageUrl(token,engineId,arch)
-     }else if engine[0] == '#' {//@todo: validate user request name ???
-     	return engine[1:],arch,nil
      }else if paths := strings.SplitN(engine,"/",2);len(paths) == 2 && strings.ContainsAny(paths[0],".:"){//already full name
-     	return engine,arch,nil
+		return engine,arch,nil
+	 }else if engine[0] == '#' {//@todo: validate user request name ???
+     	return getAPHarborImageUrlByName(token,engine[1:],arch)
      }else {// resolve relative name:tag to full name by apharbor
-        return getAPHarborImageUrlByName(token,engine,arch)
+        return engine,arch,nil
      }
 }
 
