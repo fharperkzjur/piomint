@@ -148,6 +148,7 @@ func getAllLabRuns(c*gin.Context) (interface{},APIError){
 		"jobType":"job_type",
 		"parent" :"parent",
 		"status" : "status",
+		"creator":"creator",
 	})
 	if err != nil {
 		return nil,err

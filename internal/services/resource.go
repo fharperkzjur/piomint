@@ -49,12 +49,13 @@ var g_resources_mgr ResourceMgr
 
 func init(){
 
-	 g_resources_mgr.AddResource("model",   ModelResourceSrv{})
-	 g_resources_mgr.AddResource("dataset", DatasetResourceSrv{})
-	 g_resources_mgr.AddResource("mlrun",   MlrunResourceSrv{})
-	 g_resources_mgr.AddResource("code",    CodeResourceSrv{})
-	 g_resources_mgr.AddResource("engine",  EngineResourceSrv{})
-	 g_resources_mgr.AddResource(exports.AILAB_OUTPUT_NAME, MlrunOutputSrv{} )
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_MODEL,   ModelResourceSrv{})
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_DATASET, DatasetResourceSrv{})
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_MLRUN,   MlrunResourceSrv{})
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_CODE,    CodeResourceSrv{})
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_ENGINE,  EngineResourceSrv{})
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_OUTPUT, MlrunOutputSrv{} )
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_STORE,  StoreResourceSrv{})
 }
 
 func UseResource(ty string, ctx string,resource exports.GObject) (interface{},APIError) {
@@ -131,25 +132,26 @@ func BatchUseResource(runId string,resource exports.GObject) APIError {
 		if len(ty) == 0 { ty = k }
 
 		 if ty[0] == '#'{//ref parent does not need to ref&unref
-		 	 rsc_cfg["rpath"]=getPVCMappedPath(k,"","")
+		 	 rsc_cfg["rpath"]=getPVCMappedPath(k,"",safeToString(rsc_cfg["rpath"]))
 			 continue
 		 }
-		 if id  := safeToString(rsc_cfg["id"]);len(id)==0 {
-			 return exports.ParameterError("invalid resource id")
-		 }
+		 //if id  := safeToString(rsc_cfg["id"]);len(id)==0 {
+		//	 return exports.ParameterError("invalid resource id with name:" + k)
+		//}
 		 resp,err := UseResource(ty,runId,rsc_cfg)
 		 if err != nil{
 			logger.Errorf("RefResource[%s]: error:%s",ty,err.Error())
 			return err
 		 }
 		 //should never error
-		 result := resp.(exports.GObject)
-		 for rk,rv := range(result){// copy to original resource config
-			rsc_cfg[rk] = rv
+		 if result,ok := resp.(exports.GObject);ok {
+			 for rk,rv := range(result){// copy to original resource config
+				 rsc_cfg[rk] = rv
+			 }
 		 }
 		 //fill in rpath to mounts into pods
 		 if path,_ := rsc_cfg["path"].(string);checkIsPVCURL(path){
-		 	rsc_cfg["rpath"]=getPVCMappedPath(k,"","")
+		 	rsc_cfg["rpath"]=getPVCMappedPath(k,"",safeToString(rsc_cfg["rpath"]))
 		 }
 	 }
 	 return nil

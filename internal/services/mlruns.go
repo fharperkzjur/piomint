@@ -140,7 +140,6 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 	//@mark: check add `output` resource type
 	if len(req.OutputPath) > 0 {
         rsc := addResource(req.Resource,exports.AILAB_OUTPUT_NAME)
-        rsc["id"]     = "*"
         rsc["access"] = 1
 	}
 	//@mark: check cmds reference valid
@@ -151,7 +150,6 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 		}
 		rsc := addResource(req.Resource,name)
 		if name == exports.AILAB_OUTPUT_NAME {
-			rsc["id"]     ="*"
 			rsc["access"] =1
 			req.OutputPath="*"
 		}
@@ -172,8 +170,13 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 			if err != nil {
 				return nil,err
 			}
-		}else if ty != exports.AILAB_OUTPUT_NAME {
+		}else if ty == exports.AILAB_RESOURCE_TYPE_STORE {//do nothing with `store` resource , becare to check authority before call
 
+		}else if ty == exports.AILAB_RESOURCE_TYPE_OUTPUT{//@todo:pseudo output as a refered resource ???
+			req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
+			req.OutputPath = "*"
+			rsc["access"]  = 1
+		}else{
 			if id:= safeToString(rsc["id"]);len(id) == 0{
 				return nil,exports.ParameterError("invalid resource id with name:" + name)
 			}else if safeToNumber(rsc["access"]) != 0{
@@ -181,11 +184,6 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 			}else{
 				req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
 			}
-		}else{//@todo:  pseudo output as a refered resource ???
-			req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
-			req.OutputPath = "*"
-			rsc["access"]  = 1
-			rsc["id"]      = "*"
 		}
 	}
 	if len(req.Resource) == 0 {

@@ -53,11 +53,11 @@ type LabRunStats struct{
 }
 
 type JobStatusChange struct {
-	RunId      string
-	JobType    string
-	Flags      uint64  // some flags to determine resumable jobs
-	Status     int     // old status
-	StatusTo   int     // changed new status
+	RunId      string  `json:"runId"`
+	JobType    string  `json:"jobType"`
+	Flags      uint64  `json:"flags"` // some flags to determine resumable jobs
+	Status     int     `json:"status"`// old status
+	StatusTo   int     `json:"statusTo,omitempty"`// changed new status
 }
 
 func (job*JobStatusChange)RunActive()bool{
