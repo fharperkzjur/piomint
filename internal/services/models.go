@@ -120,7 +120,8 @@ func (d ModelResourceSrv) CompleteResource(runId string,resource exports.GObject
 			if err != nil {
 				if commitOrCancel == true && err.Errno() == MODEL_COMMIT_FAIL{
 					err = exports.RaiseAPIError(exports.AILAB_CANNOT_COMMIT,"cannot commit saved model :"+err.Error())
-				}else if commitOrCancel == false && err.Errno() == MODEL_ROLLBACK_NOT_EXISTS{
+				}else if commitOrCancel == false && (err.Errno() == MODEL_ROLLBACK_NOT_EXISTS ||
+					 err.Errno() == MODEL_COMMIT_FAIL){
 					logger.Warnf("rollback runId: %s with lock:%v not exists !",runId,resource["lock"])
                     err = nil
 				}
