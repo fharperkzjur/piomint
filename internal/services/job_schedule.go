@@ -112,7 +112,7 @@ func checkResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 
 func checkNpuDriverMounts(quota * JOB.ResourceQuota,mounts []JOB.MountPoint) ( []JOB.MountPoint,string)  {
 
-	 if strings.Contains(quota.Request.Device.DeviceType,"npu") {
+	 if quota.Request.Device.ComputeType == "huawei_npu" {
 	 	 mounts = append(mounts,JOB.MountPoint{
 			 Path:          "/usr/local/Ascend/driver",
 			 ContainerPath: "/usr/local/Ascend/driver",
