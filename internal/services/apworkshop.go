@@ -15,6 +15,7 @@ const APWORKSHOP_MGR_MODULE_ID = 2400
 
 const (
 	APWORKSHOP_ERROR_CODE_BEGIN    = APWORKSHOP_MGR_MODULE_ID*100000 + iota
+    APWORKSHOP_MODEL_NOT_EXISTS    = APWORKSHOP_MGR_MODULE_ID*100000 + 20101
 	APWORKSHOP_REF_NOT_EXISTS      = APWORKSHOP_MGR_MODULE_ID*100000 + 20401         // ref不存在,  ref 和 unref返回
 	APWORKSHOP_COMMIT_FAIL         = APWORKSHOP_MGR_MODULE_ID*100000 + 20301         // commit  新模型失败 ; rollback不会失败
 	APWORKSHOP_ROLLBACK_NOT_EXISTS = APWORKSHOP_MGR_MODULE_ID*100000 + 20302         // rollback 模型失败 ; rollback不会失败
@@ -36,7 +37,7 @@ type APWorkshopPrepareInfo struct{
 }
 
 //cannot error
-func (d APWorkshopResourceSrv) PrepareResource (runId string,  resource exports.GObject) (interface{},APIError){
+func (d APWorkshopResourceSrv) PrepareResource (runId string, token string, resource exports.GObject) (interface{},APIError){
 
 	if safeToNumber(resource["access"]) == 0 {//ref exists model
 		if checkDebugNoRefs(resource) {
@@ -83,7 +84,7 @@ func (d APWorkshopResourceSrv) PrepareResource (runId string,  resource exports.
 }
 
 // should never error
-func (d APWorkshopResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d APWorkshopResourceSrv) CompleteResource(runId string,token string,resource exports.GObject,commitOrCancel bool) APIError {
 
 
 	if safeToNumber(resource["access"]) == 0 {//unref model,should never error
@@ -96,7 +97,7 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,resource exports.GO
 			ModelVersion: safeToNumber(resource["version"]),
 		}
 		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioUnref","POST",nil,req, nil)
-		if err != nil && err.Errno() == MODEL_REF_NOT_EXISTS {// unref not exists supress not found error
+		if err != nil && (err.Errno() == APWORKSHOP_REF_NOT_EXISTS || err.Errno() == APWORKSHOP_MODEL_NOT_EXISTS){// unref not exists supress not found error
 			err = nil
 		}
 		return err
@@ -111,10 +112,10 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,resource exports.GO
 				"status":   status,
 			}, nil)
 		if err != nil {
-			if commitOrCancel == true && err.Errno() == MODEL_COMMIT_FAIL{
+			if commitOrCancel == true && err.Errno() == APWORKSHOP_COMMIT_FAIL{
 				err = exports.RaiseAPIError(exports.AILAB_CANNOT_COMMIT,"cannot commit register model :"+err.Error())
-			}else if commitOrCancel == false && (err.Errno() == MODEL_ROLLBACK_NOT_EXISTS ||
-				err.Errno() == MODEL_COMMIT_FAIL){
+			}else if commitOrCancel == false && (err.Errno() == APWORKSHOP_ROLLBACK_NOT_EXISTS ||
+				 err.Errno() == APWORKSHOP_REF_NOT_EXISTS || err.Errno() == APWORKSHOP_MODEL_NOT_EXISTS ){
 				logger.Warnf("rollback runId: %s with lock:%v not exists !",runId,resource["lock"])
 				err = nil
 			}

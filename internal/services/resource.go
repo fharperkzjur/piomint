@@ -29,9 +29,9 @@ func needReleaseRefs(flags int) bool{
 
 type ResourceUsage interface {
 	// cannot be error
-	PrepareResource(ctx string,  resource exports.GObject) (interface{},APIError)
+	PrepareResource(ctx string, token string, resource exports.GObject) (interface{},APIError)
 	// should never error
-	CompleteResource(ctx string, resource exports.GObject,commitOrCancel bool ) APIError
+	CompleteResource(ctx string,token string, resource exports.GObject,commitOrCancel bool ) APIError
 }
 
 type ResourceMgr struct{
@@ -59,21 +59,21 @@ func init(){
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_APWORKSHOP,APWorkshopResourceSrv{})
 }
 
-func UseResource(ty string, ctx string,resource exports.GObject) (interface{},APIError) {
+func UseResource(ty string, ctx string,token string, resource exports.GObject) (interface{},APIError) {
 	 if usage,ok := g_resources_mgr.resources[ty];ok {
-	 	return usage.PrepareResource(ctx,resource)
+	 	return usage.PrepareResource(ctx,token,resource)
 	 }else{//should never happen
 		 return nil,exports.NotImplementError("UseResource:"+ty)
 	 }
 }
-func ReleaseResource(ty string,ctx string,resource exports.GObject,cleanFlags int)APIError{
+func ReleaseResource(ty string,ctx string,token string,resource exports.GObject,cleanFlags int)APIError{
 	 if usage,ok := g_resources_mgr.resources[ty];ok {
 	 	     if safeToNumber(resource["access"]) == 0 {
-                return usage.CompleteResource(ctx,resource,false)
+                return usage.CompleteResource(ctx,token,resource,false)
 			 }else if (resource_release_commit&cleanFlags) != 0 {
-	 	 	 	return usage.CompleteResource(ctx,resource,true)
+	 	 	 	return usage.CompleteResource(ctx,token,resource,true)
 			 }else if (resource_release_rollback&cleanFlags)!= 0{
-			 	return usage.CompleteResource(ctx,resource,false)
+			 	return usage.CompleteResource(ctx,token,resource,false)
 			 }else  {//trival
 			 	return nil
 			 }
@@ -119,7 +119,7 @@ func safeToNumber(v interface{}) (value int64){
 }
 
 //@mark: input/output
-func BatchUseResource(runId string,resource exports.GObject) APIError {
+func BatchUseResource(runId string,token string,resource exports.GObject) APIError {
 
 	 if len(resource) == 0 {
         return nil
@@ -139,7 +139,7 @@ func BatchUseResource(runId string,resource exports.GObject) APIError {
 		 //if id  := safeToString(rsc_cfg["id"]);len(id)==0 {
 		//	 return exports.ParameterError("invalid resource id with name:" + k)
 		//}
-		 resp,err := UseResource(ty,runId,rsc_cfg)
+		 resp,err := UseResource(ty,runId,token,rsc_cfg)
 		 if err != nil{
 			logger.Errorf("RefResource[%s]: error:%s",ty,err.Error())
 			return err
@@ -182,7 +182,7 @@ func BatchReleaseResource(run* models.Run,commitFlags int) APIError {
 			continue
 		}
 
-		err := ReleaseResource(ty,run.RunId,rsc_cfg,commitFlags)
+		err := ReleaseResource(ty,run.RunId,run.Token, rsc_cfg,commitFlags)
 		if err != nil {
 			if err.Errno() == exports.AILAB_NOT_IMPLEMENT {
 				logger.Errorf("cannot support resource type:" + ty)
@@ -207,7 +207,7 @@ func PrepareResources(run * models.Run,resource exports.GObject, isRollback bool
 	}
 
 	if err == nil {
-		err = BatchUseResource(run.RunId,resource)
+		err = BatchUseResource(run.RunId,run.Token,resource)
 	}
 	if err == nil{
 		run.Resource.Save(resource)

@@ -13,14 +13,14 @@ type CodeResourceSrv struct{
 
 }
 //cannot error
-func (d CodeResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
+func (d CodeResourceSrv) PrepareResource(runId string, token string, resource exports.GObject) (interface{},APIError){
 	// no need to ref &unref code now , because project manage the whole repo lifecycle this time
 
 	return nil,nil
 }
 
 // should never error
-func (d CodeResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d CodeResourceSrv) CompleteResource(runId string,token string,resource exports.GObject,commitOrCancel bool) APIError {
 	// no need to ref &unref code now , because project manage the whole repo lifecycle this time
 
 	return nil
@@ -30,13 +30,13 @@ type HarborResourceSrv struct{
 
 }
 //cannot error
-func (d HarborResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
+func (d HarborResourceSrv) PrepareResource(runId string, token string, resource exports.GObject) (interface{},APIError){
 
 	return nil,exports.NotImplementError("EngineResourceSrv")
 }
 
 // should never error
-func (d HarborResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d HarborResourceSrv) CompleteResource(runId string,token string,resource exports.GObject,commitOrCancel bool) APIError {
     //@todo: engine no need to ref ???
 	return nil
 }
@@ -108,7 +108,7 @@ type StoreResourceSrv struct{
 }
 
 //cannot error
-func (d StoreResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
+func (d StoreResourceSrv) PrepareResource(runId string, token string, resource exports.GObject) (interface{},APIError){
 
 	if len(safeToString(resource["path"])) == 0 {
 		return nil,exports.ParameterError("store resource must have valid path !!!")
@@ -117,6 +117,6 @@ func (d StoreResourceSrv) PrepareResource(runId string,  resource exports.GObjec
 }
 
 // should never error
-func (d StoreResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d StoreResourceSrv) CompleteResource(runId string,token string,resource exports.GObject,commitOrCancel bool) APIError {
 	return nil
 }

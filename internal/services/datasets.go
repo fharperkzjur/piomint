@@ -24,7 +24,7 @@ const (
 )
 
 //cannot error
-func (d DatasetResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
+func (d DatasetResourceSrv) PrepareResource(runId string, token string, resource exports.GObject) (interface{},APIError){
 
 	  if safeToNumber(resource["access"]) != 0 {
 	  	  return nil,exports.NotImplementError("DatasetResourceSrv no support for prepare dataset !!!")
@@ -52,7 +52,7 @@ func (d DatasetResourceSrv) PrepareResource(runId string,  resource exports.GObj
 }
 
 // should never error
-func (d DatasetResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d DatasetResourceSrv) CompleteResource(runId string, token string,resource exports.GObject,commitOrCancel bool) APIError {
 
 		if safeToNumber(resource["access"]) != 0 {
 			return  exports.NotImplementError("DatasetResourceSrv no support for complete dataset !!!")

@@ -20,7 +20,7 @@ type MlrunResourceSrv struct{
 
 }
 //cannot error
-func (d MlrunResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
+func (d MlrunResourceSrv) PrepareResource(runId string, token string, resource exports.GObject) (interface{},APIError){
 
 	 access := safeToNumber(resource["access"])
 	 if access != 0 {
@@ -37,7 +37,7 @@ func (d MlrunResourceSrv) PrepareResource(runId string,  resource exports.GObjec
 }
 
 // should never error
-func (d MlrunResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d MlrunResourceSrv) CompleteResource(runId string,token string,resource exports.GObject,commitOrCancel bool) APIError {
 	refer  := safeToString(resource["id"])
 	return models.DeleteLinkWith(runId,refer)
 }
@@ -46,7 +46,7 @@ type MlrunOutputSrv struct{
 
 }
 //cannot error
-func (d MlrunOutputSrv) PrepareResource(runId string, resource exports.GObject) (interface{},APIError){
+func (d MlrunOutputSrv) PrepareResource(runId string, token string,resource exports.GObject) (interface{},APIError){
 
 	path,err := models.EnsureLabRunStgPath(runId)
 	if err != nil {
@@ -58,7 +58,7 @@ func (d MlrunOutputSrv) PrepareResource(runId string, resource exports.GObject) 
 }
 
 // should never error
-func (d MlrunOutputSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d MlrunOutputSrv) CompleteResource(runId string,token string,resource exports.GObject,commitOrCancel bool) APIError {
 
     return nil
 }

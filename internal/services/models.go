@@ -33,7 +33,7 @@ func checkDebugNoRefs(resource exports.GObject) bool {
 }
 
 //cannot error
-func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObject) (interface{},APIError){
+func (d ModelResourceSrv) PrepareResource (runId string, token string, resource exports.GObject) (interface{},APIError){
 
 	  if safeToNumber(resource["access"]) == 0 {//ref exists model
 	  	   if checkDebugNoRefs(resource) {
@@ -81,7 +81,7 @@ func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObje
 }
 
 // should never error
-func (d ModelResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
+func (d ModelResourceSrv) CompleteResource(runId string,token string,resource exports.GObject,commitOrCancel bool) APIError {
 
 
 		if safeToNumber(resource["access"]) == 0 {//unref model,should never error
