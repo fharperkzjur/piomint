@@ -36,6 +36,9 @@ func checkUserEndpointInits(run*models.Run, container * JOB.Container,quota*mode
 			}
 		}
 		container.Ports=endpoints.ToSchedulerPorts()
+		if quota.Node > 1 {
+			enableSSH = true
+		}
 		//@add: check ssh setup
 		if enableSSH {
 			helper += " 03.setup_ssh.sh"
@@ -84,6 +87,10 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask,quota*models.UserResourceQ
 			ReadOnly:      true,
 		})
 		preStart += " 02.setup_mindspore.sh"
+		//@mark: always allocate device foreach pod
+		if quota.Node > 1 {
+			run.Flags |= exports.AILAB_RUN_FLAGS_COMPACT_MASTER
+		}
 	}
 
 	preStart += endPointsInits
@@ -109,6 +116,9 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask,quota*models.UserResourceQ
 	}
 	task.Container.Envs["JOB_CMD"]=strings.Join(task.Container.Cmd," ")
 	task.Container.Envs["PRESTART_SCRIPTS"] = preStart
+	if exports.IsJobDistributeCompactMaster(run.Flags) {
+		task.Container.Envs[exports.AILAB_ENV_COMPACT_MASTER]="1"
+	}
 	task.Container.Cmd=[]string{"bash","-c","/prestart/prestart.sh && /start/start.sh"}
 	task.InitContainer.ResourceQuota = task.Container.ResourceQuota
 	//@mark: init container use same qutoa as container without any device !
