@@ -78,7 +78,7 @@ func notifyRunStatusChange(notifier * models.RunStatusNotifier,cmd string) APIEr
 			 ModId:       exports.AILAB_MODULE_ID,
 			 Cmd:         cmd,
 			 PushType:    wsmsg.PushTypeUserGroup,
-			 PushTargets: []string{strconv.FormatUint(notifier.UserGroupId,0)},
+			 PushTargets: []string{strconv.FormatUint(notifier.UserGroupId,10)},
 		 },
 		 Payload: &notifier.RunNotifyPayload,
 		 Scope:   &notifier.RunNotifyScope,
