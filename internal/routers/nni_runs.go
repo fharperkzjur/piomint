@@ -19,7 +19,8 @@ func createNNIDevExperiment(c*gin.Context) (interface{},APIError){
 	}
 	req.JobType = exports.AILAB_RUN_NNI_DEV
 	req.Token=getUserToken(c)
-	req.JobFlags = exports.AILAB_RUN_FLAGS_IDENTIFY_NAME | exports.AILAB_RUN_FLAGS_VIRTUAL_EXPERIMENT
+	req.JobFlags = exports.AILAB_RUN_FLAGS_IDENTIFY_NAME | exports.AILAB_RUN_FLAGS_VIRTUAL_EXPERIMENT |
+		exports.AILAB_RUN_FLAGS_WAIT_CHILD
 	return forkChildRun(labId,runId,req)
 }
 func submitNNIExperimentRun(c*gin.Context)  (interface{},APIError){
@@ -32,6 +33,7 @@ func submitNNIExperimentRun(c*gin.Context)  (interface{},APIError){
 		return nil,exports.ParameterError("invalid json data")
 	}
 	req.JobType = exports.AILAB_RUN_NNI_TRAIN
+	req.JobFlags = exports.AILAB_RUN_FLAGS_WAIT_CHILD
 	req.Token=getUserToken(c)
 	return services.ReqCreateRun(labId,"",req,false,false)
 }
@@ -45,7 +47,7 @@ func submitNNITrials(c*gin.Context) (interface{},APIError){
 		return nil,exports.ParameterError("invalid json data")
 	}
 	req.JobType  = exports.AILAB_RUN_NNI_TRIAL
-	req.JobFlags = exports.AILAB_RUN_FLAGS_IDENTIFY_NAME
+	req.JobFlags = exports.AILAB_RUN_FLAGS_IDENTIFY_NAME | exports.AILAB_RUN_FLAGS_WAIT_CHILD
 	req.Token=getUserToken(c)
 	return forkChildRun(labId,runId,req)
 }
@@ -58,7 +60,7 @@ func forkChildRun(labId uint64,runId string,req*exports.CreateJobRequest) (inter
 	if labId != run.LabId {
 		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
 	}
-	if !run.StatusIsRunning() {
+	if exports.IsJobNeedWaitForChilds(run.Flags) && !run.StatusIsRunning() {
 		return nil,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"only running jobs can fork sub runs !!!")
 	}
 	// fork child runs may inherit cmd,engine,resource,quota
@@ -94,20 +96,10 @@ func forkChildRun(labId uint64,runId string,req*exports.CreateJobRequest) (inter
 
 func checkForkedResources(resource exports.RequestObject) {
 	for name,v := range(resource){
-
 		rsc,_ := v.(exports.GObject)
 		ty,_ := rsc["type"].(string)
 		if len(ty) == 0 { ty = name }
-		if ty[0] == '#' {// do nothing with ancestor ref
-
-		}else if ty == exports.AILAB_RESOURCE_TYPE_STORE {//do nothing with `store` resource
-
-		}else if ty == exports.AILAB_RESOURCE_TYPE_OUTPUT{//do not ref parent output path
-			rsc[exports.AILAB_RESOURCE_NO_REFS]=1
-		}else{// automatically ref to platform resource again
-			if rsc[exports.AILAB_RESOURCE_NO_REFS] != 1 {
-				rsc["path"]=""
-			}
-		}
+		//@mark:  forked child runs always use parent resources as `store` directory !
+		rsc["type"] = exports.AILAB_RESOURCE_TYPE_STORE
 	}
 }

@@ -17,14 +17,15 @@ type Event struct{
 	Extra     []byte     // compound informations for this event
 }
 
-func(evt*Event)Fetch(v interface{})error{
-	return json.Unmarshal(evt.Extra,v)
-}
+//func(evt*Event)Fetch(v interface{})error{
+//	return json.Unmarshal(evt.Extra,v)
+//}
 
 const (
 	Evt_init_run    = "init"
  	Evt_start_run   = "start"
 	Evt_kill_run    = "kill"
+	Evt_wait_child  = "wait"
 	// check whether can clean actually
 	Evt_complete_run    = "complete"
 	// should be deleted status
@@ -107,13 +108,18 @@ func logKillRun(tx*gorm.DB,runId string,events EventsTrack) APIError{
 	return LogBackendEvent(tx,Evt_kill_run,runId,nil,events)
 }
 
-func logSaveRun(tx*gorm.DB,runId string,extra int, events EventsTrack)APIError{
-	return LogBackendEvent(tx,Evt_complete_run,runId,extra,events)
+func logSaveRun(tx*gorm.DB,runId string, events EventsTrack)APIError{
+	return LogBackendEvent(tx,Evt_complete_run,runId,nil,events)
 }
 
-func logCleanRun(tx*gorm.DB,runId string,extra int, events EventsTrack) APIError {
-	return LogBackendEvent(tx,Evt_clean_run,runId,extra,events)
+func logWaitChildRun(tx*gorm.DB,runId string,events EventsTrack) APIError{
+	return LogBackendEvent(tx,Evt_wait_child,runId,nil,events)
 }
+
+func logCleanRun(tx*gorm.DB,runId string, events EventsTrack) APIError {
+	return LogBackendEvent(tx,Evt_clean_run,runId,nil,events)
+}
+
 func logDiscardRun(tx*gorm.DB,runId string,events EventsTrack) APIError{
 	return LogBackendEvent(tx,Evt_discard_run,runId,nil,events)
 }

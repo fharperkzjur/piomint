@@ -35,7 +35,8 @@ const (
 	AILAB_RUN_STATUS_KILLING   // request kill job , cannot break
 	AILAB_RUN_STATUS_STOPPING  // wait for stopped,  cannot break
 	AILAB_RUN_STATUS_RUN
-	AILAB_RUN_STATUS_COMPLETING = 99    // saving status , pseudo end status ,cannot break
+	AILAB_RUN_STATUS_WAIT_CHILD = 98    // waiting status, pseudo end status , cannot break
+	AILAB_RUN_STATUS_COMPLETING = 99    // saving status , pseudo end status , cannot break
 	AILAB_RUN_STATUS_SUCCESS  = 100
 	AILAB_RUN_STATUS_ABORT    = 101
 	AILAB_RUN_STATUS_ERROR    = 102
@@ -75,6 +76,8 @@ const (
 	AILAB_RUN_FLAGS_IDENTIFY_NAME = 0x400
 	// virtual experiment run , not actually running job
 	AILAB_RUN_FLAGS_VIRTUAL_EXPERIMENT = 0x800
+	// used for forked job , need wait for all child runs finish before itself finish
+	AILAB_RUN_FLAGS_WAIT_CHILD         = 0x1000
 
 	// have prepare all resource complete
 	AILAB_RUN_FLAGS_PREPARE_OK           = 0x10000
@@ -317,11 +320,17 @@ func  IsRunStatusNonActive(status int)   bool{
 func  IsRunStatusNeedComplete(status int) bool {
 	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE && status != AILAB_RUN_STATUS_SAVE_FAIL
 }
+func  IsRunStatusNeedWaitChild(status int ,flags uint64) bool{
+	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE && IsJobNeedWaitForChilds(flags)
+}
 func  IsRunStatusStopping(status int)    bool{
 	return status == AILAB_RUN_STATUS_KILLING || status == AILAB_RUN_STATUS_STOPPING
 }
 func  IsRunStatusCompleting(status int)bool{
 	return status == AILAB_RUN_STATUS_COMPLETING
+}
+func  IsRunStatusWaitChild(status int) bool{
+	return status == AILAB_RUN_STATUS_WAIT_CHILD
 }
 func  IsRunStatusClean(status int) bool {
 	return status == AILAB_RUN_STATUS_CLEAN
@@ -360,6 +369,10 @@ func  IsJobNeedPrepare(flags uint64) bool{
 func  IsJobPrepareSuccess(flags uint64)  bool{
 	return (flags & AILAB_RUN_FLAGS_PREPARE_OK)!= 0
 }
+func  IsJobNeedWaitForChilds(flags uint64) bool {
+	return (flags & AILAB_RUN_FLAGS_WAIT_CHILD) != 0
+}
+
 func  HasJobCleanupWithJobSched(flags uint64)  bool{
      return (flags &  AILAB_RUN_FLAGS_RELEASED_JOB_SCHED) != 0
 }

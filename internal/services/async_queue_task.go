@@ -93,8 +93,8 @@ func checkReleaseResources(run*models.Run,cleanFlags int,filterStatus int) (err 
 func doCleanupResource(event*models.Event,status int) APIError {
 	run ,err := models.QueryRunDetail(event.Data,exports.IsRunStatusClean(status),status)
 	if err == nil{
-		extra    := 0
-		event.Fetch(&extra)
+		extra    := run.ExtStatus
+		//event.Fetch(&extra)
 		cleanFlags :=getCleanupFlags(extra,exports.IsRunStatusClean(status))
 
 		err = checkReleaseJobSched(run,cleanFlags,status)
@@ -113,6 +113,19 @@ func doCleanupResource(event*models.Event,status int) APIError {
 		return err
 	}
 }
+
+func WaitChildProcessor(event*models.Event) APIError {
+
+	run ,err := models.QueryRunDetail(event.Data,false,exports.AILAB_RUN_STATUS_WAIT_CHILD)
+	if err == nil{
+		return CheckW(run,nil,false)
+	}else if err.Errno() == exports.AILAB_NOT_FOUND{
+		return nil
+	}else{
+		return err
+	}
+}
+
 
 func SaveProcessor(event*models.Event) APIError{
 	  return doCleanupResource(event,exports.AILAB_RUN_STATUS_COMPLETING)

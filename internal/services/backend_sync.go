@@ -208,6 +208,7 @@ func InitServices() error {
 	 getBackendSyncer().AddTaskQueue(models.Evt_init_run, InitProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_start_run,StartProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_kill_run, KillProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_wait_child,WaitChildProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_complete_run, SaveProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_clean_run,CleanProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_discard_run,DiscardProcessor,0,nil)
