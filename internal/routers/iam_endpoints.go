@@ -2,8 +2,6 @@ package routers
 
 import (
 	"fmt"
-	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
-	"github.com/apulis/bmod/ai-lab-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"path"
 )
@@ -118,9 +116,9 @@ func init() {
 }
 
 func registerEndpoints(){
-		urlpath := configs.GetAppConfig().Resources.Iam + "/endpoints"
+		//urlpath := configs.GetAppConfig().Resources.Iam + "/endpoints"
 
-		err := services.Request(urlpath,"POST",nil,&g_IAM_EndPoints,nil)
+		//err := services.Request(urlpath,"POST",nil,&g_IAM_EndPoints,nil)
 
-		logger.Infof("register endpoints to iam:%v",err)
+		//logger.Infof("register endpoints to iam:%v",err)
 }
