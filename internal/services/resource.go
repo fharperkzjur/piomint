@@ -131,7 +131,7 @@ func BatchUseResource(runId string,resource exports.GObject) APIError {
 		if len(ty) == 0 { ty = k }
 
 		 if ty[0] == '#'{//ref parent does not need to ref&unref
-		 	 rsc_cfg["rpath"]=getPVCMountPath(k,"","")
+		 	 rsc_cfg["rpath"]=getPVCMappedPath(k,"","")
 			 continue
 		 }
 		 if id  := safeToString(rsc_cfg["id"]);len(id)==0 {
@@ -149,7 +149,7 @@ func BatchUseResource(runId string,resource exports.GObject) APIError {
 		 }
 		 //fill in rpath to mounts into pods
 		 if path,_ := rsc_cfg["path"].(string);checkIsPVCURL(path){
-		 	rsc_cfg["rpath"]=getPVCMountPath(k,"","")
+		 	rsc_cfg["rpath"]=getPVCMappedPath(k,"","")
 		 }
 	 }
 	 return nil

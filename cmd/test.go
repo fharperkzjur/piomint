@@ -46,7 +46,7 @@ func main(){
 
 	 })
 
-	 fmt.Printf("cmds:%v mounts:%v",cmds,mounts)
+	 fmt.Printf("cmds:%+v mounts:%+v",cmds,mounts)
 
 	 var sss interface{}
 

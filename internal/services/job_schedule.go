@@ -15,7 +15,7 @@ import (
 func checkIsPVCURL(path string)bool{
 	return strings.HasPrefix(path,"pvc://")
 }
-func getPVCMountPath(name,subname,rpath string) string{
+func getPVCMappedPath(name,subname,rpath string) string{
 	if strings.HasPrefix(name,exports.AILAB_OUTPUT_NAME) {
 		name = exports.AILAB_OUTPUT_MOUNT
 	}else if name[0] =='#'{// mount to refer parent resource
@@ -25,6 +25,21 @@ func getPVCMountPath(name,subname,rpath string) string{
 		rpath = exports.AILAB_DEFAULT_MOUNT + "/" + name
 	}
 	if len(subname) == 0 {
+		return rpath
+	}else{
+		return rpath + "/" + subname
+	}
+}
+func getPVCMountedPath(name,rpath string,subname ,subpath string) string{
+	if strings.HasPrefix(name,exports.AILAB_OUTPUT_NAME) {
+		name = exports.AILAB_OUTPUT_MOUNT
+	}else if name[0] =='#'{// mount to refer parent resource
+		name = exports.AILAB_PIPELINE_REFER_PREFIX + name[1:]
+	}
+	if len(rpath) == 0 {//use default mount path
+		rpath = exports.AILAB_DEFAULT_MOUNT + "/" + name
+	}
+	if len(subpath) == 0 {
 		return rpath
 	}else{
 		return rpath + "/" + subname
@@ -56,13 +71,13 @@ func tryResourceMounts(name,path,rpath string,access int , subname,subpath strin
 	  if maps[mount_name] == 0 && checkIsPVCURL(pvc_path) {
 		  mounts = append(mounts,JOB.MountPoint{
 			  Path:          pvc_path,
-			  ContainerPath: getPVCMountPath(name,subname,rpath),
+			  ContainerPath: getPVCMountedPath(name,rpath,subname,subpath),
 			  ReadOnly:      access == 0,
 		  })
 		  maps[mount_name]=1//track resource mounted
 	  }
 	  if(checkIsPVCURL(pvc_path)){
-		return mounts,getPVCMountPath(name,subname,rpath)
+		return mounts,getPVCMappedPath(name,subname,rpath)
 	  }else if len(subname) > 0 {
 	  	if len(subpath) >0 {
             return mounts,subpath
