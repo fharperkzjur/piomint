@@ -34,6 +34,7 @@ func (d*GiteaDriver)init(conf configs.VcsConfig) APIError{
 	  	 d.Url = conf.Url
 	  	 d.Host=conf.Host
 	  	 d.SshHost=conf.SshHost
+	  	 d.UseHttp=conf.UseHttp
 	  	 d.Extranet=conf.Extranet
 	  }
 	  if len(conf.User) > 0 { // use default user as data operator user
