@@ -2,7 +2,7 @@
 
 buildPlugin ( {
     repoName = 'ai-lab-backend'
-    project = ["aistudio"]
+    project = ["songshanhu"]
     dockerImages = [
         [
             'compileContainer': '',
