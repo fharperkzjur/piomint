@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"gorm.io/gorm"
+	"time"
 )
 
 type Lab struct{
@@ -55,10 +56,29 @@ type JobStatusChange struct {
 	StatusTo   int     // changed new status
 }
 
+func (job*JobStatusChange)RunActive()bool{
+	return job.Status < exports.RUN_STATUS_FAILED
+}
+func (job*JobStatusChange)IsStopping()bool{
+	return job.Status == exports.RUN_STATUS_KILLING || job.Status == exports.RUN_STATUS_STOPPING
+}
+func (job*JobStatusChange)EnableResume()bool{
+	return (job.Flags & exports.RUN_FLAGS_RESUMEABLE) != 0
+}
+func (job*JobStatusChange)IsIniting()bool{
+	return job.Status == exports.RUN_STATUS_INIT
+}
+
 type JobStats  map[string]*LabRunStats
 
 func (d*LabRunStats)Sum(s * LabRunStats){
-
+     d.RunStarting += s.RunStarting
+     d.Running     += s.Running
+     d.Stopping    += s.Stopping
+     d.Fails       += s.Fails
+     d.Errors      += s.Errors
+     d.Aborts      += s.Aborts
+     d.Success     += s.Success
 }
 
 func (d*JobStats) Sum(s JobStats) {
@@ -205,18 +225,81 @@ func BatchCreateLab(labs []Lab)APIError{
 	})
 }
 
-func DeleteLabByGroup(group string)(interface{},APIError){
+func DeleteLabByGroup(group string,labId uint64)(interface{},APIError){
 	counts := 0
 	err := execDBTransaction(func(tx *gorm.DB) APIError {
 
-		labs ,err := getLabsByGroup(tx,group)
+		labs ,err := getLabsByGroup(tx,group,labId)
 		if err == nil {
+			counts = len(labs)
 			err = tryDeleteLabRunsByGroup(tx,labs)
 		}else if(err.Errno() == exports.AILAB_NOT_FOUND){// no labs need to be delete
 			return nil
 		}
 		if err == nil{
-			err = wrapDBUpdateError(tx.Delete(&Lab{},"group=?",group),int64(len(labs)))
+			err = wrapDBUpdateError(tx.Delete(&Lab{},"id in ?",labs),int64(counts))
+		}
+		return err
+	})
+	return counts,err
+}
+
+
+func ClearLabByGroup(group string,labId uint64) (interface{},APIError) {
+	counts := 0
+	err := execDBTransaction(func(tx *gorm.DB) APIError {
+
+		labs ,err := getLabsByGroup(tx,group,labId)
+		if err == nil {
+			counts = len(labs)
+			err = tryClearLabRunsByGroup(tx,labs)
+		}else if(err.Errno() == exports.AILAB_NOT_FOUND){// no labs need to be delete
+			return nil
+		}
+		if err == nil {//@mark: cleared lab cannot be restore !!!
+			err = wrapDBUpdateError(tx.Model(&Lab{}).Where("lab_id in ?",labs).UpdateColumns(
+				map[string]interface{}{
+					"deleted_at" : UnixTime{time.Now()},
+					"type":        exports.AISutdio_labs_discard,
+				}),int64(counts))
+		}
+		if err == nil {
+			for _,id := range(labs) {
+				err = doLogClearLab(tx,id)
+				if err != nil {
+					break
+				}
+			}
+		}
+		return err
+	})
+	return counts,err
+}
+
+func KillLabByGroup(group string,labId uint64)(interface{},APIError) {
+	counts := uint64(0)
+	err := execDBTransaction(func(tx *gorm.DB) APIError {
+
+		labs ,err := getLabsByGroup(tx,group,labId)
+		if err == nil {
+			counts,err = tryKillLabRunsByGroup(tx,labs)
+		}else if(err.Errno() == exports.AILAB_NOT_FOUND){// no labs run need to be kill
+			err = nil
+		}
+		return err
+	})
+	return counts,err
+}
+
+func CleanLabRunByGroup(group string,labId uint64) (interface{},APIError){
+	counts := uint64(0)
+	err := execDBTransaction(func(tx *gorm.DB) APIError {
+
+		labs ,err := getLabsByGroup(tx,group,labId)
+		if err == nil {
+			counts,err = tryCleanLabRunsByGroup(tx,labs)
+		}else if(err.Errno() == exports.AILAB_NOT_FOUND){// no labs run need to be clean
+			err = nil
 		}
 		return err
 	})
@@ -282,11 +365,15 @@ func getBasicLabInfo(tx * gorm.DB, labId uint64) (lab *BasicLabInfo,err APIError
 		return
 }
 
-func getLabsByGroup(tx * gorm.DB, group string) (labs []uint64,err APIError) {
+func getLabsByGroup(tx * gorm.DB, group string,labId uint64) (labs []uint64,err APIError) {
 	    labs = []uint64{}
-		err = checkDBQueryError( tx.Set("gorm:query_option", "FOR UPDATE").Table("labs").
-			Where("group=?",group).
-			Select("id").
-			Row().Scan(&labs))
+	    inst := tx.Set("gorm:query_option", "FOR UPDATE").Table("labs")
+	    if len(group) > 0 {
+	    	inst = inst.Where("group=?",group)
+		}
+		if labId > 0 {
+			inst = inst.Where("id=?",labId)
+		}
+		err = wrapDBQueryError(inst.Pluck("id",&labs))
 		return
 }

@@ -1,9 +1,11 @@
 package models
 
 import (
+	"database/sql"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"time"
 )
 
 
@@ -40,6 +42,7 @@ type Run struct{
 
 const (
 	list_runs_fields=""
+	select_run_status_change = "run_id,status,flags,job_type"
 )
 
 type BasicMLRunContext struct{
@@ -53,9 +56,6 @@ type BasicMLRunContext struct{
 	  Flags    uint64
 }
 
-func (ctx*BasicMLRunContext) IsNestRun() bool{
-     return len(ctx.RunId) > 0
-}
 func (ctx*BasicMLRunContext) IsLabRun() bool {
      return len(ctx.RunId) == 0
 }
@@ -118,14 +118,23 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  return run
 }
 
-func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest) (run*Run,err APIError){
+func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enableRepace bool) (result interface{},err APIError){
 
 	err = execDBTransaction(func(tx *gorm.DB) APIError {
 
 		mlrun ,err := getBasicMLRunInfo(tx,labId,runId)
 		if err == nil {
-			err = preCheckCreateRun(tx,mlrun,req)
+			old, err := preCheckCreateRun(tx,mlrun,req)
+			if err != nil && err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {
+				if !enableRepace {
+					result = old
+					return err
+				}
+				//discard old run if possible
+				_,err = tryForceDeleteRun(tx,old,mlrun)
+			}
 		}
+		var run * Run
 		if err == nil{
 			run  = newLabRun(mlrun,req)
 			err  = allocateLabRunStg(run,mlrun)
@@ -139,107 +148,204 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest) (run*
 		if err == nil {
 			err = doLogStartRun(tx,run.RunId)
 		}
+		if err == nil{
+			result = run
+		}
 		return err
 	})
 	return
 }
-func  QueryRunDetail(runId string) (*Run,APIError){
-	run := &Run{}
-	err := wrapDBQueryError(db.First(run,"id=?",runId))
-	return run,err
+func  QueryRunDetail(runId string,unscoped bool) (run*Run,err APIError){
+	run  = &Run{}
+	if !unscoped {
+        err = wrapDBQueryError(db.First(run,"id=?",runId))
+	}else{
+		err = wrapDBQueryError(db.Unscoped().First(run,"id=?",runId))
+	}
+	return
 }
 
-func  scanNestChildRuns(tx*gorm.DB,runId string,childs []JobStatusChange) ([]JobStatusChange,APIError){
-	var result []JobStatusChange
-	err := wrapDBQueryError(tx.Find(&result,"parent=?",runId))
-	copy(childs,result)
-	return childs,err
+func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
+	if run.IsStopping() {
+		return 0,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS)
+	}else if run.RunActive() {//already running or started
+		return 0,nil
+	}else if !run.EnableResume(){
+		return 0,exports.RaiseAPIError(exports.AILAB_RUN_CANNOT_RESTART)
+	}
+
+	run.StatusTo = exports.RUN_STATUS_INIT
+	err := wrapDBUpdateError(tx.Table("runs").Update("status",run.StatusTo).
+		Where("run_id=?",run.RunId),1)
+	if err == nil {
+		mlrun.JobStatusChange(run)
+		err = doLogStartRun(tx,run.RunId)
+	}
+	return 1,err
 }
 
-func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) APIError{
-    return exports.NotImplementError()
+func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
+	if !run.RunActive() {// no need to kill
+		return 0,nil
+	}
+	if run.IsIniting() {// kill to abort immediatley
+		run.StatusTo = exports.RUN_STATUS_ABORT
+	}else{
+		run.StatusTo = exports.RUN_STATUS_KILLING
+	}
+	err := wrapDBUpdateError(tx.Table("runs").Update("status",run.StatusTo).
+		Where("run_id=?",run.RunId),1)
+	if err == nil {
+		mlrun.JobStatusChange(run)
+		if run.StatusTo == exports.RUN_STATUS_KILLING {
+			err = doLogKillRun(tx,run.RunId)
+		}
+	}
+	return 1,err
 }
-func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext)APIError{
-	return exports.NotImplementError()
-}
-func tryDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext)APIError{
-	return exports.NotImplementError()
-}
-func  tryRecursiveCtrlRun(tx*gorm.DB, mlrun*BasicMLRunContext,jobType string,deepScan bool ,
-	      executor func(*gorm.DB,*JobStatusChange,*BasicMLRunContext) APIError) APIError{
 
-	    inst := tx.Table("runs").Select("run_id,status,flags,job_type")
+func tryDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
+	if  run.RunActive() {//cannot delete a active run
+		return 0,exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE)
+	}
+	run.StatusTo = -1
+	err := wrapDBUpdateError(tx.Delete(&Run{},"run_id=?",run.RunId),1)
+	if err == nil {
+		mlrun.JobStatusChange(run)
+	}
+	return 1,err
+
+}
+func tryForceDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext)(uint64,APIError){
+	if  run.RunActive() {//cannot delete a active run
+		return 0,exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE)
+	}
+	run.StatusTo = -1
+	err := wrapDBUpdateError(tx.Where("run_id=?",run.RunId).Updates(
+		    map[string]interface{}{
+				"deleted_at": UnixTime{time.Now()},
+				"status":     exports.RUN_STATUS_CLEANING,
+			}),1)
+	if err == nil {
+		mlrun.JobStatusChange(run)
+		err = doLogCleanRun(tx,run.RunId)
+	}
+	return 1,err
+}
+
+func tryCleanRunWithDeleted(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError) {
+		if  run.RunActive() {//cannot delete a active run , should never happen
+			return 0,exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE)
+		}
+	    err := wrapDBUpdateError(tx.Table("runs").UpdateColumn("status",exports.RUN_STATUS_CLEANING).
+		    Where("run_id=?",run.RunId),1)
+	    if err == nil {
+	    	err = doLogCleanRun(tx,run.RunId)
+	  }
+	  return 1,err
+}
+
+
+func  tryRecursiveOpRuns(tx*gorm.DB, mlrun*BasicMLRunContext,jobType string,deepScan bool ,applySelf bool,
+	      executor func(*gorm.DB,*JobStatusChange,*BasicMLRunContext) (uint64,APIError)) (counts uint64,err APIError){
+
+	    inst := tx.Table("runs").Select(select_run_status_change)
 	    if len(jobType) > 0 {
 	    	inst = inst.Where("job_type=?",jobType)
 		}
-		
-		result,err := scanNestChildRuns(inst,mlrun.RunId,[]JobStatusChange{})
-		if err == nil && deepScan {
+		result := []JobStatusChange{}
+		if mlrun.IsLabRun() {
+            err = wrapDBQueryError(inst.Find(&result,"lab_id=?",mlrun.ID))
+		}else if applySelf {
+			result = append(result,*mlrun.PrepareJobStatusChange())
+		}else{
+			err = wrapDBQueryError(inst.Find(&result,"parent=?",mlrun.RunId))
+		}
+		if deepScan {
+			for i:=0; err != nil && i<len(result);i++ {
+				err = execDBQuerRows(inst.Where("parent=?",result[i].RunId),func(rows*sql.Rows)APIError{
 
-			for i:=0 ;i<len(result);i++ {
-				result,err = scanNestChildRuns(inst,result[i].RunId,result)
-				if err != nil {
-					return err
-				}
+					job := &JobStatusChange{}
+					if err1 := rows.Scan(job);err1 == nil {
+						result = append(result,*job)
+                        return nil
+					}else{
+						return exports.RaiseAPIError(exports.AILAB_DB_READ_ROWS)
+					}
+
+				})
 			}
 		}
-		for _,item := range(result) {
-			if err = executor(tx,&item,mlrun);err != nil {
-				return err
-			}
+	    cnt := uint64(0)
+		for i:=0; err != nil && i<len(result);i++{
+			cnt,err = executor(tx,&result[i],mlrun)
+			counts += cnt
 		}
-		// update lab statistics
-		return mlrun.Save(tx)
+        // update lab statistics
+		err = mlrun.Save(tx)
+		return
 }
 
-func  TryKillNestRun(labId uint64,runId string , jobType string) APIError{
-	return execDBTransaction(func(tx *gorm.DB) APIError {
-
-		  assertCheck(len(runId)>0,"TryKillNestRun must have parent runId")
-
+func  KillNestRun(labId uint64,runId string , jobType string, deepScan bool ) (counts uint64,err APIError){
+	err = execDBTransaction(func(tx *gorm.DB) APIError {
+		  assertCheck(len(runId)>0,"KillNestRun must have runId")
 		  mlrun ,err := getBasicMLRunInfo(tx,labId,runId)
 		  if err == nil{
-			  err = tryRecursiveCtrlRun(tx,mlrun,jobType,false,tryKillRun)
+			  counts,err = tryRecursiveOpRuns(tx,mlrun,jobType,deepScan,false,tryKillRun)
 		  }
 		  return err
 	})
+	return
 }
+func KillLabRun(labId uint64,runId string,deepScan bool) (counts uint64,err APIError) {
+	err =  execDBTransaction(func(tx*gorm.DB)APIError{
+		assertCheck(len(runId)>0,"KillLabRun must have runId")
+		mlrun,err := getBasicMLRunInfo(tx,labId,runId)
+		if err == nil {
+			counts,err = tryRecursiveOpRuns(tx,mlrun,"",deepScan,true,tryKillRun)
+		}
+		return err
+	})
+	return
+}
+func DeleteLabRun(labId uint64,runId string,force bool) (counts uint64, err APIError){
+	err = execDBTransaction(func(tx *gorm.DB) APIError {
 
-func TryDeleteLabRun(labId uint64,runId string) APIError{
-	return execDBTransaction(func(tx *gorm.DB) APIError {
-
-		assertCheck(len(runId)>0,"TryDeleteLabRun must have parent runId")
+		assertCheck(len(runId)>0,"DeleteLabRun must have runId")
 
 		mlrun ,err := getBasicMLRunInfo(tx,labId,runId)
 		if err == nil{
-			err = tryRecursiveCtrlRun(tx,mlrun,"",true,tryDeleteRun)
+			if !force {
+				counts, err = tryRecursiveOpRuns(tx,mlrun,"",true,true,tryDeleteRun)
+			}else{
+				counts, err = tryRecursiveOpRuns(tx,mlrun,"",true,true,tryForceDeleteRun)
+			}
 		}
 		return err
 	})
-
+	return
 }
-
-func KillLabRun(labId uint64,runId string) APIError {
-	return execDBTransaction(func(tx*gorm.DB)APIError{
+func CleanLabRun(labId uint64,runId string) (counts uint64,err APIError) {
+	err =  execDBTransaction(func(tx*gorm.DB)APIError{
+		assertCheck(len(runId)>0,"CleanLabRun must have runId")
+		//@mark:  here only need to traverse all deleted runs !!!
+		tx = tx.Unscoped().Where("deleted_at is not null")
 		mlrun,err := getBasicMLRunInfo(tx,labId,runId)
 		if err == nil {
-			err = tryKillRun(tx,mlrun.PrepareJobStatusChange(),mlrun)
-		}
-		if err == nil {
-			err = mlrun.Save(tx)
+			counts,err = tryRecursiveOpRuns(tx,mlrun,"",true,true,tryCleanRunWithDeleted)
 		}
 		return err
 	})
+	return
 }
 
 func ResumeLabRun(labId uint64,runId string) (mlrun *BasicMLRunContext,err APIError){
-	err= execDBTransaction(func(tx*gorm.DB)APIError{
-		mlrun,err = getBasicMLRunInfo(tx,labId,runId)
-		if err == nil {
-			err = tryResumeRun(tx,mlrun.PrepareJobStatusChange(),mlrun)
-		}
-		if err == nil {
-			err = mlrun.Save(tx)
+
+	err = execDBTransaction(func(tx *gorm.DB) APIError {
+		assertCheck(len(runId)>0,"ResumeLabRun must have runId")
+		mlrun ,err := getBasicMLRunInfo(tx,labId,runId)
+		if err == nil{
+			_, err = tryRecursiveOpRuns(tx,mlrun,"",false,true,tryResumeRun)
 		}
 		return err
 	})
@@ -266,7 +372,7 @@ func  getBasicMLRunInfo(tx*gorm.DB,labId uint64,runId string) (mlrun*BasicMLRunC
 		  }
 		  mlrun.BasicLabInfo=*lab
 	  }else{
-		  err = checkDBQueryError(db.Table("runs").Set("gorm:query_option","FOR UPDATE").
+		  err = checkDBQueryError(tx.Table("runs").Set("gorm:query_option","FOR UPDATE").
 			  Select("id,starts,location,statistics, run_id,status,job_type,output,started,flags").
 			  Joins("left join labs on runs.lab_id=labs.id").
 			  Where("run_id=?",runId).Row().Scan(mlrun))
@@ -278,6 +384,72 @@ func  getBasicMLRunInfo(tx*gorm.DB,labId uint64,runId string) (mlrun*BasicMLRunC
 	  return
 }
 
+func tryClearLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError {
+	runId := ""
+
+	err := checkDBQueryError(tx.Model(&Run{}).Unscoped().Select("run_id").Limit(1).
+		Where("lab_id in ? and status < ?",labs,exports.RUN_STATUS_FAILED).Row().Scan(&runId))
+	if err == nil {
+		return exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE,"still have runs active !")
+	}else if err.Errno() == exports.AILAB_NOT_FOUND{
+
+		return wrapDBUpdateError(tx.Model(&Run{}).Where("lab_id in ?",labs).UpdateColumns(
+			  map[string]interface{}{
+                  "deleted_at" : UnixTime{time.Now()},
+                  "status":     exports.RUN_STATUS_CLEANING,
+			  }),0)
+	}else{
+		return err
+	}
+}
+func tryCleanLabRunsByGroup(tx*gorm.DB,labs [] uint64) (counts uint64,err APIError){
+	var mlrun *BasicMLRunContext
+	for _,id := range (labs) {
+		mlrun,err = getBasicMLRunInfo(tx,id,"")
+		if err != nil {
+			return
+		}
+		err = execDBQuerRows(tx.Table("runs").Unscoped().Where("lab_id=? and status >= ? and deleted_at is not null",
+			id,exports.RUN_STATUS_FAILED).Select(select_run_status_change), func(rows *sql.Rows) APIError {
+			stats := &JobStatusChange{}
+			if err := rows.Scan(stats);err != nil {
+				return exports.RaiseAPIError(exports.AILAB_DB_READ_ROWS)
+			}
+			cnt,err := tryCleanRunWithDeleted(tx,stats,mlrun)
+			counts += cnt
+			return err
+		})
+		err =  mlrun.Save(tx)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func tryKillLabRunsByGroup(tx*gorm.DB,labs []uint64) (counts uint64,err APIError){
+	  var mlrun *BasicMLRunContext
+	  for _,id := range (labs) {
+	  	  mlrun,err = getBasicMLRunInfo(tx,id,"")
+	  	  if err != nil {
+	  	  	 return
+		  }
+		  err = execDBQuerRows(tx.Table("runs").Where("lab_id=? and status < ?",
+		  	  id,exports.RUN_STATUS_FAILED).Select(select_run_status_change), func(rows *sql.Rows) APIError {
+		  	  	stats := &JobStatusChange{}
+		  	  	if err := rows.Scan(stats);err != nil {
+		  	  		return exports.RaiseAPIError(exports.AILAB_DB_READ_ROWS)
+				}
+				cnt,err := tryKillRun(tx,stats,mlrun)
+				counts += cnt
+				return err
+		  })
+		  err =  mlrun.Save(tx)
+		  if err != nil {
+		  	return
+		  }
+	  }
+	  return
+}
 
 func tryDeleteLabRuns(tx*gorm.DB,labId uint64) APIError{
 	 runId := ""
@@ -307,38 +479,41 @@ func tryDeleteLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError{
 	}
 }
 
-func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest) APIError {
+
+func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest) (old*JobStatusChange,err APIError) {
 
 	if mlrun.IsLabRun()  {//create lab run
 		if (req.JobFlags & exports.RUN_FLAGS_SINGLE_INSTANCE) != 0{
-			exists := ""
-			err := checkDBQueryError(tx.Table("runs").Select("run_id").
+
+			old = &JobStatusChange{}
+
+			err = checkDBQueryError(tx.Table("runs").Select(select_run_status_change).
 				Where("lab_id=? and job_type=?",mlrun.ID,req.JobType).
-				Row().Scan(&exists))
+				Row().Scan(old))
 			if err == nil{//exists singleton instance
-				return exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,exists)
+				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
 			}else if err.Errno() != exports.AILAB_NOT_FOUND {
-				return err
+				return nil,err
 			}
 		}else{//track lab run starts
 			mlrun.Starts ++
 		}
 	}else{// create nest run
 		if (req.JobFlags & exports.RUN_FLAGS_SINGLE_INSTANCE) != 0{
-			exists := ""
-			err    := checkDBQueryError(tx.Table("runs").Select("run_id").
+			old = &JobStatusChange{}
+			err    := checkDBQueryError(tx.Table("runs").Select(select_run_status_change).
 				Where("parent=? and job_type=?",mlrun.RunId,req.JobType).
-				Row().Scan(&exists))
+				Row().Scan(old))
 			if err == nil{//exists singleton instance
-				return exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,exists)
+				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
 			}else if err.Errno() != exports.AILAB_NOT_FOUND {
-				return err
+				return nil,err
 			}
 		}else{//track run nested starts
 			mlrun.Started++
 		}
 	}
-	return nil
+	return
 }
 
 func completeCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest) (err APIError){

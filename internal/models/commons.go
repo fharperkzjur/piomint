@@ -181,6 +181,8 @@ func checkDBUpdateError(err error)APIError{
 	return exports.RaiseServerError(exports.AILAB_DB_EXEC_FAILED,err.Error())
 }
 
+var notifier exports.NotifyBackendEvents
+
 func execDBTransaction( executor func(tx*gorm.DB) APIError  ) (err APIError) {
 
 	 var events interface{}
@@ -196,7 +198,7 @@ func execDBTransaction( executor func(tx*gorm.DB) APIError  ) (err APIError) {
 	 	err = checkDBUpdateError(err1)
 	 }
 	 if evt ,ok := events.(string) ; ok {//notify backend events occur
-         fmt.Println("new backend events:",evt)
+		 notifier.NotifyWithEvent(evt)
 	 }
 	 return
 }
@@ -228,3 +230,8 @@ func assertCheck(v bool ,msg string) {
 	 	panic(msg)
 	 }
 }
+
+func SetEventNotifier(fy exports.NotifyBackendEvents){
+	 notifier = fy
+}
+

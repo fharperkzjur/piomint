@@ -18,6 +18,8 @@ func AddGroupAILab(r *gin.Engine){
 	group.POST("/", wrapper(createLab))
 	group.POST("/batch", wrapper(batchCreateLab))
 	group.POST("/deletes",wrapper(batchDeleteLab))
+	group.POST("/kills",wrapper(batchKillLab))
+	group.POST("/clear",wrapper(batchClearLab))
 	group.DELETE("/:lab", wrapper(deleteLab))
 }
 
@@ -75,17 +77,34 @@ func batchCreateLab(c*gin.Context) (interface{},APIError){
 	 	return nil,err
 	 }
 }
-
+type ReqTargetLab struct{
+	Group string `json:"group"`
+	LabID uint64 `json:"labId"`
+}
 func batchDeleteLab(c*gin.Context) (interface{},APIError){
-	 type ReqDeleteLab struct{
-	 	 Group string "json:group"
+
+	 req := &ReqTargetLab{}
+	 if err := c.ShouldBindJSON(req);err != nil {
+	 	return nil,exports.ParameterError("batch delete lab invalid json data")
 	 }
-	 req := &ReqDeleteLab{}
-	 if err := c.ShouldBindJSON(req);err ==  nil && len(req.Group) > 0 {
-	 	return models.DeleteLabByGroup(req.Group)
-	}else{
-		return nil,exports.ParameterError("batch delete lab invalid group")
-	 }
+	 return models.DeleteLabByGroup(req.Group,req.LabID)
+}
+
+func batchKillLab(c*gin.Context) (interface{},APIError){
+	  req := &ReqTargetLab{}
+	  if err := c.ShouldBindJSON(req);err != nil {
+			return nil,exports.ParameterError("batch kill lab invalid json data")
+	  }
+	  return models.KillLabByGroup(req.Group,req.LabID)
+}
+
+func batchClearLab(c*gin.Context) (interface{},APIError){
+
+	req := &ReqTargetLab{}
+	if err := c.ShouldBindJSON(req);err != nil {
+		return nil,exports.ParameterError("batch delete lab invalid json data")
+	}
+	return models.ClearLabByGroup(req.Group,req.LabID)
 }
 
 func deleteLab(c*gin.Context) (interface{},APIError){

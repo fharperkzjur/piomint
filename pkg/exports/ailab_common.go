@@ -14,6 +14,7 @@ const (
 	AIStudio_labs_visual = "visual"
 	AIStudio_labs_expert = "expert"
 	AIStudio_labs_autodl = "autodl"
+	AISutdio_labs_discard = "**"
 )
 const (
 	RUN_STATUS_INIT     = iota
@@ -184,4 +185,8 @@ type CreateJobRequest struct{
 
 	Envs        map[string]string        `json:"envs"`
 	Endpoints       [] PodEndpoint       `json:"endpoints"` // control job scheduler create specific endpoint when create job
+}
+
+type NotifyBackendEvents interface{
+	NotifyWithEvent(evt string)
 }

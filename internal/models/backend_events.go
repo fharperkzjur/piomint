@@ -2,8 +2,9 @@
 package models
 
 import (
-	"gorm.io/gorm"
 	"encoding/json"
+	"fmt"
+	"gorm.io/gorm"
 )
 
 type Event struct{
@@ -18,6 +19,7 @@ const (
  	Log_evt_start_run   = "start"
 	Log_evt_kill_run    = "kill"
 	Log_evt_clean_run   = "clean"
+	Log_evt_clear_lab   = "clear"
 )
 
 //@mark: usually within a transaction
@@ -39,4 +41,16 @@ func  LogBackendEvent(tx * gorm.DB , ty , data string,extra interface{}) APIErro
 
 func doLogStartRun(tx*gorm.DB, runId string) APIError {
 	return LogBackendEvent(tx,Log_evt_start_run,runId,nil)
+}
+
+func doLogKillRun(tx*gorm.DB,runId string) APIError{
+	return LogBackendEvent(tx,Log_evt_kill_run,runId,nil)
+}
+
+func doLogClearLab(tx*gorm.DB,labId uint64) APIError{
+	return LogBackendEvent(tx,Log_evt_clear_lab,fmt.Sprintf("%d",labId),nil)
+}
+
+func doLogCleanRun(tx*gorm.DB,runId string) APIError {
+	 return LogBackendEvent(tx,Log_evt_clean_run,runId,nil)
 }

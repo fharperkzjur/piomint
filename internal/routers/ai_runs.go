@@ -2,6 +2,7 @@ package routers
 
 import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
+	"github.com/apulis/bmod/ai-lab-backend/internal/services"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
 	"strconv"
@@ -42,7 +43,7 @@ func submitLabRun(c*gin.Context) (interface{},APIError){
 	 	return nil,exports.ParameterError("invalid json data")
 	 }
 	 req.JobType = exports.AILAB_RUN_TRAINING
-	 return models.CreateLabRun(labId,"",req)
+	 return models.CreateLabRun(labId,"",req,false)
 }
 
 func submitLabEvaluate(c*gin.Context)(interface{},APIError){
@@ -55,23 +56,19 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 		return nil,exports.ParameterError("invalid json data")
 	}
 	req.JobType = exports.AILAB_RUN_EVALUATE
-	return models.CreateLabRun(labId,runId,req)
+	return models.CreateLabRun(labId,runId,req,false)
 }
 
 func saveLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
 	req.JobType  = exports.AILAB_RUN_SAVE
-	req.JobFlags = exports.RUN_FLAGS_SINGLE_INSTANCE | exports.RUN_FLAGS_AUTO_DELETED | exports.RUN_FLAGS_RESUMEABLE
-	_, err := models.CreateLabRun(labId,runId,req)
+	req.JobFlags = exports.RUN_FLAGS_SINGLE_INSTANCE | exports.RUN_FLAGS_AUTO_DELETED
+	run, err := models.CreateLabRun(labId,runId,req,true)
 	if err == nil {// created new run
-		return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start visual job ...")
-	}else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {// exists old job
-		_, err := models.ResumeLabRun(labId,err.Error())
-		if err == nil{//@todo: here should return visit url
-
-		}
-		return nil,err
+		return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start save job ...")
+	}else if err.Errno() == exports.AILAB_STILL_ACTIVE {// exists old job
+		return nil,exports.RaiseAPIError(exports.AILAB_SERVER_BUSY, "old save job still active ...")
 	}else{
-		return nil,err
+		return run,err
 	}
 }
 
@@ -80,7 +77,7 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 	if labId == 0 || len(runId) == 0 {
 		return nil,exports.ParameterError("create nest run invalid lab id or run id")
 	}
-	run, err := models.QueryRunDetail(runId)
+	run, err := models.QueryRunDetail(runId,false)
 	if err == nil && run.LabId != labId {
 		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
 	}
@@ -88,7 +85,7 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 }
 func sysQueryLabRun(c*gin.Context)(interface{},APIError){
 	_,runId := parseLabRunId(c)
-	return models.QueryRunDetail(runId)
+	return models.QueryRunDetail(runId,true)
 }
 
 func getAllLabRuns(c*gin.Context) (interface{},APIError){
@@ -96,7 +93,11 @@ func getAllLabRuns(c*gin.Context) (interface{},APIError){
 	if labId == 0 {
 		return nil,exports.ParameterError("invalid lab id")
 	}
-	cond,err := checkSearchCond(c,nil)
+	cond,err := checkSearchCond(c,exports.QueryFilterMap{
+		"jobType":"job_type",
+		"parent" :"parent",
+		"status" : "status",
+	})
 	if err != nil {
 		return nil,err
 	}
@@ -104,12 +105,11 @@ func getAllLabRuns(c*gin.Context) (interface{},APIError){
 	return makePagedQueryResult(cond,data,err)
 }
 func sysGetAllLabRuns(c*gin.Context)(interface{},APIError){
-	labId,_ := parseLabRunId(c)
 	cond,err := checkSearchCond(c,nil)
 	if err != nil {
 		return nil,err
 	}
-	data,err := models.ListAllLabRuns(cond,labId)
+	data,err := models.ListAllLabRuns(cond,0)
 	return makePagedQueryResult(cond,data,err)
 }
 
@@ -119,7 +119,7 @@ func queryLabRunStats(c*gin.Context) (interface{},APIError){
 }
 
 func sysQueryLabRunStats(c*gin.Context)(interface{},APIError){
-    return nil,exports.NotImplementError()
+    return models.QueryLabStats(0,c.Query("group"))
 }
 func postLabRuns(c*gin.Context)(interface{},APIError) {
 	labId,runId := parseLabRunId(c)
@@ -134,18 +134,22 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 		   }
 		   return openLabRunVisual(labId,runId,req)
 	  case "close_visual":
-	  	   return nil,models.TryKillNestRun(labId,runId,exports.AILAB_RUN_VISUALIZE)
+	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_VISUALIZE,false)
 	  case "save":
 		  if err := c.ShouldBindJSON(req);err != nil {
 			  return nil,exports.ParameterError("invalid json data")
 		  }
 		  return saveLabRun(labId,runId,req)
+	  case "cancel_save":
+	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_SAVE,false)
 	  case "kill":
-	  	  return nil,models.KillLabRun(labId,runId)
+	  	  return  models.KillLabRun(labId,runId,false)
 	  case "pause":
 	  	  return nil,models.PauseLabRun(labId,runId)
 	  case "resume":
 	  	  return models.ResumeLabRun(labId,runId)
+	  case "clean":
+	  	  return models.CleanLabRun(labId,runId)
 	  default:
 	  	  return nil,exports.NotImplementError()
 	}
@@ -158,35 +162,38 @@ func sysPostLabRuns(c*gin.Context)(interface{},APIError){
 	}
 	switch(c.Query("action")){
 	case "kill":
-		return nil,models.KillLabRun(0,runId)
+		return models.KillLabRun(0,runId,false)
 	case "pause":
 		return nil,models.PauseLabRun(0,runId)
 	case "resume":
 		return models.ResumeLabRun(0,runId)
+	case "clean":
+		return models.CleanLabRun(0,runId)
 	default:
 		return nil,exports.NotImplementError()
 	}
 }
-
 
 func delLabRun(c*gin.Context) (interface{},APIError){
 	labId,runId := parseLabRunId(c)
 	if labId == 0 || len(runId) == 0 {
 		return nil,exports.ParameterError("invalid lab id or run id")
 	}
-	return nil,models.TryDeleteLabRun(labId,runId)
+	return models.DeleteLabRun(labId,runId,false)
 }
+
 func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (interface{},APIError){
 
 	 req.JobFlags = exports.RUN_FLAGS_SINGLE_INSTANCE | exports.RUN_FLAGS_RESUMEABLE
 	 req.JobType  = exports.AILAB_RUN_VISUALIZE
-	 _, err := models.CreateLabRun(labId,runId,req)
+	 run, err := models.CreateLabRun(labId,runId,req,false)
 	 if err == nil {// created new run
 	 	return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start visual job ...")
 	 }else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {// exists old job
-	 	 _, err := models.ResumeLabRun(labId,err.Error())
-	 	 if err == nil{//@todo: here should return visit url
-
+	 	 job := run.(*models.JobStatusChange)
+	 	 run, err := models.ResumeLabRun(labId,job.RunId)
+	 	 if err == nil{
+	 	 	return services.GetEndpointUrl(run)
 		 }
 		 return nil,err
 	 }else{
@@ -196,7 +203,11 @@ func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (i
 
 
 func sysCleanLabRuns(c*gin.Context) (interface{},APIError){
-	 return nil,exports.NotImplementError()
+	 req := &ReqTargetLab{}
+	 if err := c.ShouldBindJSON(req);err != nil {
+		return nil,exports.ParameterError("batch clean lab invalid json data")
+	 }
+	 return models.CleanLabRunByGroup(req.Group,req.LabID)
 }
 
 func sysResetCleanStrategy(c*gin.Context) (interface{},APIError){
