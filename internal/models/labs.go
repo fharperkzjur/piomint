@@ -72,6 +72,9 @@ func (job*JobStatusChange)RunActive()bool{
 func (job*JobStatusChange)IsStopping()bool{
 	return exports.IsRunStatusStopping(job.Status)
 }
+func (job*JobStatusChange)IsKilling()bool{
+	return exports.IsRunStatusKilling(job.Status)
+}
 func (job*JobStatusChange)IsCompleting()bool{
 	return exports.IsRunStatusCompleting(job.Status)
 }

@@ -399,6 +399,9 @@ func  IsRunStatusNeedWaitChild(status int ,flags uint64) bool{
 func  IsRunStatusStopping(status int)    bool{
 	return status == AILAB_RUN_STATUS_KILLING || status == AILAB_RUN_STATUS_STOPPING
 }
+func  IsRunStatusKilling(status int) bool{
+	return status == AILAB_RUN_STATUS_KILLING
+}
 func  IsRunStatusCompleting(status int)bool{
 	return status == AILAB_RUN_STATUS_COMPLETING
 }
