@@ -106,6 +106,7 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 func registerLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
 	req.JobType  = exports.AILAB_RUN_MODEL_REGISTER
 	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE
+	req.Engine   = exports.AILAB_ENGINE_DEFAULT
 	run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	if err == nil {// created new run
 		return nil,exports.RaiseReqWouldBlock("wait to start model register job ...")
