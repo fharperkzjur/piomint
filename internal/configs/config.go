@@ -22,6 +22,8 @@ type AppConfig struct {
 	Mounts      map[string]string
 	Storage     string
 	HttpClient  HttpClient
+	GatewayUrl  string
+
 }
 
 type DbConfig struct {

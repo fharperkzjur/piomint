@@ -90,6 +90,7 @@ config:
       jobsched:       http://job-scheduler.default:80/api/v1        #job调度管理接口
       engine:                                                      #镜像管理接口
       code:                                                    #代码管理暂时由模型工厂托管
+   gatewayUrl: https://123.60.231.101:80
 
 storage:  
     persistentVolumeType: nfs

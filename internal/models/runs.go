@@ -62,6 +62,8 @@ type BasicMLRunContext struct{
 	  Started  uint64
 	  Flags    uint64
 	  DeletedAt soft_delete.DeletedAt
+	  //track endpoints if exists
+	  Endpoints *JsonMetaData
 	  events    EventsTrack
 }
 
@@ -536,7 +538,7 @@ func  getBasicMLRunInfoEx(tx*gorm.DB,labId uint64,runId string,events EventsTrac
 		  }
 		  mlrun.BasicLabInfo=*lab
 	  }else{
-		  err = wrapDBQueryError(tx.Model(&Run{}).Select("run_id,status,job_type,output,started,flags,lab_id as id,deleted_at").
+		  err = wrapDBQueryError(tx.Model(&Run{}).Select("run_id,status,job_type,output,started,flags,lab_id as id,deleted_at,endpoints").
 		  	First(mlrun,"run_id=?",runId))
 
 		  if err == nil && labId != 0 && labId != mlrun.ID {

@@ -37,4 +37,5 @@ mounts:
   aiplatform-ailab-data-pvc:   /app/ai-labs-data
 
 
+gatewayUrl: https://123.60.231.101:80
 

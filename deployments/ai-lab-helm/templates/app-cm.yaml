@@ -21,4 +21,5 @@ data:
           {{- range $.Values.storage.mounts }}
              {{ .name }} : {{ .mountPath }}
           {{- end }}
+        gatewayUrl: {{ .gatewayUrl }}
     {{- end }}

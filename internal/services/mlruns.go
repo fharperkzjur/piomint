@@ -1,19 +1,54 @@
 package services
 
 import (
+	"encoding/base64"
 	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
+	JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"path"
+	"strings"
 )
 
 type APIError = exports.APIError
 
-func GetEndpointUrl(mlrun*models.BasicMLRunContext) (interface{},APIError){
-	 return "",exports.NotImplementError("GetEndpointUrl")
+func genEndpointsUrl(name string,service string,port int) string{
+	 url := configs.GetAppConfig().GatewayUrl
+	 jsonInfo := map[string]interface{}{
+	 	"service":service,
+	 	"port":port,
+	 }
+	 vhost ,_:= json.Marshal(jsonInfo)
+
+	 return fmt.Sprintf("%s/endpoints/%s/%s",url,name, base64.StdEncoding.EncodeToString(vhost))
+}
+
+
+func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},APIError){
+	 if mlrun.StatusIsSuccess() {
+	 	 if mlrun.Endpoints == nil {
+	 	 	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"no endpoints created for run:"+mlrun.RunId)
+	     }
+	     endpoints := []JOB.ContainerPort{}
+	     if err:=mlrun.Endpoints.Fetch(&endpoints);err != nil {
+	     	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid endpoints data formats for run:"+mlrun.RunId)
+	     }
+	     for _,v := range(endpoints) {
+	     	if strings.HasPrefix(v.ServiceName,name) {
+
+	     		return genEndpointsUrl(name,v.ServiceName,v.Port),nil
+	        }
+	     }
+	     return nil,exports.NotFoundError()
+	 }else{
+		 return "",exports.RaiseReqWouldBlock("wait to starting job ...")
+	 }
 }
 
 

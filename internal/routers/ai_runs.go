@@ -209,7 +209,10 @@ func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (i
 	 	 job := run.(*models.JobStatusChange)
 	 	 run, err := models.ResumeLabRun(labId,job.RunId)
 	 	 if err == nil{
-	 	 	return services.GetEndpointUrl(run)
+	 	 	if len(req.Endpoints) == 0 {
+	 	 		return nil,exports.ParameterError("openLabRunVisual must have endpoints specified !!!")
+		    }
+	 	 	return services.GetEndpointUrl(run,req.Endpoints[0].Name)
 		 }
 		 return nil,err
 	 }else{

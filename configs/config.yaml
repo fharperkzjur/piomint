@@ -43,3 +43,5 @@ httpClient:
   timeoutSeconds: 10
 
 
+gatewayUrl: https://123.60.231.101:80
+
