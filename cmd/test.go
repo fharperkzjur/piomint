@@ -1,12 +1,17 @@
 package main
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/internal/services"
+	"gorm.io/gorm"
+	"log"
+	"strconv"
 )
 
-
+var db * gorm.DB
 
 type LabRunStats struct{
 	RunStarting  int  `json:"start"`
@@ -32,7 +37,90 @@ func(d*JobStats)StatusChange(jobType string,from,to int){
 	jobs.Fails--
 }
 
+func init_db() (err error){
+	db,err = models.OpenDB("postgres","127.0.0.1",5432,"postgres","root","test_river")
+	db=db.Debug()
+	return
+}
+
+type TestNull struct{
+	gorm.Model
+	Time        int
+	Description string
+	Hello       SQLInt
+	Value       SQLString
+}
+
+type SQLInt     int
+type SQLString  string
+
+func (s*SQLString) Scan(value interface{}) error{
+    switch v := value.(type) {
+      case string: *s = SQLString(v)
+      case int64:  *s = SQLString(strconv.FormatInt(v,10))
+    }
+    return nil
+}
+func (s *SQLString) Value() (driver.Value,error){
+	 return *s,nil
+}
+
+
+// Scan implements the Scanner interface.
+func (n *SQLInt) Scan(value interface{}) error {
+	if value == nil {
+		*n = 0
+		return nil
+	}
+	switch  v := value.(type) {
+	  case int64: *n =  SQLInt(v)
+	  case string: i,_ := strconv.ParseInt(v,0,32)
+	                 *n=SQLInt(i)
+	  default:  *n=0
+	}
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (n SQLInt) Value() (driver.Value, error) {
+	return int64(n),nil
+}
+
+func test_read_db(){
+
+	data :=  TestNull{}
+
+	var ival1,ival2 SQLInt
+	var sval1       SQLString
+
+	err := db.Model(&data).Where("hello is null").Select("time,hello,value").Row().Scan(&ival1,&ival2,&sval1)
+
+    var aaa string = string(sval1)
+
+
+	log.Printf("read data from db:%+v",err)
+
+}
+
+func test_db(){
+
+	 db.AutoMigrate(&TestNull{})
+	 
+	 db.Create(&TestNull{
+		 Model:       gorm.Model{},
+
+	 })
+
+
+}
+
+
+
 func main(){
+
+	 init_db()
+
+	test_read_db()
 
 	 cmds,mounts := services.CheckResourceMounts([]string{
       "iqi-laucnher","{{model/code}}",

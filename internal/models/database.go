@@ -62,6 +62,42 @@ func InitDb()  error {
 	return  initTables()
 }
 
+func OpenDB(driver string,host string,port int,user ,passwd string,database string) (db*gorm.DB,err error){
+
+	switch driver {
+	case "postgres", "postgresql":
+		// create database if not exists
+		preDsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable",
+			     host, port, user, passwd)
+		db, err = gorm.Open(postgres.Open(preDsn), &gorm.Config{})
+		if err != nil {
+			panic(err)
+		}
+
+		exit := 0
+		res1 := db.Table("pg_database").Select("count(1)").Where("datname = ?", database).Scan(&exit)
+		if res1.Error != nil {
+			return nil,res1.Error
+		}
+		if exit == 0 {
+			res2 := db.Exec(fmt.Sprintf("CREATE DATABASE %s", database))
+			if res2.Error != nil {
+				return nil,res2.Error
+			}
+		}
+
+		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			 host, port, user, passwd, database)
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err != nil {
+			return nil,err
+		}
+	default:
+		return nil,errors.New("Unsupported database type")
+	}
+	return
+}
+
 func initTables() error {
 
 	modelTypes := []interface{}{
