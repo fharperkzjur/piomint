@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 )
 
 type APIError = exports.APIError
@@ -42,11 +41,6 @@ func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},API
 	     	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid endpoints data formats for run:"+mlrun.RunId)
 	     }
 	     for _,v := range(endpoints) {
-		     if len(v.Name) == 0 {
-			     if idx := strings.IndexByte(v.ServiceName,'-');idx > 0 {
-				     v.Name=v.ServiceName[0:idx]
-			     }
-		     }
 	     	if v.Name == name {
 	     		return genEndpointsUrl(name,v.ServiceName,mlrun.Namespace,v.Port),nil
 	        }
@@ -76,11 +70,6 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 		}
 		response := []exports.ServiceEndpoint{}
 		for idx,v := range(endpoints) {
-			if len(v.Name) == 0 {
-				if idx := strings.IndexByte(v.ServiceName,'-');idx > 0 {
-					v.Name=v.ServiceName[0:idx]
-				}
-			}
 			url := genEndpointsUrl(v.Name,v.ServiceName,run.Namespace,v.Port)
 			response = append(response,exports.ServiceEndpoint{
 				Name:      v.Name,
@@ -98,11 +87,15 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 	}
 }
 
-func CreateLabRunEndpoints(labId uint64,runId string,endpoint*exports.ServiceEndpoint)(interface{},APIError){
-	return nil,exports.NotImplementError("CreateLabRunEndpoints")
+func CreateLabRunEndpoints(labId uint64,runId string,endpoint*exports.ServiceEndpoint) APIError {
+	// update db first
+	//err := models.
+
+	return exports.NotImplementError("CreateLabRunEndpoints")
 }
-func DeleteLabRunEndpoints(labId uint64,runId string,name string) (interface{},APIError){
-	return nil,exports.NotImplementError("DeleteLabRunEndpoints")
+func DeleteLabRunEndpoints(labId uint64,runId string,name string) (APIError){
+
+	return exports.NotImplementError("DeleteLabRunEndpoints")
 }
 func ValidateUserEndpoints( req []exports.ServiceEndpoint) APIError {
 	 if req == nil {

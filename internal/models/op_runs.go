@@ -275,3 +275,44 @@ func QueryLabRealStats(labId uint64, group string)(interface{},APIError) {
 		return stats,nil
 	}
 }
+
+func CreateUserEndpoint(labId uint64,runId string,endpoint* exports.ServiceEndpoint) (status string,err APIError) {
+
+	  err = execDBTransaction(func(tx*gorm.DB,events EventsTrack)APIError{
+	  	  mlrun,err := getBasicMLRunInfoEx(tx,labId,runId,events)
+	  	  endpointList := []UserEndpoint{}
+	  	  if err == nil {
+	  	  	err1 := mlrun.Endpoints.Fetch(&endpointList)
+	  	  	if err1 != nil {
+	  	  		err = exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid stored endpoints")
+		    }
+	      }
+	      if err == nil {
+	      	  count := 0
+	      	  for _,v := range(endpointList) {
+	      	  	  if v.Name == endpoint.Name {
+	      	  	  	  count = -1
+			          status = v.Status
+	      	  	  	  break
+		          }else if v.Name[0] != '$' {
+		          	  count++
+		          }
+	          }
+	          if count < 0 {
+	          	 return nil
+	          }else if count >= exports.AILAB_USER_ENDPOINT_MAX_NUM {
+	          	 return exports.RaiseAPIError(exports.AILAB_EXCEED_LIMIT)
+	          }
+
+	      }
+	      return nil
+
+	  })
+	  return
+}
+
+func DeleteUserEndpoint(labId uint64,runId string,name string) (string,APIError){
+	 return "",nil
+}
+
+

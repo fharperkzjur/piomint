@@ -133,6 +133,7 @@ type UserEndpoint struct{
 	 JOB.ContainerPort
 	 Name      string       `json:"name"`
 	 SecureKey string       `json:"secret_key,omitempty"`
+	 Status    string       `json:"status,omitempty"`
 }
 type UserResourceQuota struct{
 	 JOB.ResourceQuota

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"regexp"
 	"strconv"
 )
 
@@ -159,7 +160,10 @@ func createLabRunEndPoint(c*gin.Context)(interface{},APIError){
 	if err := c.ShouldBindJSON(endpoint);err != nil {
 		return nil,exports.ParameterError("invalid json data")
 	}
-	return services.CreateLabRunEndpoints(labId,runId,endpoint)
+	if err := validateEndpointName(endpoint.Name);err != nil {
+		return nil,err
+	}
+	return nil,services.CreateLabRunEndpoints(labId,runId,endpoint)
 }
 func deleteLabRunEndPoint(c*gin.Context)(interface{},APIError){
 	labId,runId := parseLabRunId(c)
@@ -168,7 +172,7 @@ func deleteLabRunEndPoint(c*gin.Context)(interface{},APIError){
 	}
 	name := c.Param("name")
 
-	return services.DeleteLabRunEndpoints(labId,runId,name)
+	return nil,services.DeleteLabRunEndpoints(labId,runId,name)
 }
 
 func sysQueryLabRun(c*gin.Context)(interface{},APIError){
@@ -238,6 +242,7 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 		  if err := c.ShouldBindJSON(req);err != nil {
 			  return nil,exports.ParameterError("invalid json data")
 		  }
+		  req.Token = getUserToken(c)
 		  return registerLabRun(labId,runId,req)
 	  case "cancel_register":
 	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_MODEL_REGISTER,false)
@@ -245,6 +250,7 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 		  if err := c.ShouldBindJSON(req);err != nil {
 			  return nil,exports.ParameterError("invalid json data")
 		  }
+		  req.Token = getUserToken(c)
 		  return scratchLabRun(labId,runId,req)
 	  case "cancel_scratch":
 	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_SCRATCH,false)
@@ -373,8 +379,25 @@ func fetchLabRunLogs(c*gin.Context) {
 		req.URL.Scheme = forwardURL.Scheme
 		req.URL.Host   = forwardURL.Host
 		req.URL.Path   = forwardURL.Path
+		req.Host = forwardURL.Host
 	}
 	proxy := &httputil.ReverseProxy{Director: director}
 	proxy.ServeHTTP(c.Writer, c.Request)
 
+}
+
+var regexp_endpoint_name_validator *regexp.Regexp
+
+func init(){
+	regexp.MustCompile("^[a-z]([-a-z0-9]*[a-z0-9])?$")
+}
+
+func validateEndpointName(name string)APIError {
+	if len(name) > exports.AILAB_USER_ENDPOINT_MAX_NUM{
+		return exports.ParameterError("user endpoint name lenght exceed limit !!!")
+	}
+	if !regexp_endpoint_name_validator.MatchString(name) {
+		return exports.ParameterError("user endpoint name invalid char !!!")
+	}
+	return nil
 }
