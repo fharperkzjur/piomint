@@ -278,7 +278,7 @@ func SubmitVcJob(run*models.Run, tasks []JOB.VcJobTask) (int, APIError) {
 	  }
 	 vcjob.Tasks=tasks
 	 //@todo:  disable vcjob for distribute trainning ?
-	 vcjob.DisableIstio()
+	 //vcjob.DisableIstio()
 	 url  := configs.GetAppConfig().Resources.Jobsched+"/distributed-jobs"
 	 return submitJobInternal(run,url,vcjob)
 }
