@@ -136,7 +136,7 @@ func checkNpuDriverMounts(quota * JOB.ResourceQuota,mounts []JOB.MountPoint) ( [
 		 })
 		 return mounts,"*"
 	 }else{
-		 return mounts,""
+		 return mounts,"*"
 	 }
 }
 
