@@ -1,13 +1,9 @@
 package services
 
 import (
-	"encoding/base64"
 	"encoding/csv"
-	"encoding/json"
-	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
-	"github.com/apulis/bmod/ai-lab-backend/internal/utils"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -17,125 +13,7 @@ import (
 
 type APIError = exports.APIError
 
-func genEndpointsUrl(name  ,service ,namespace string,port int) string{
-	 url := configs.GetAppConfig().GatewayUrl
-	 namespace="default"
-	 jsonInfo := map[string]interface{}{
-	 	//@todo: hardcode service name in `default` namespace
-	 	"service":service + "." + namespace + ".svc.cluster.local",
-	 	"port":port,
-	 }
-	 vhost ,_:= json.Marshal(jsonInfo)
-	 if name[0] == '$'{
-	 	name=name[1:]
-	 }
-	 return fmt.Sprintf("%s/endpoints/%s/%s/",url,name, base64.StdEncoding.EncodeToString(vhost))
-}
 
-
-func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},APIError){
-	 if mlrun.StatusIsRunning() {
-	 	 if mlrun.Endpoints == nil {
-	 	 	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"no endpoints created for run:"+mlrun.RunId)
-	     }
-	     endpoints := []models.UserEndpoint{}
-	     if err:=mlrun.Endpoints.Fetch(&endpoints);err != nil {
-	     	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid endpoints data formats for run:"+mlrun.RunId)
-	     }
-	     for _,v := range(endpoints) {
-	     	if v.Name == name {
-	     		return genEndpointsUrl(name,v.ServiceName,mlrun.Namespace,v.Port),nil
-	        }
-	     }
-	     return nil,exports.NotFoundError()
-	 }else{
-		 return "",exports.RaiseReqWouldBlock("wait to starting job ...")
-	 }
-}
-func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
-	run, err := models.QueryRunDetail(runId,false,-1)
-	if err != nil {
-		return nil,err
-	}
-	if run.LabId != labId {
-		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
-	}
-	if run.StatusIsNonActive() {
-		return nil,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"lab run is non-active yet !")
-	}else if run.StatusIsRunning() {
-		if run.Endpoints == nil {
-			return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"no endpoints created for run:"+run.RunId)
-		}
-		endpoints := []models.UserEndpoint{}
-		if err:=run.Endpoints.Fetch(&endpoints);err != nil {
-			return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid endpoints data formats for run:"+run.RunId)
-		}
-		response := []exports.ServiceEndpoint{}
-		for idx,v := range(endpoints) {
-			url := genEndpointsUrl(v.Name,v.ServiceName,run.Namespace,v.Port)
-			response = append(response,exports.ServiceEndpoint{
-				Name:      v.Name,
-				Port:      v.Port,
-				Url:       url,
-				SecretKey: v.SecureKey,
-				Status:    v.Status,
-			})
-			if len(v.SecureKey) > 0 {
-				response[idx].AccessKey=run.Creator
-			}
-		}
-		return response,nil
-	}else{
-		return "",exports.RaiseReqWouldBlock("wait to starting job ...")
-	}
-}
-
-func CreateLabRunEndpoints(labId uint64,runId string,endpoint*exports.ServiceEndpoint) APIError {
-	// update db first
-	status,err := models.CreateUserEndpoint(labId,runId,endpoint)
-	if err != nil {
-		return err
-	}
-	if status == exports.AILAB_USER_ENDPOINT_STATUS_INIT || status == exports.AILAB_USER_ENDPOINT_STATUS_ERROR {//retry
-
-	}
-	switch(status){
-	case exports.AILAB_USER_ENDPOINT_STATUS_INIT: fallthrough
-	case exports.AILAB_USER_ENDPOINT_STATUS_STOP:
-	}
-
-
-	return exports.NotImplementError("CreateLabRunEndpoints")
-}
-
-func DeleteLabRunEndpoints(labId uint64,runId string,name string) (APIError){
-
-	return exports.NotImplementError("DeleteLabRunEndpoints")
-}
-
-func ValidateUserEndpoints( req []exports.ServiceEndpoint) APIError {
-	 if req == nil {
-	 	return nil
-	 }
-     names  := make(map[string]int,0)
-     ports  := make(map[int]int,0)
-	 for idx,v := range(req) {
-	 		if _,ok := names[v.Name];ok {
-	 			return exports.ParameterError("duplicate endpoints name !!!")
-		    }else{
-		    	names[v.Name]=1
-		    }
-		    if _,ok := ports[v.Port];v.Port > 0 && ok {
-		    	return exports.ParameterError("duplicate endpoints port !!!")
-		    }else{
-		    	ports[v.Port]=1
-		    }
-		    if v.SecretKey == exports.AILAB_SECURE_DEFAULT  {// need generate passwd by AILAB
-                req[idx].SecretKey= base64.StdEncoding.EncodeToString(utils.GenerateRandomPasswd(8))
-		    }
-	 }
-	 return nil
-}
 
 
 type MlrunResourceSrv struct{

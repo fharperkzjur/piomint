@@ -4,7 +4,6 @@ package models
 import (
 	"database/sql"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
-	JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"gorm.io/gorm"
 	"time"
 )
@@ -276,94 +275,3 @@ func QueryLabRealStats(labId uint64, group string)(interface{},APIError) {
 		return stats,nil
 	}
 }
-
-func CreateUserEndpoint(labId uint64,runId string,endpoint* exports.ServiceEndpoint) (status string,err APIError) {
-
-	  err = execDBTransaction(func(tx*gorm.DB,events EventsTrack)APIError{
-	  	  mlrun,err := getBasicMLRunInfoEx(tx,labId,runId,events)
-	  	  endpointList := []UserEndpoint{}
-	  	  if err == nil {
-	  	  	err1 := mlrun.Endpoints.Fetch(&endpointList)
-	  	  	if err1 != nil {
-	  	  		err = exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid stored endpoints")
-		    }
-	      }
-	      if err == nil {
-	      	  count := 0
-	      	  port  := endpoint.Port
-	      	  for _,v := range(endpointList) {
-	      	  	  if v.Name == endpoint.Name {
-	      	  	  	  count = -1
-			          status = v.Status
-	      	  	  	  break
-		          }else if v.Name[0] != '$' {
-		          	  count++
-		          }
-		          if port != 0 && v.Port != 0 && port == v.Port {
-		          	 return exports.RaiseAPIError(exports.AILAB_ALREADY_EXISTS)
-		          }
-	          }
-	          if count < 0 {
-	          	 return nil
-	          }else if count >= exports.AILAB_USER_ENDPOINT_MAX_NUM {
-	          	 return exports.RaiseAPIError(exports.AILAB_EXCEED_LIMIT)
-	          }
-		      newEndpoint := JOB.ContainerPort{
-			      Port:        endpoint.Port,
-			      ServiceName: endpoint.Name + "-" + runId,
-		      }
-		      //@todo: allow user created nodePort ???
-		      status = exports.AILAB_USER_ENDPOINT_STATUS_INIT
-		      endpointList = append(endpointList,UserEndpoint{
-			      ContainerPort: newEndpoint,
-			      Name:          endpoint.Name,
-			      Status:        status,
-		      })
-		      endpointStore := &JsonMetaData{}
-		      endpointStore.Save(endpointList)
-		      err = wrapDBUpdateError(tx.Model(&Run{}).Where("run_id=?",runId).
-			      Update("endpoints",endpointStore),1)
-	      }
-	      return err
-	  })
-	  return
-}
-
-func DeleteUserEndpoint(labId uint64,runId string,name string,forcely bool)  APIError {
-
-	return execDBTransaction(func(tx*gorm.DB,events EventsTrack)APIError{
-		mlrun,err := getBasicMLRunInfoEx(tx,labId,runId,events)
-		endpointList := []UserEndpoint{}
-		if err == nil {
-			err1 := mlrun.Endpoints.Fetch(&endpointList)
-			if err1 != nil {
-				err = exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid stored endpoints")
-			}
-		}
-		idx := -1
-		if err == nil {
-			for i,v := range(endpointList) {
-				if v.Name == name {
-					idx = i
-					break
-				}
-			}
-			if idx < 0 {
-				return exports.NotFoundError()
-			}
-			if !forcely {
-				endpointList[idx].Status=exports.AILAB_USER_ENDPOINT_STATUS_STOP
-			}else{
-				endpointList=append(endpointList[:idx],endpointList[idx+1:]...)
-			}
-			endpointStore := &JsonMetaData{}
-			endpointStore.Save(endpointList)
-
-			err = wrapDBUpdateError(tx.Model(&Run{}).Where("run_id=?",runId).
-				Update("endpoints",endpointStore),1)
-		}
-		return err
-	})
-}
-
-

@@ -183,6 +183,7 @@ type JobDistribute struct{
 type ServiceEndpoint struct{
 	Name     string `json:"name"`        // service name
 	Port     int    `json:"port"`        // service port
+	NodePort int    `json:"nodePort,omitempty"`    // if non-zero , request for nodePort service
 	Url      string `json:"url,omitempty"`
 	AccessKey string `json:"access_key,omitempty"`
 	SecretKey string `json:"secret_key,omitempty"`

@@ -128,17 +128,12 @@ func (r*Run) StatusIsNonActive()bool {
 	return exports.IsRunStatusNonActive(r.Status)
 }
 
-//@add: wrapper for user endpoints
-type UserEndpoint struct{
-	 JOB.ContainerPort
-	 Name      string       `json:"name"`
-	 SecureKey string       `json:"secret_key,omitempty"`
-	 Status    string       `json:"status,omitempty"`
-}
 type UserResourceQuota struct{
-	 JOB.ResourceQuota
-	 Node int          `json:"node"`
+	JOB.ResourceQuota
+	Node int          `json:"node"`
 }
+
+
 
 func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  run := &Run{
@@ -184,21 +179,25 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  if len(req.Endpoints) > 0{
 			run.Endpoints=&JsonMetaData{}
 			//@mark: convert user endpoints to k8s service
-			endpoints :=[]UserEndpoint{}
+			endpoints :=UserEndpointList{}
 			for _,v := range(req.Endpoints) {
 				patchName := v.Name
 				if patchName[0] == '$' {//@mark: replace $ to - to make k8s compatible
 					patchName=patchName[1:] + "-"
+					if v.Name == exports.AILAB_SYS_ENDPOINT_SSH {// force sys ssh endpoint to use nodePort service
+						v.NodePort = -1
+						v.AccessKey=req.Creator
+					}
 				}
-				endpoints=append(endpoints,UserEndpoint{
-					ContainerPort:JOB.ContainerPort{
-						Port:        int(v.Port),
-					    TargetPort:  int(v.Port),
-					    ServiceName: patchName + "-" + run.RunId,
-					},
-					Name: v.Name,
-					SecureKey: v.SecretKey,
-				})
+				userEndpoint := UserEndpoint{
+					Name:        v.Name,
+					Port:        v.Port,
+					ServiceName: patchName + "-" + run.RunId,
+					NodePort:    v.NodePort,
+					SecureKey:   v.SecretKey,
+					AccessKey:   v.AccessKey,
+				}
+				endpoints=append(endpoints,userEndpoint)
 			}
 			run.Endpoints.Save(endpoints)
 	  }

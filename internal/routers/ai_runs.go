@@ -389,7 +389,7 @@ func fetchLabRunLogs(c*gin.Context) {
 var regexp_endpoint_name_validator *regexp.Regexp
 
 func init(){
-	regexp.MustCompile("^[a-z]([-a-z0-9]*[a-z0-9])?$")
+	regexp_endpoint_name_validator = regexp.MustCompile("^[a-z]([-a-z0-9]*[a-z0-9])?$")
 }
 
 func validateEndpointName(name string)APIError {

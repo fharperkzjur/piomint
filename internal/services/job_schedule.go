@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
-	"github.com/apulis/bmod/ai-lab-backend/internal/utils"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
-    JOB "github.com/apulis/go-business/pkg/jobscheduler"
+	JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"github.com/apulis/sdk/go-utils/broker"
 	"strings"
 )
@@ -55,6 +54,8 @@ func translateJobStatus(status JOB.JobStatus) int{
 	    case JOB.JOB_STATUS_RUNNING:     return exports.AILAB_RUN_STATUS_RUN
 	    case JOB.JOB_STATUS_FINISH:      return exports.AILAB_RUN_STATUS_SUCCESS
 	    case JOB.JOB_STATUS_ERROR:       return exports.AILAB_RUN_STATUS_ERROR
+	    case JOB.JOB_STATUS_TERMINATING: return exports.AILAB_RUN_STATUS_STOPPING
+	    case JOB.JOB_STATUS_TERMINATED:  return exports.AILAB_RUN_STATUS_ABORT
 	    default://should never happen
 	         logger.Warnf("invalid status return from job-sched:%v",status)
 	         return exports.AILAB_RUN_STATUS_INVALID
@@ -136,9 +137,9 @@ func CheckResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 	 }
 	 return action,mounts
 }
-
+/*
 func checkEnableSSH(run*models.Run,job * JOB.Job) bool {
-	  ports := []models.UserEndpoint{}
+	  ports := models.UserEndpointList{}
 	  if  err := run.Endpoints.Fetch(&ports) ; err == nil  {
 	  	 for _,v := range(ports) {
 	  	 	if v.Name == exports.AILAB_SYS_ENDPOINT_SSH{
@@ -256,10 +257,11 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 	 return exports.AILAB_RUN_STATUS_INVALID,err
 	 }
 }
-
+*/
 func KillJob(run*models.Run) (int,APIError) {
 	 if err := DeleteJob(run.RunId);err == nil{
-	 	return exports.AILAB_RUN_STATUS_ABORT,nil
+	 	//return exports.AILAB_RUN_STATUS_ABORT,nil
+	 	return exports.AILAB_RUN_STATUS_STOPPING,nil
 	 }else{
 	 	return exports.AILAB_RUN_STATUS_INVALID,err
 	 }
@@ -299,11 +301,13 @@ func  MonitorJobStatus(event broker.Event) error{
 		  statusTo := translateJobStatus(jobs.JobState.Status)
 		  if statusTo == exports.AILAB_RUN_STATUS_INVALID {
 		  	logger.Warnf("receive unknown job state from mq:%s",string(event.Message().Body))
+		  }else if jobs.ServiceState.NodePort > 0 {
+			logger.Info("receive mq serviceState message:%s",string(event.Message().Body))
+			return models.ChangeEndpointStatus(jobs.ServiceState.JobId,jobs.ServiceState.Name,int(jobs.ServiceState.NodePort))
 		  }else{
 		  	logger.Info("receive mq message:%s",string(event.Message().Body))
 		  	return models.ChangeJobStatus(jobs.JobId,exports.AILAB_RUN_STATUS_INVALID,statusTo,jobs.JobState.Msg)
 		  }
-
 	  }
 	  return nil
 }

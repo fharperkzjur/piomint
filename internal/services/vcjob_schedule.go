@@ -9,27 +9,29 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"strings"
+	"time"
 )
 
-func checkEnableUserEndpoints(run*models.Run, container * JOB.Container) (helper string) {
-	    endpoints :=  []models.UserEndpoint{}
+func checkUserEndpointInits(run*models.Run, container * JOB.Container) (helper string) {
+	    endpoints :=  models.UserEndpointList{}
 	    run.Endpoints.Fetch(&endpoints)
-		for idx,v := range(endpoints) {
+
+		for _,v := range(endpoints) {
 			if v.Name == exports.AILAB_SYS_ENDPOINT_SSH {// force ssh to be nodePort service
 				if len(v.SecureKey) > 0 {
 					sk , _ := base64.StdEncoding.DecodeString(v.SecureKey)
 					container.Envs["SSH_PASSWD"] = string(sk)
+					container.Envs["SSH_USER"]   = v.AccessKey
 				}
 				helper += " 03.setup_ssh.sh"
-				container.Ports[idx].ServiceType = JOB.ServiceTypeNodePort
 				continue
 			}
 			if v.Name == exports.AILAB_SYS_ENDPOINT_NNI{
 				container.Envs["AILAB_NNI_ENDPOINT"] = fmt.Sprintf("%s:%d",v.ServiceName,v.Port)
 				helper += " 04.patch_nni.sh"
 			}
-			container.Ports[idx].ServiceType = JOB.ServiceTypeClusterIP
 		}
+		container.Ports=endpoints.ToSchedulerPorts()
 		return
 }
 
@@ -39,6 +41,7 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask)   {
 	if exports.IsJobNeedAffinity(run.Flags) {
 		//task.Affinity = run.Parent
 	}
+
 	if run.Image == exports.AILAB_ENGINE_DEFAULT {// use init-container as target logic run container
 		task.Container.ImageName = configs.GetAppConfig().InitToolImage
 		if run.JobType == exports.AILAB_RUN_SCRATCH {//only this `scratch` JOB need docker support & root user
@@ -51,7 +54,9 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask)   {
 		}
 		return
 	}
-	if !strings.HasSuffix(task.Container.Cmd[0],"_launcher"){// cmd not launcher , start target container directly !!!
+	endPointsInits := checkUserEndpointInits(run,task.Container)
+
+	if endPointsInits == "" && !strings.HasSuffix(task.Container.Cmd[0],"_launcher"){// cmd not launcher , start target container directly !!!
 		return
 	}
 	preStart := "01.init_user.sh"
@@ -72,7 +77,7 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask)   {
 		preStart += " 02.setup_mindspore.sh"
 	}
 
-	preStart += checkEnableUserEndpoints(run,task.Container)
+	preStart += endPointsInits
 	task.InitContainer=&JOB.Container{
 		ContainerName: "init-tools",
 		ImageName:     configs.GetAppConfig().InitToolImage,
@@ -197,12 +202,11 @@ func CreateVcJobTask(run*models.Run) ([]JOB.VcJobTask,APIError){
 	}
 	run.Cmd.Fetch(&container.Cmd)
 	run.Envs.Fetch(&container.Envs)
-	run.Endpoints.Fetch(&container.Ports)
 
 	resource := exports.GObject{}
 	run.Resource.Fetch(&resource)
 	container.Cmd,container.MountPoints = CheckResourceMounts(container.Cmd,resource)
-	checkAILabEnvs(run,container.Envs)
+	TagAILabEnvs(run,container.Envs)
 	task.Container=container
 
 	checkAppUsage(run,&task)
@@ -230,6 +234,7 @@ func submitJobInternal(run*models.Run, url string,job interface{}) (int,APIError
 			if err != nil {
 				return exports.AILAB_RUN_STATUS_INVALID,err
 			}
+			time.Sleep(5*time.Second)
 			//submit again
 			err = Request(url,"POST",nil,job,resp)
 			if err == nil {
@@ -301,5 +306,36 @@ func SubmitJobV2(run*models.Run) (int, APIError) {
 		return SubmitVcJob(run,tasks)
 	}else {
 		return SubmitSingleJob(run,&tasks[0])
+	}
+}
+
+func CreateJobEndpointImpl(mlrun * models.BasicMLRunContext,userEndPoint * models.UserEndpoint) (APIError,string) {
+	serviceReq := &JOB.CreateServiceReq{
+		JobId:         mlrun.RunId,
+		Namespace:     mlrun.Namespace,
+		ContainerPort: userEndPoint.ToSchedulerPort(),
+	}
+	serviceReq.Namespace="default"
+	url  := configs.GetAppConfig().Resources.Jobsched+"/services"
+	serviceRsp := &JOB.CreateServiceRsp{}
+	err  := Request(url,"POST",nil,serviceReq,serviceRsp)
+	if err != nil {
+		return err,exports.AILAB_USER_ENDPOINT_STATUS_ERROR
+	}else if userEndPoint.NodePort == 0 {
+		return nil,exports.AILAB_USER_ENDPOINT_STATUS_READY
+	}else{
+		return exports.RaiseReqWouldBlock("wait for nodePort to start ..."),exports.AILAB_USER_ENDPOINT_STATUS_INIT
+	}
+}
+
+func DeleteJobEndPointImpl(mlrun * models.BasicMLRunContext,serviceName string) (APIError,string) {
+	mlrun.Namespace = "default"
+	url  := fmt.Sprintf("%s/services?jobId=%s&namespace=%s&serviceName=%s",configs.GetAppConfig().Resources.Jobsched,
+		mlrun.RunId,mlrun.Namespace,serviceName)
+	err   :=Request(url,"DELETE",nil,nil,nil)
+	if err != nil {
+		return err,exports.AILAB_USER_ENDPOINT_STATUS_ERROR
+	}else{
+		return nil,""
 	}
 }
