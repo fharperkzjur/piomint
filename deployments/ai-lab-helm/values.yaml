@@ -8,6 +8,7 @@ image:
   #harbor.internal.cn/apulistech/ai-lab
   repository: harbor.apulis.cn:8443/develop/apulistech/ai-lab/amd64:master
   pullPolicy: Always
+  toolbox:    busybox:1.28
 
 imagePullSecrets: []
 nameOverride: ""

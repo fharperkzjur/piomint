@@ -29,7 +29,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
         - name: check-postgres-ready
-          image: { { util.image_fullname('busybox', 'third') } }
+          image: {{ .Values.image.toolbox }}
           command: [ 'sh', '-c', "until nc -vz {{ .Values.config.db.host }} {{ .Values.config.db.port }}; do echo 'Waiting for postgres service'; sleep 2; done;" ]
       containers:
         - name: {{ .Chart.Name }}
