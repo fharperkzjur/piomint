@@ -289,9 +289,18 @@ func SubmitSingleJob(run*models.Run,task * JOB.VcJobTask) (int,APIError){
 		job.SetContainerPorts(task.Container.Ports)
 	}
 	if exports.IsJobNeedAffinity(run.Flags) {
-		job.SetAffinity(&JOB.JobAffinity{
-			JobId: run.Parent,
-		})
+		if is,err := models.CheckIsDistributeJob(run.Parent) ;err != nil{
+			return exports.AILAB_RUN_STATUS_INVALID,err
+		}else if is {
+			job.SetAffinity(&JOB.JobAffinity{
+				JobId:    run.Parent,
+				TaskName: "master",
+			})
+		}else{
+			job.SetAffinity(&JOB.JobAffinity{
+				JobId: run.Parent,
+			})
+		}
 	}
 	url  := configs.GetAppConfig().Resources.Jobsched+"/jobs"
 	return submitJobInternal(run,url,job)
