@@ -27,6 +27,7 @@ data:
           {{- end }}
         gatewayUrl: {{ .gatewayUrl }}
         clusterId:  {{ .clusterId }}
+        initToolImage:  {{ .initToolImage  }}
         VersionControl:
           {{- toYaml .VersionControl | nindent 10 }}
     {{- end }}

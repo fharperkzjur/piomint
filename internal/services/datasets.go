@@ -29,8 +29,8 @@ func (d DatasetResourceSrv) PrepareResource(runId string,  resource exports.GObj
 	  if safeToNumber(resource["access"]) != 0 {
 	  	  return nil,exports.NotImplementError("DatasetResourceSrv no support for prepare dataset !!!")
 	  }
-	  if norefs := checkDebugNoRefPath(resource) ; norefs != nil{
-		return norefs,nil
+	  if checkDebugNoRefs(resource) {
+		return nil,nil
 	  }
 	  datasetId := safeToNumber(resource["id"])
 	  if datasetId == 0 {

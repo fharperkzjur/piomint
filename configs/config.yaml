@@ -4,7 +4,7 @@ port: 6100
 
 grpc: 6101
 
-debug: false # gin debug模式
+debug: true # gin debug模式
 
 time:
   timezoneStr: Asia/Shanghai # 时区名称
@@ -57,6 +57,8 @@ httpClient:
 gatewayUrl: https://123.60.231.101:80
 
 clusterId:  xxx-xxx-xxxxxx
+
+initToolImage:  harbor.apulis.cn:8443/aistudio/infra/init-container:aistudio-v0.1.0
 
 #connector for version control system
 VersionControl:

@@ -24,7 +24,11 @@ func AddGroupTraining(r*gin.Engine){
     // support train&evaluate job list
 	group.GET("/runs", wrapper(getAllLabRuns))
 	group.GET("/runs/:runId",wrapper(queryLabRun))
+
 	group.GET("runs/:runId/endpoints",wrapper(queryLabRunEndpoints))
+	group.POST("runs/:runId/endpoints",wrapper(createLabRunEndPoint))
+	group.DELETE("runs/:runId/endpoints/:name",wrapper(deleteLabRunEndPoint))
+
 	group.GET("/stats",wrapper(queryLabRunStats))
 	group.GET("/real-stats",wrapper(queryLabRunRealStats))
 
@@ -100,7 +104,7 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 
 func registerLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
 	req.JobType  = exports.AILAB_RUN_MODEL_REGISTER
-	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_AUTO_DELETED
+	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE
 	run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	if err == nil {// created new run
 		return nil,exports.RaiseReqWouldBlock("wait to start model register job ...")
@@ -113,7 +117,11 @@ func registerLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (i
 
 func scratchLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
 	req.JobType  = exports.AILAB_RUN_SCRATCH
-	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_AUTO_DELETED
+	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_SCHEDULE_AFFINITY
+	req.Engine   = exports.AILAB_ENGINE_DEFAULT
+	if len(runId) == 0 {
+		return nil,exports.ParameterError("scratch JOB must have parent job id !!!")
+	}
 	run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	if err == nil {// created new run
 		return nil,exports.RaiseReqWouldBlock("wait to start docker image scratch job ...")
@@ -141,6 +149,26 @@ func queryLabRunEndpoints(c*gin.Context)(interface{},APIError){
 		return nil,exports.ParameterError("queryLabRunEndpoints invalid lab id or run id")
 	}
 	return services.GetLabRunEndpoints(labId,runId)
+}
+func createLabRunEndPoint(c*gin.Context)(interface{},APIError){
+	labId,runId := parseLabRunId(c)
+	if labId == 0 || len(runId) == 0 {
+		return nil,exports.ParameterError("createLabRunEndPoint invalid lab id or run id")
+	}
+	endpoint := &exports.ServiceEndpoint{}
+	if err := c.ShouldBindJSON(endpoint);err != nil {
+		return nil,exports.ParameterError("invalid json data")
+	}
+	return services.CreateLabRunEndpoints(labId,runId,endpoint)
+}
+func deleteLabRunEndPoint(c*gin.Context)(interface{},APIError){
+	labId,runId := parseLabRunId(c)
+	if labId == 0 || len(runId) == 0 {
+		return nil,exports.ParameterError("deleteLabRunEndPoint invalid lab id or run id")
+	}
+	name := c.Param("name")
+
+	return services.DeleteLabRunEndpoints(labId,runId,name)
 }
 
 func sysQueryLabRun(c*gin.Context)(interface{},APIError){

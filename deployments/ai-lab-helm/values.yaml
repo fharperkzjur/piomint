@@ -110,6 +110,7 @@ config:
       code:                                                    #代码管理暂时由模型工厂托管
    gatewayUrl: https://123.60.231.101:80
    clusterId:  xxx-xxxx-xxxxxx
+   initToolImage:  harbor.apulis.cn:8443/aistudio/infra/init-container:aistudio-v0.1.0
   #connector for version control system
    VersionControl:
       gitea:

@@ -23,7 +23,7 @@ func allocateLabStg(lab* Lab) (APIError){
 
 func allocateLabRunStg(run *Run,mlrun * BasicMLRunContext) (APIError) {
 
-      if run.Output == "*" {//auto generate if not present
+      if run.Output == exports.AILAB_OUTPUT_NAME {//auto generate if not present
       	 run.Output = fmt.Sprintf("%s/%s",mlrun.Location,run.RunId)
 	  }
 	  return nil

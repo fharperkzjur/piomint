@@ -30,7 +30,7 @@ func (d*AsyncWSNotifier) Run() {
 	 		break
 	    }
 	    //@todo:
-	    logger.Infof("runId %s status changed ")
+	    logger.Infof("runId %s status changed ",runId)
 	 }
 }
 

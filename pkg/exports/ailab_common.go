@@ -57,7 +57,7 @@ const (
 	// default runs will be multi-instance support
 	AILAB_RUN_FLAGS_SINGLE_INSTANCE = 0x4
 	// default runs will not deleted automatially when success
-	AILAB_RUN_FLAGS_AUTO_DELETED = 0x8
+	//AILAB_RUN_FLAGS_AUTO_DELETED = 0x8
 	// support paused&resume semantics
 	AILAB_RUN_FLAGS_RESUMEABLE = 0x10
 	// support graceful stop semantics ?
@@ -66,6 +66,10 @@ const (
 	AILAB_RUN_FLAGS_USE_CLOUD  = 0x40
 	// singleton by user among valid scope
 	AILAB_RUN_FLAGS_SINGLETON_USER = 0x80
+	// should dispatch to host node as parent
+	AILAB_RUN_FLAGS_SCHEDULE_AFFINITY=0x100
+	// whether use compact master node
+	AILAB_RUN_FLAGS_COMPACT_MASTER=0x200
 
 	// have prepare all resource complete
 	AILAB_RUN_FLAGS_PREPARE_OK           = 0x10000
@@ -97,6 +101,10 @@ const (
 	AILAB_RESOURCE_TYPE_STORE   = "store"
 )
 
+const AILAB_RESOURCE_NO_REFS = "norefs"
+const AILAB_ENGINE_DEFAULT   = "*"
+const AILAB_SECURE_DEFAULT   = "*"
+
 const (
 	AILAB_RUN_TRAINING = "train"
 	AILAB_RUN_EVALUATE = "eval"
@@ -106,6 +114,12 @@ const (
 	AILAB_RUN_SCRATCH   = "scratch"       // standalone docker image scratch tool
 	//AILAB_RUN_MINDINSIGHT = "mindinsight"
 	//AILAB_RUN_TENSORBOARD = "tensorboard"
+)
+
+const (
+	AILAB_SYS_ENDPOINT_SSH = "$ssh"
+	AILAB_SYS_ENDPOINT_NNI = "$nni"
+	AILAB_SYS_ENDPOINT_JUPYTER = "$jupyter"
 )
 
 type SearchCond struct {
@@ -228,11 +242,12 @@ type ReqBatchCreateLab struct {
 
 type CreateJobRequest struct{
 
-	JobType  string                   `json:"-"`            // job type should determined by server (api interface)
-	JobGroup string                   `json:"-"`            // useless now
-	JobFlags uint64                   `json:"-"`            // job flags used internally
-	Token    string                   `json:"-"`            // user token to access resource
-	UseModelArts  bool                `json:"useModelArts"` // [experimental] associate with modelArts cloud training platform
+	JobType  string                   `json:"-"`                    // job type should determined by server (api interface)
+	JobGroup string                   `json:"-"`                    // useless now
+	JobFlags uint64                   `json:"-"`                   // job flags used internally
+	Token    string                   `json:"-"`                   // user token to access resource
+	UseModelArts        bool          `json:"useModelArts"`        // [experimental] associate with modelArts cloud training platform
+	CompactMaster       bool          `json:"compactMaster"` // default will use standalone master node pod
 	Name     string                   `json:"name"`         // varchar[255]
 	Engine   string                   `json:"engine"`
 	Arch     string                   `json:"arch"`        // user expected arch , empty match all os
@@ -323,4 +338,10 @@ func  HasJobCleanupWithRefs(flags uint64)  bool{
 }
 func  IsJobRunWithCloud(flags uint64) bool {
 	return (flags & AILAB_RUN_FLAGS_USE_CLOUD) != 0
+}
+func  IsJobNeedAffinity(flags uint64) bool {
+	return (flags & AILAB_RUN_FLAGS_SCHEDULE_AFFINITY) != 0
+}
+func  IsJobDistributeCompactMaster(flags uint64) bool {
+	return (flags & AILAB_RUN_FLAGS_COMPACT_MASTER) != 0
 }

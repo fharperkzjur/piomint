@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+var letterRunes = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 var r* rand.Rand
 
@@ -16,10 +16,22 @@ func init() {
 }
 
 func GenerateRandomStr(n int) string {
-	b := make([]rune, n)
+	b := make([]byte, n)
 
 	for i := range b {
 		b[i] = letterRunes[r.Intn(nletter)]
 	}
 	return string(b)
 }
+
+func GenerateRandomPasswd(n int) []byte {
+	b := make([]byte, n)
+
+	for i := range b {
+		b[i] = letterRunes[r.Intn(nletter)]
+	}
+	return b
+}
+
+
+

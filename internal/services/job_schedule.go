@@ -141,7 +141,7 @@ func checkEnableSSH(run*models.Run,job * JOB.Job) bool {
 	  ports := []models.UserEndpoint{}
 	  if  err := run.Endpoints.Fetch(&ports) ; err == nil  {
 	  	 for _,v := range(ports) {
-	  	 	if v.Name == "ssh"{
+	  	 	if v.Name == exports.AILAB_SYS_ENDPOINT_SSH{
 	  	 		job.Envs["SSH_PASSWD"] = utils.GenerateRandomStr(6)
 
 	  	 		return true

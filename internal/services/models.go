@@ -28,25 +28,16 @@ type ModelRefInfo struct{
 	ModelName    string         `json:"modelName,omitempty"`
 }
 
-func checkDebugNoRefPath(resource exports.GObject) interface{} {
-	 if configs.GetAppConfig().Debug && safeToString(resource["path"]) != ""{
-	 	return map[string]interface{}{
-	 		"norefs":1,
-		}
-	 }else{
-	 	return nil
-	 }
-}
 func checkDebugNoRefs(resource exports.GObject) bool {
-	 return configs.GetAppConfig().Debug && safeToNumber(resource["norefs"]) == 1
+	 return safeToNumber(resource[exports.AILAB_RESOURCE_NO_REFS]) == 1
 }
 
 //cannot error
 func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObject) (interface{},APIError){
 
 	  if safeToNumber(resource["access"]) == 0 {//ref exists model
-	  	   if norefs := checkDebugNoRefPath(resource) ; norefs != nil{
-	  	   	  return norefs,nil
+	  	   if checkDebugNoRefs(resource) {
+	  	   	  return nil,nil
 		   }
 		   req :=  &ModelRefInfo{
 			   Context:      runId,

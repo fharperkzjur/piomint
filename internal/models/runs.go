@@ -131,7 +131,12 @@ func (r*Run) StatusIsNonActive()bool {
 //@add: wrapper for user endpoints
 type UserEndpoint struct{
 	 JOB.ContainerPort
-	 Name string       `json:"name"`
+	 Name      string       `json:"name"`
+	 SecureKey string       `json:"secret_key,omitempty"`
+}
+type UserResourceQuota struct{
+	 JOB.ResourceQuota
+	 Node int          `json:"node"`
 }
 
 func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
@@ -180,7 +185,9 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 			//@mark: convert user endpoints to k8s service
 			endpoints :=[]UserEndpoint{}
 			for _,v := range(req.Endpoints) {
-
+				if v.Name[0] == '$' {//@mark: replace $ to 0 to make k8s compatible
+					v.Name="0" + v.Name[1:]
+				}
 				endpoints=append(endpoints,UserEndpoint{
 					ContainerPort:JOB.ContainerPort{
 						Port:        int(v.Port),
@@ -188,13 +195,17 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 					    ServiceName: v.Name + "-" + run.RunId,
 					},
 					Name: v.Name,
+					SecureKey: v.SecretKey,
 				})
 			}
 			run.Endpoints.Save(endpoints)
 	  }
 
-		run.Quota=&JsonMetaData{}
-		run.Quota.Save(req.Quota)
+	  run.Quota=&JsonMetaData{}
+	  run.Quota.Save(req.Quota)
+	  if req.CompactMaster {
+	  	  run.Flags |= exports.AILAB_RUN_FLAGS_COMPACT_MASTER
+	  }
 
 	  return run
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
+	"github.com/apulis/bmod/ai-lab-backend/internal/utils"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -19,9 +20,10 @@ type APIError = exports.APIError
 
 func genEndpointsUrl(name  ,service ,namespace string,port int) string{
 	 url := configs.GetAppConfig().GatewayUrl
+	 namespace="default"
 	 jsonInfo := map[string]interface{}{
 	 	//@todo: hardcode service name in `default` namespace
-	 	"service":service + "." + "default" + ".svc.cluster.local",
+	 	"service":service + "." + namespace + ".svc.cluster.local",
 	 	"port":port,
 	 }
 	 vhost ,_:= json.Marshal(jsonInfo)
@@ -73,7 +75,7 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 			return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid endpoints data formats for run:"+run.RunId)
 		}
 		response := []exports.ServiceEndpoint{}
-		for _,v := range(endpoints) {
+		for idx,v := range(endpoints) {
 			if len(v.Name) == 0 {
 				if idx := strings.IndexByte(v.ServiceName,'-');idx > 0 {
 					v.Name=v.ServiceName[0:idx]
@@ -84,12 +86,46 @@ func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
 				Name:      v.Name,
 				Port:      uint32(v.Port),
 				Url:       url,
+				SecretKey: v.SecureKey,
 			})
+			if len(v.SecureKey) > 0 {
+				response[idx].AccessKey=run.Creator
+			}
 		}
 		return response,nil
 	}else{
 		return "",exports.RaiseReqWouldBlock("wait to starting job ...")
 	}
+}
+
+func CreateLabRunEndpoints(labId uint64,runId string,endpoint*exports.ServiceEndpoint)(interface{},APIError){
+	return nil,exports.NotImplementError("CreateLabRunEndpoints")
+}
+func DeleteLabRunEndpoints(labId uint64,runId string,name string) (interface{},APIError){
+	return nil,exports.NotImplementError("DeleteLabRunEndpoints")
+}
+func ValidateUserEndpoints( req []exports.ServiceEndpoint) APIError {
+	 if req == nil {
+	 	return nil
+	 }
+     names  := make(map[string]int,0)
+     ports  := make(map[uint32]int,0)
+	 for idx,v := range(req) {
+	 		if _,ok := names[v.Name];ok {
+	 			return exports.ParameterError("duplicate endpoints name !!!")
+		    }else{
+		    	names[v.Name]=1
+		    }
+		    if _,ok := ports[v.Port];v.Port > 0 && ok {
+		    	return exports.ParameterError("duplicate endpoints port !!!")
+		    }else{
+		    	ports[v.Port]=1
+		    }
+		    if v.SecretKey == exports.AILAB_SECURE_DEFAULT  {// need generate passwd by AILAB
+                req[idx].SecretKey= base64.StdEncoding.EncodeToString(utils.GenerateRandomPasswd(8))
+		    }
+	 }
+	 return nil
 }
 
 
@@ -125,10 +161,6 @@ type MlrunOutputSrv struct{
 //cannot error
 func (d MlrunOutputSrv) PrepareResource(runId string, resource exports.GObject) (interface{},APIError){
 
-	refer    := safeToString(resource["id"])
-	if refer != "*" {
-		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"MlrunOutputSrv")
-	}
 	path,err := models.EnsureLabRunStgPath(runId)
 	if err != nil {
 		return nil,err
@@ -161,6 +193,16 @@ func addResource(resource exports.GObject,name string) exports.GObject{
 
 func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enableRepace bool,syncPrepare bool) (interface{},APIError) {
 
+	//@mark: validate engine
+	var err1 APIError
+	if req.Engine,req.Arch,err1 = ValidateEngineUrl(req.Engine,req.Arch);err1 != nil {
+		return nil,err1
+	}
+	//@mark: validate user endpoints
+	if err1 = ValidateUserEndpoints(req.Endpoints);err1 != nil {
+		return nil,err1
+	}
+
 	if len(req.Cmd) == 0 {
 		return nil,exports.ParameterError("invalid run cmd !!!")
 	}
@@ -192,7 +234,7 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 		rsc := addResource(req.Resource,name)
 		if name == exports.AILAB_OUTPUT_NAME {
 			rsc["access"] =1
-			req.OutputPath="*"
+			req.OutputPath=exports.AILAB_OUTPUT_NAME
 		}
 	}
 	for name,v := range(req.Resource){
@@ -215,7 +257,7 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 
 		}else if ty == exports.AILAB_RESOURCE_TYPE_OUTPUT{//@todo:pseudo output as a refered resource ???
 			req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
-			req.OutputPath = "*"
+			req.OutputPath = exports.AILAB_OUTPUT_NAME
 			rsc["access"]  = 1
 		}else{
 			if id:= safeToString(rsc["id"]);len(id) == 0{
@@ -224,6 +266,9 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 				req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_SAVE
 			}else{
 				req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
+			}
+			if configs.GetAppConfig().Debug && safeToString(rsc["path"]) != "" {
+				rsc[exports.AILAB_RESOURCE_NO_REFS]=1
 			}
 		}
 	}

@@ -41,7 +41,8 @@ func StartProcessor(event*models.Event) APIError{
 		}
 	}// submit job to k8s
 	status := 0
-	status,err = SubmitJob(run)
+	//status,err = SubmitJob(run)
+	status,err = SubmitJobV2(run)
 
 	return SyncJobStatus(run.RunId,exports.AILAB_RUN_STATUS_STARTING,status,err)
 }

@@ -24,6 +24,7 @@ type AppConfig struct {
 	Debug       bool
 	Mounts      map[string]string
 	Storage     string
+	InitToolImage    string
 	HttpClient  HttpClient
 	GatewayUrl  string
 	ClusterId   string
@@ -46,7 +47,8 @@ type ResourceConfig struct{
 	Model         string
 	Dataset       string
 	Jobsched      string
-	Engine        string
+	ApHarbor      string
+	ApWorkshp     string
 	Code          string
 }
 
