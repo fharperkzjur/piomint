@@ -22,3 +22,10 @@ version: 0.1.0
 # follow Semantic Versioning. They should reflect the version the application is using.
 appVersion: 0.1.0
 
+# kube version dependency
+kubeVersion: 1.18.x
+
+# keywords use in search
+keywords:
+  - apulis
+  - ai-lab

@@ -35,7 +35,7 @@ RUN  strip /go/bin/$project
 
 
 FROM alpine:3.11
-ARG project
+ARG project=ai-lab
 RUN apk --no-cache add ca-certificates libdrm
 COPY --from=0 /usr/local/go/lib/time/zoneinfo.zip /opt/zoneinfo.zip
 ENV ZONEINFO /opt/zoneinfo.zip

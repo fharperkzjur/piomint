@@ -43,7 +43,7 @@ securityContext: {}
 
 service:
   type: ClusterIP
-  port: 10000
+  port: 80
 
 ingress:
   enabled: true
@@ -73,8 +73,8 @@ resources: {}
   #   memory: 128Mi
   
 config:
-   port: 10000
-   grpc: 10001
+   port: 80
+   grpc: 81
    debug: true
    db:
       serverType: postgres
