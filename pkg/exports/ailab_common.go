@@ -298,7 +298,22 @@ type ReqBatchCreateLab struct {
 	Labs      []ReqCreateLab `json:"labs"`
 }
 
-
+type ReqEditLab struct{
+	Description string                 `json:"description" `
+	Name      string                   `json:"name"  `     // user defined name
+	Editor    string                   `json:"editor"`
+	Tags      RequestTags              `json:"tags"`      // user defined tags
+	Meta      RequestObject            `json:"meta"`
+}
+type ReqBatchEditLab struct{
+	// override per lab configuration
+	Group     string `json:"group,omitempty"`
+	Editor    string `json:"editor,omitempty"`
+	UserId    uint64 `json:"userId"`
+	ProjectName string `json:"projectName,omitempty"`
+	// at least 1 lab configuration must be exists
+	Labs      []ReqEditLab `json:"labs"`
+}
 
 /*
        type Resource struct{
