@@ -400,7 +400,11 @@ func viewLabRunFiles(c*gin.Context){
 			return
 		}
 		if err := services.ServeFile(labId,runId,c.Query("prefix"),c);err != nil {
-			c.JSON(http.StatusBadRequest,exports.CommResponse{
+			httpCode := http.StatusBadRequest
+			if h, ok := err.(*exports.APIException); ok {
+				httpCode = h.StatusCode
+			}
+			c.JSON(httpCode,exports.CommResponse{
 				Code: err.Errno(),
 				Msg:  err.Error(),
 			})
