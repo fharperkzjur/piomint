@@ -31,6 +31,8 @@ type Lab struct{
 	OrgId        uint64       `json:"orgId,omitempty"`
 	OrgName      string       `json:"orgName,omitempty" gorm:"type:varchar(255)"`
 	UserGroupId  uint64       `json:"userGroupId"`
+	//@mark: username may changed , use uid instead !!!
+	UserId       uint64       `json:"userId"`
 	ProjectName  string       `json:"projectName" gorm:"type:varchar(512)"`
 }
 

@@ -14,6 +14,7 @@ const (
 type ReqCreateRepo struct{
 	Bind        string                   `json:"bind" `     // user defined apps (repo resource path)
 	Creator     string                   `json:"creator"`
+	UserId      uint64                   `json:"userId"`
     RepoId      string                   `json:"repoId"`    // exists repoId
     IsMultiBind bool                     `json:"multi"`     // instruct this app can bind multiple repos
     IsSsoAuth   bool                     `json:"sso"`       // instruct this app need sso user to access repo

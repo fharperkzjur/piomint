@@ -190,6 +190,7 @@ func getAllLabRuns(c*gin.Context) (interface{},APIError){
 		"parent" :"parent",
 		"status" : "status",
 		"creator":"creator",
+		"userId" :"user_id",
 	})
 	if err != nil {
 		return nil,err

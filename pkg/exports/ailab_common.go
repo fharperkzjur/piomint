@@ -25,6 +25,8 @@ const (
 	AILAB_ENV_USER_TOKEN = "AILAB_TOKEN"
 	AILAB_ENV_CLUSTER_ID = "APULIS_CLUSTER_ID"
 	AILAB_ENV_JOB_TYPE   = "AILAB_JOB_TYPE"
+	AILAB_ENV_AFFINITY_JOB_ID    = "AILAB_AFFINITY_JOB_ID"
+	AILAB_ENV_AFFINITY_TASK_NAME = "AILAB_AFFINITY_TASK_NAME"
 )
 const (
 	AILAB_RUN_STATUS_INVALID  = iota
@@ -239,6 +241,8 @@ type ReqBatchCreateLab struct {
 	Group     string `json:"group,omitempty"`
 	App       string `json:"app,omitempty"`
 	Creator   string `json:"creator,omitempty"`
+	//@mark: username may changed !!!
+	UserId    uint64 `json:"userId"`
 	Namespace string `json:"namespace,omitempty"`
 	ProjectName string `json:"projectName,omitempty"`
 
@@ -285,6 +289,7 @@ type CreateJobRequest struct{
 	// if * will allocate output path automatically and override output resource
 	OutputPath  string                `json:"output"`
 	Creator     string                `json:"creator"`      // user specified creator
+	UserId      uint64                `json:"userId"`       // username may changed
 	Description string                `json:"description"`  // user specified description
 	Tags        RequestTags           `json:"tags"`         // user specified tags
 	Config      RequestObject         `json:"config"`    // user specified configs

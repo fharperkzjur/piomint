@@ -22,6 +22,8 @@ type Run struct{
 	 JobType string `json:"jobType" gorm:"type:varchar(32)"`               // system defined job types
 	 Parent  string `json:"parent,omitempty" gorm:"index;type:varchar(255)"`   // created by parent run
 	 Creator string `json:"creator" gorm:"type:varchar(255)"`
+	 //@mark: username may changed, use uid instead !!!
+	 UserId       uint64       `json:"userId"`
 	 CreatedAt UnixTime  `json:"createdAt"`
 	 DeletedAt soft_delete.DeletedAt `json:"deletedAt,omitempty" gorm:"not null"`
 	 Description string       `json:"description"`
@@ -54,7 +56,7 @@ type Run struct{
 }
 
 const (
-	list_runs_fields="run_id,lab_id,runs.name,num,job_type,runs.creator,runs.created_at,runs.deleted_at,start_time,end_time,runs.description,status,runs.tags,runs.flags,msg,parent"
+	list_runs_fields="run_id,lab_id,runs.name,num,job_type,runs.creator,runs.user_id,runs.created_at,runs.deleted_at,start_time,end_time,runs.description,status,runs.tags,runs.flags,msg,parent"
 	select_run_status_change = "run_id,status,flags,job_type"
 	select_mlrun_context = "run_id,status,ext_status,parent,job_type,output,started,flags,lab_id as id,deleted_at,endpoints"
 )
@@ -166,6 +168,7 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 		  JobType:     req.JobType,
 		  Parent:      mlrun.RunId,
 		  Creator:     req.Creator,
+		  UserId:      req.UserId,
 		  Description: req.Description,
 		  Arch:        req.Arch,
 		  Image:       req.Engine,
@@ -650,6 +653,17 @@ func  CleanupDone(runId string,extra int,filterStatus int) APIError{
 	  })
 }
 
+func  CheckIsDistributeJob(runId string) (bool ,APIError){
+       quota := &JsonMetaData{}
+	   if err := checkDBQueryError(db.Model(Run{}).Select("quota").Where("run_id=?",runId).Row().Scan(quota));err != nil {
+	   	  return false,err
+	   }else{
+		  q := UserResourceQuota{}
+	   	  quota.Fetch(&q)
+		  return q.Node > 1 ,nil
+	   }
+}
+
 func  getBasicMLRunInfoEx(tx*gorm.DB,labId uint64,runId string,events EventsTrack) (mlrun*BasicMLRunContext,err APIError){
 
 	  mlrun = &BasicMLRunContext{events: events}
@@ -807,7 +821,7 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 					First(old, "lab_id=? and job_type=?", mlrun.ID, req.JobType))
 			}else{
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
-					First(old, "lab_id=? and job_type=? and creator=?", mlrun.ID, req.JobType,req.Creator))
+					First(old, "lab_id=? and job_type=? and user_id=?", mlrun.ID, req.JobType,req.UserId))
 			}
 			err = checkReturnSingleon(err)
 		}else {
@@ -827,7 +841,7 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 					First(old, "parent=? and job_type=?", mlrun.RunId, req.JobType))
 			}else{
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
-					First(old, "parent=? and job_type=? and creator=?", mlrun.RunId, req.JobType,req.Creator))
+					First(old, "parent=? and job_type=? and user_id=?", mlrun.RunId, req.JobType,req.UserId))
 			}
 			err = checkReturnSingleon(err)
 		}else {

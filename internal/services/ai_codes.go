@@ -103,6 +103,7 @@ func CreateAppRepoBind(req*exports.ReqCreateRepo)(interface{},APIError){
 		Description: req.Description,
 		Connector:   req.Connector,
 		Creator:     req.Creator,
+		UserId:      req.UserId,
 		Meta:        nil,
 		Status:      exports.AICODE_REPO_STATUS_INIT,
 		HttpUrl:     req.HttpUrl,

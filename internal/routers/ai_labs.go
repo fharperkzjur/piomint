@@ -129,6 +129,9 @@ func checkCreateLab(lab*models.Lab) APIError{
 	  if len(lab.Creator) == 0 {
 		return exports.ParameterError("invalid creator")
 	  }
+	  if lab.UserId == 0 {
+	  	return exports.ParameterError("invalid user id")
+	  }
 	  if len(lab.Namespace) == 0{
 	  	return exports.ParameterError("invalid namespace")
 	  }
@@ -153,6 +156,9 @@ func checkBatchCreateLab(req*exports.ReqBatchCreateLab)(labs []models.Lab,err AP
 	  if len(req.Creator) == 0 {
 			return nil,exports.ParameterError("batch labs invalid creator")
 	  }
+	  if req.UserId == 0 {
+	  	    return nil,exports.ParameterError("batch labs invalid user id")
+	  }
 	  if len(req.Namespace) == 0{
 			return nil,exports.ParameterError("batch labs invalid namespace")
 	  }
@@ -161,6 +167,7 @@ func checkBatchCreateLab(req*exports.ReqBatchCreateLab)(labs []models.Lab,err AP
 			 App:         req.App,
 			 Bind:        req.Group,
 			 Creator:     req.Creator,
+			 UserId:      req.UserId,
 			 Namespace:   req.Namespace,
 			 ProjectName: req.ProjectName,
 			 //@add: retrieve org & group information from jwt context

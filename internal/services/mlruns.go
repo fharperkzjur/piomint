@@ -99,6 +99,9 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 	if len(req.Creator) == 0 {
 		return nil,exports.ParameterError("run creator cannot be empty !!!")
 	}
+	if  req.UserId == 0 {
+		return nil,exports.ParameterError("run user id cannot be empty !!!")
+	}
 	if  len(req.Name) == 0 {
 		return nil,exports.ParameterError("run name cannot be empty !!!")
 	}

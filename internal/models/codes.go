@@ -16,6 +16,8 @@ type Code struct{
 	Description string       `json:"description,omitempty"`
 	Connector string          // predefined connector type
 	Creator   string          `json:"creator" gorm:"type:varchar(255)"`
+	//@mark: username may changed !!!
+	UserId    uint64          `json:"userId"`
 	AccessKey string          `json:"accessKey"`
 	SecretKey string          `json:"secretKey,omitempty"`
 	HttpUrl   string          `json:"http_url"`
