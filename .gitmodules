@@ -1,0 +1,6 @@
+[submodule "deps/simple-gin-logger"]
+	path = deps/simple-gin-logger
+	url = https://apulis-gitlab.apulis.cn/sdk/simple-gin-logger.git
+[submodule "deps/go-utils"]
+	path = deps/go-utils
+	url = https://apulis-gitlab.apulis.cn/sdk/go-utils.git

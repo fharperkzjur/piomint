@@ -1,0 +1,149 @@
+syntax="proto3";
+
+package bmod.ai_lab;
+option go_package = "pkg/api" ;
+import "google/protobuf/struct.proto";
+
+message ReqTarget {
+   // indicate which type this objId belong to !
+   string object_type=1;
+   oneof object {
+      uint64  id = 2;
+      string  objId = 3;
+      string  group = 4;
+   }
+}
+
+message ReplyHeader {
+    // error code
+    int32  code   = 1;
+    // error message
+    string msg    = 2;
+    // used for some more specific response
+    string detail = 3;
+}
+
+
+enum QueryOrder{
+   ORDER_DEFAULT = 0;
+   ORDER_ASC     = 1;
+   ORDER_DESC    = 2;
+}
+enum ShowScoped{
+   SHOW_NORMAL = 0;
+   SHOW_WITH_DELETED = 1;
+   SHOW_ONLY_DELETED = 2;
+}
+
+message QueryFilters {
+   //start from 1~N
+   uint32      pageNum    =1;
+   uint32      pageSize   =2;
+   string      orderBy    =3;
+   QueryOrder  order      =4;
+   // list by app group
+   string      group      =5;
+   // indicate "group" list match recursively !
+   bool        matchAll   =6;
+   // search by keyword
+   string      searchWord =7;
+   //enumeration for need detail return
+   int32       detail     =8;
+   //enumeration for deleted item search
+   ShowScoped  show       =9;
+   // filters by predefined key=value pairs
+   map<string,string>equalFilters=10;
+}
+
+// define AILab list informations
+message AILabItem {
+     uint64 labId = 1;
+     string name  = 2;
+     string app   = 3;
+     string type  = 4;
+     string classify=5;
+     string creator =6;
+     int64  created_at=7;
+     int64  updated_at=8;
+     int64  deleted_at=9;
+     // app defined tags
+     map<string,string>tags = 10;
+     // statistics runs
+     map<string,uint32>statistics=11;
+}
+
+message AILabDetail {
+   AILabItem item = 1;
+   //some more details about the AILab defined by app
+   google.protobuf.Struct meta=2;
+   string                 group=3;
+   string                 location=4;
+   string                 namespace=5;
+}
+
+message PagedInfo {
+   // total items matched
+   uint64   total  = 1;
+   // ceil(total/pageSize) ,be zero if request pageSize is zero
+   uint64   totalPages=2;
+   // request pageNum
+   uint64   pageNum= 3;
+   // request pageSize, if zero indicate none paged querys
+   uint64   pageSize=4;
+   // used for next pagedQuery hints
+   string   next    =5;
+}
+
+// list AILabs
+message ReqListLabs {
+    QueryFilters filters =1;
+}
+message ReplyListLabs {
+    ReplyHeader  header=1;
+    PagedInfo    pages =2;
+    repeated AILabItem    items =3;
+}
+// create new lab
+message ReqCreateLab{
+   // (group,name) must be unique
+   string group =1;
+   string name  = 2;
+   string app   = 3;
+   string type  = 4;
+   string classify=5;
+   string creator =6;
+   string namespace=7;
+   // app defined tags
+   map<string,string>tags = 8;
+   // app defined meta data
+   google.protobuf.Struct meta=9;
+}
+message ReqBatchCreateLab{
+   // override per lab configuration
+   string group = 1;
+   string app   = 2;
+   string creator=3;
+   string namespace=4;
+   // at least 1 lab configuration must be exists
+   repeated ReqCreateLab labs=5;
+}
+
+// update lab meta information
+message ReqUpdateLab {
+   // app defined tags
+   map<string,string>tags = 1;
+   // app defined meta data
+   google.protobuf.Struct meta=2;
+}
+
+
+
+service AILab {
+   rpc CreateLab(ReqCreateLab) returns (ReplyHeader) {}
+   rpc ListLabs(ReqListLabs)   returns (ReplyListLabs){}
+   rpc QueryLab(ReqTarget)     returns (AILabDetail) {}
+   rpc DeleteLab(ReqTarget)    returns (ReplyHeader) {}
+   rpc UpdateLab(ReqUpdateLab) returns (ReplyHeader) {}
+   rpc BatchCreateLab(ReqBatchCreateLab) returns (ReplyHeader) {}
+   rpc BatchDeleteLab(ReqTarget) returns (ReplyHeader) {}
+}
