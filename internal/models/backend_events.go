@@ -86,3 +86,7 @@ func doLogClearLab(tx*gorm.DB,labId uint64) APIError{
 func doLogCleanRun(tx*gorm.DB,runId string) APIError {
 	 return LogBackendEvent(tx,Log_evt_pre_clean,runId,nil)
 }
+
+func doLogDiscardRun(tx*gorm.DB,runId string) APIError {
+	return LogBackendEvent(tx,Log_evt_discard_run,runId,nil)
+}

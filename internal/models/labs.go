@@ -355,6 +355,22 @@ func GetBasicLabInfo(labId uint64) (lab *BasicLabInfo,err APIError) {
 	err = wrapDBQueryError(db.Select("id,starts,location").First(lab,"id=?",labId))
 	return
 }
+// deleted lab output storage & then delete from db
+func DisposeLab(labId uint64) APIError{
+	lab := &BasicLabInfo{}
+	err := wrapDBQueryError(db.Unscoped().Select("id,starts,location").First(lab,"id=? and type=?",labId,exports.AISutdio_labs_discard))
+	if err == nil{
+		err = deleteStg(lab.Location)
+		if err == nil {
+			err = wrapDBUpdateError(db.Unscoped().Delete(lab),1)
+		}
+		return err
+	}else if err.Errno() == exports.AILAB_NOT_FOUND{
+		return nil
+	}else{
+		return err
+	}
+}
 
 func getBasicLabInfo(tx * gorm.DB, labId uint64) (lab *BasicLabInfo,err APIError) {
 

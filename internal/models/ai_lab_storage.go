@@ -25,3 +25,10 @@ func allocateLabRunStg(run *Run,mlrun * BasicMLRunContext) (APIError) {
 	  return nil
 }
 
+func deleteStg(output string) (APIError){
+	 if len(output) == 0{
+	 	return nil
+	 }
+	 return exports.NotImplementError("deleteStg")
+}
+

@@ -18,6 +18,9 @@ type ResourceMgr struct{
 }
 
 func (d ResourceMgr)AddResource(name string,usage ResourceUsage){
+	 if d.resources == nil{
+	 	d.resources = make(map[string]ResourceUsage)
+	 }
 	 d.resources[name]=usage
 }
 
@@ -86,7 +89,12 @@ func BatchUseResource(runId string, resource exports.GObject) APIError {
 	 return nil
 }
 
-func BatchReleaseResource(runId string,resource exports.GObject) APIError {
+func BatchReleaseResource(run* models.Run) APIError {
+	resource := exports.GObject{}
+	if err1 := run.Resource.Fetch(&resource) ;err1 != nil {//should never error
+		return nil                                         // exports.ParameterError("ReqCreateRun invalid resource definitions !!!")
+	}
+
 	if len(resource) == 0 {
 		return nil
 	}
@@ -110,7 +118,7 @@ func BatchReleaseResource(runId string,resource exports.GObject) APIError {
 		}
 		version,_:=rsc_cfg["version"].(string)
 
-		err := usage.UnRefResource(runId,id,version)
+		err := usage.UnRefResource(run.RunId,id,version)
 		if err != nil{
 			logger.Errorf("UnRefResource[%s]:%s (%s) error:%s",ty,id,version,err.Error())
 			return err

@@ -4,6 +4,7 @@ package services
 import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
+	"strconv"
 )
 
 func InitProcessor  (event *models.Event) APIError{
@@ -52,13 +53,48 @@ func KillProcessor(event*models.Event) APIError{
 }
 
 func PreCleanProcessor(event*models.Event) APIError{
-	return exports.NotImplementError("PreCleanProcessor")
+
+	run ,err := models.QueryRunDetail(event.Data,true,exports.RUN_STATUS_PRE_CLEAN)
+	if err == nil{
+		err = BatchReleaseResource(run)
+		if err == nil {
+			err = models.DiscardRun(run.RunId)
+		}
+        return err
+	}else if err.Errno() == exports.AILAB_NOT_FOUND{
+		return nil
+	}else{
+		return err
+	}
 }
 
 func DiscardProcessor(event*models.Event) APIError{
-    return exports.NotImplementError("DiscardProcessor")
+	run ,err := models.QueryRunDetail(event.Data,true,exports.RUN_STATUS_DISCARD)
+	if err == nil{
+		return models.DisposeRun(run)
+	}else if err.Errno() == exports.AILAB_NOT_FOUND{
+		return nil
+	}else{
+		return err
+	}
 }
 
 func ClearLabProcessor(event*models.Event) APIError{
-	return exports.NotImplementError("DiscardProcessor")
+
+	labId ,_ := strconv.ParseUint(event.Data,0,64)
+	run,err := models.SelectAnyLabRun(labId)
+	if err == nil{
+		err = BatchReleaseResource(run)
+		if err == nil {
+			err = models.DisposeRun(run)
+		}
+		if err == nil {
+			err = exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK)
+		}
+		return err
+	}else if err.Errno() == exports.AILAB_NOT_FOUND{
+		return models.DisposeLab(labId)
+	}else{
+		return err
+	}
 }

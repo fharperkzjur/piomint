@@ -14,6 +14,7 @@ import (
 const (
 	read_db_failed_retry    = 5000
 	default_task_fail_delay = 5000
+	default_continue_do     = 20
 )
 
 type BackendEventSync struct {
@@ -198,7 +199,11 @@ func default_task_run(task*BackendTask){
 			if err == nil {
                 task.SetLastProcessed(event.ID)
 			}else {
-				task.AlertableWait(task.failed_retry,"process backend event type:%s id:%d failed:%s",
+				ts := task.failed_retry
+				if err.Errno() == exports.AILAB_WOULD_BLOCK {
+					ts = default_continue_do
+				}
+				task.AlertableWait(ts,"process backend event type:%s id:%d failed:%s",
 					  event.Type,event.ID, err.Error())
 			}
 		}

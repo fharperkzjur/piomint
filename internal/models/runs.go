@@ -67,6 +67,12 @@ func (ctx*BasicMLRunContext) PrepareJobStatusChange() *JobStatusChange {
 		 Status:   ctx.Status,
 	 }
 }
+func (ctx*BasicMLRunContext) HasCompleteOK() bool {
+	 return ctx.Status == exports.RUN_STATUS_SUCCESS
+}
+func (ctx*BasicMLRunContext) NeedClean() bool {
+	 return ctx.Status >= exports.RUN_STATUS_PRE_CLEAN
+}
 
 func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  run := &Run{
@@ -170,6 +176,10 @@ func  QueryRunDetail(runId string,unscoped bool,status int) (run*Run,err APIErro
 	}
 	err =  wrapDBQueryError(inst.First(run,"run_id=?",runId))
 	return
+}
+func SelectAnyLabRun(labId uint64) (run*Run,err APIError){
+	run = &Run{}
+	return run,wrapDBQueryError(db.Unscoped().First(run,"lab_id=?",labId))
 }
 
 func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,APIError){
