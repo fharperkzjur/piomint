@@ -1,21 +1,20 @@
-# ai-lab-backend
+[![build](https://img.shields.io/badge/Build-success-brightgreen.svg)](https://gitee.com/apulisplatform/apulis_platform/releases)
+[![license](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
+[![release](https://img.shields.io/badge/Release-1.5.0-blue.svg)](https://gitee.com/apulisplatform/apulis_platform/releases/Latest)
+[![docs](https://img.shields.io/badge/doc-passing-blueviolet.svg)](https://gitee.com/apulisplatform/apulis_platform/tree/v1.5.0/docs/tutorial)
+[![python](https://img.shields.io/badge/python-3.7.5-blue.svg)](https://www.python.org/dev/peps/pep-0537/#id4)
+[![Gitter](https://badges.gitter.im/apulis-ai-platform/community.svg)](https://gitter.im/apulis-ai-platform/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-Restful service for AI lab runs management  
+![Apulis标志](docs/img/apulis-logo.png "Apulis logo")
 
-   AI Lab manages runs in two hierarchy , the basic root is called lab which user can construct template data 
-according to your needs. Lab is something like a run groups , configure its tags and config data , then run as
-many times as necessary , user will see run list behind labs. Besides common run tempate data , labs also 
-record user information like user name ,user id , group name ,group id, orgnization name, orgniaztion id etc .
-These data apply to all runs which started below this lab .By the way , each run's output directory will also 
-be created as needed just under its lab storage directory .
+[English](#Overview)|[简体中文](./README_CN.md)
 
-   When lab is created, you can start many kinds of runs belong  to this lab . Different type of runs may 
-have different lifecyle and features, but their data structure remains the same . AI Lab implements these
-features by `flags` when started , that is to say , all type of runs are no difference with AI Lab core ,but 
-their start configuration is different . Different type of runs use different starting code to generate run 
-record, thus API is different ,but core controller remains the same . So add a new job type is simple ,only 
-need to change start code ,combines some core feature flags . 
-  
-   AI Lab implement following core features for each run:
-   1. 
-  
+## Overview
+
+**Apulis AI Platform** is designed to provide an end-to-end AI solution to users from different industries and enable them to start the high-performance AI development work with significantly reduced ramp up time, thereby saving costs and improving efficiency. It will also provide a highly efficient, low cost private cloud AI solution for small and medium size company. 
+
+The platform incorporates TensorFlow, PyTorch, MindSpore and other open source AI frameworks, thereby provides user friendly development environment for AI model training, auto ML, hardware status monitoring etc., making it very easy for AI developers to quickly develop AI application. It also has built-in comprehensive early warning system which can automatically alert the system administrator on any anomaly, thereby improve the platform efficiency and security. 
+
+**License**
+
+The entire codebase is under [MIT license](LICENSE)
