@@ -4,3 +4,6 @@
 [submodule "deps/go-utils"]
 	path = deps/go-utils
 	url = git@apulis-gitlab.apulis.cn:sdk/go-utils.git
+[submodule "deps/go-business"]
+	path = deps/go-business
+	url = https://apulis-gitlab.apulis.cn/sdk/go-business.git
