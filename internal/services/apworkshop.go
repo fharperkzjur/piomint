@@ -78,7 +78,7 @@ func (d APWorkshopResourceSrv) PrepareResource (runId string, token string, reso
 
 		result := make(map[string]interface{})
 		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioPrepareModel","POST",map[string]string{
-			"Authorization":"Bear " + token,
+			"Authorization":"Bearer " + token,
 		},req, &result)
 		if err != nil {
 			return nil,err
@@ -113,7 +113,7 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,token string,resour
 			query  = "?internal=1"
 		}
 		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioCommitModel" + query,"PUT",map[string]string{
-			"Authorization":"Bear " + token,
+			"Authorization":"Bearer " + token,
 		},
 			map[string]interface{}{
 				"context" : runId,
