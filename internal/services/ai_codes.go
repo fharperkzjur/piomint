@@ -138,7 +138,9 @@ func CreateAppRepoBind(req*exports.ReqCreateRepo)(interface{},APIError){
 		err = vcs.setDeployKey(code.RepoId,code.AccessKey,false)
 	}
 	if e:= models.CompleteInitRepo(code,err == nil);e == nil {
-		return code.RepoId,nil
+		return code.RepoId,err
+	}else if (err == nil ){
+		err = e
 	}
 	return "",err
 }

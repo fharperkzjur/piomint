@@ -106,10 +106,14 @@ func DoRequest(url, method string, headers map[string]string, rawBody interface{
 		return err
 	}
 	//@todo: only accpet json response ???
-	if err := json.Unmarshal(rspData,output);err != nil {
+	if e := json.Unmarshal(rspData,output);e != nil {
 		logger.Warnf("[%s] :%s with req:%v invalid response json data !!!",method,url,rawBody)
 		return exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"invalid response data format")
 	}
+	if err != nil {
+		logger.Warnf("[%s] :%s with req:%v error response:%v",method,url,rawBody,rspData)
+	}
+
 	return err
 }
 

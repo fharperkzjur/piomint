@@ -167,7 +167,13 @@ func RollBackAllInitRepos() (int,APIError){
 }
 
 func DeleteRepoActually(repoId string) APIError {
-	return wrapDBUpdateError(db.Delete(&Code{},"repo_id=? and status=?",repoId,exports.AICODE_REPO_STATUS_DELETE),0)
+	return execDBTransaction(func(tx *gorm.DB,events EventsTrack) APIError {
+		err := wrapDBUpdateError(db.Delete(&Code{},"repo_id=? and status=?",repoId,exports.AICODE_REPO_STATUS_DELETE),0)
+		if err == nil {
+			err = wrapDBUpdateError(db.Delete(&CodeBind{},"repo_id=?",repoId),0)
+		}
+		return err
+	})
 }
 
 func CompleteInitRepo(code *Code,success bool) APIError {
