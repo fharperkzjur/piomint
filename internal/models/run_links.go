@@ -18,7 +18,7 @@ func CreateLinkWith(ctx string,refer string) (path string,err APIError){
 		   // must refer to an exists completed run
            mlrun,err := getBasicMLRunInfoEx(tx,0,refer,events)
            if err == nil &&  !mlrun.StatusIsSuccess() {
-           	  err = exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS)
+           	  err = exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"can only ref success completed jobs !")
 		   }
 		   if err == nil {
 		   	  path=mlrun.Output
