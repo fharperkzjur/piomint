@@ -22,6 +22,8 @@ type Run struct{
 	 JobType string `json:"jobType" gorm:"type:varchar(32)"`               // system defined job types
 	 Parent  string `json:"parent,omitempty" gorm:"index;type:varchar(255)"`   // created by parent run
 	 Creator string `json:"creator" gorm:"type:varchar(255)"`
+	 //@mark: username may changed, use uid instead !!!
+	 UserId       uint64       `json:"userId"`
 	 CreatedAt UnixTime  `json:"createdAt"`
 	 DeletedAt soft_delete.DeletedAt `json:"deletedAt,omitempty" gorm:"not null"`
 	 Description string       `json:"description"`
@@ -144,6 +146,7 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 		  JobType:     req.JobType,
 		  Parent:      mlrun.RunId,
 		  Creator:     req.Creator,
+		  UserId:      req.UserId,
 		  Description: req.Description,
 		  Arch:        req.Arch,
 		  Image:       req.Engine,
@@ -731,7 +734,7 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 					First(old, "lab_id=? and job_type=?", mlrun.ID, req.JobType))
 			}else{
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
-					First(old, "lab_id=? and job_type=? and creator=?", mlrun.ID, req.JobType,req.Creator))
+					First(old, "lab_id=? and job_type=? and user_id=?", mlrun.ID, req.JobType,req.UserId))
 			}
 			if err == nil{//exists singleton instance
 				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
@@ -751,7 +754,7 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 					First(old, "parent=? and job_type=?", mlrun.RunId, req.JobType))
 			}else{
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
-					First(old, "parent=? and job_type=? and creator=?", mlrun.RunId, req.JobType,req.Creator))
+					First(old, "parent=? and job_type=? and user_id=?", mlrun.RunId, req.JobType,req.UserId))
 			}
 			if err == nil{//exists singleton instance
 				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")

@@ -231,6 +231,8 @@ type ReqBatchCreateLab struct {
 	Group     string `json:"group,omitempty"`
 	App       string `json:"app,omitempty"`
 	Creator   string `json:"creator,omitempty"`
+	//@mark: username may changed !!!
+	UserId    uint64 `json:"userId"`
 	Namespace string `json:"namespace,omitempty"`
 	ProjectName string `json:"projectName,omitempty"`
 
@@ -277,6 +279,7 @@ type CreateJobRequest struct{
 	// if * will allocate output path automatically and override output resource
 	OutputPath  string                `json:"output"`
 	Creator     string                `json:"creator"`      // user specified creator
+	UserId      uint64                `json:"userId"`       // username may changed
 	Description string                `json:"description"`  // user specified description
 	Tags        RequestTags           `json:"tags"`         // user specified tags
 	Config      RequestObject         `json:"config"`    // user specified configs

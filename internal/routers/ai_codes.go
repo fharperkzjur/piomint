@@ -49,7 +49,10 @@ func updateRepo(c*gin.Context)(interface{},APIError){
 func createRepo(c*gin.Context)(interface{},APIError){
 	repo := &exports.ReqCreateRepo{}
 	if err := c.ShouldBindJSON(repo);err != nil || len(repo.Bind) == 0 || len(repo.Creator) == 0 {
-		return nil,exports.ParameterError("invalid create repo information")
+		return nil,exports.ParameterError("invalid create repo information !!!")
+	}
+	if repo.UserId == 0 {
+		return nil,exports.ParameterError("invalid user id !!!")
 	}
 	if len(repo.Connector) == 0 {
 		repo.Connector = exports.AICODE_CONNECTOR_GITEA
