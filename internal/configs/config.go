@@ -44,6 +44,7 @@ type DbConfig struct {
 	MaxOpenConns int
 	MaxIdleConns int
 	Debug        bool
+	Sslmode      string
 }
 
 type ResourceConfig struct{

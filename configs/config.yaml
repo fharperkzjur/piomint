@@ -31,6 +31,7 @@ db:
   maxOpenConns: 10 # 数据库连接池最大数量
   maxIdleConns: 2 # 数据库空闲连接池最大数量
   debug:        true #数据库debug模式
+  sslmode:      disable
 
 rabbitmq:
   user:     admin # 用户名

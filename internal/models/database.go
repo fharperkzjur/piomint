@@ -25,7 +25,7 @@ func InitDb()  error {
 	switch dbConf.ServerType {
 	case "postgres", "postgresql":
 		// create database if not exists
-		preDsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable", dbConf.Host, dbConf.Port, dbConf.Username, dbConf.Password)
+		preDsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=%s", dbConf.Host, dbConf.Port, dbConf.Username, dbConf.Password,dbConf.Sslmode)
 		db, err = gorm.Open(postgres.Open(preDsn), &gorm.Config{})
 		if err != nil {
 			panic(err)
@@ -45,7 +45,7 @@ func InitDb()  error {
 			}
 		}
 
-		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", dbConf.Host, dbConf.Port, dbConf.Username, dbConf.Password, dbConf.Database)
+		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", dbConf.Host, dbConf.Port, dbConf.Username, dbConf.Password, dbConf.Database,dbConf.Sslmode)
 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			return err
@@ -62,13 +62,13 @@ func InitDb()  error {
 	return  initTables()
 }
 
-func OpenDB(driver string,host string,port int,user ,passwd string,database string) (db*gorm.DB,err error){
+func OpenDB(driver string,host string,port int,user ,passwd string,database string,sslmode string) (db*gorm.DB,err error){
 
 	switch driver {
 	case "postgres", "postgresql":
 		// create database if not exists
-		preDsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable",
-			     host, port, user, passwd)
+		preDsn := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=%s",
+			     host, port, user, passwd,sslmode)
 		db, err = gorm.Open(postgres.Open(preDsn), &gorm.Config{})
 		if err != nil {
 			panic(err)
@@ -86,8 +86,8 @@ func OpenDB(driver string,host string,port int,user ,passwd string,database stri
 			}
 		}
 
-		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			 host, port, user, passwd, database)
+		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+			 host, port, user, passwd, database,sslmode)
 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			return nil,err
