@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 
 echo "./harbor_transfer.sh {ascend-mindinsight:1.2.0} {harbor.apulis.cn:8443/huawei630} {harbor.atlas.cn:8443/apulis}"
