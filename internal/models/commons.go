@@ -66,6 +66,9 @@ type JsonMetaData struct{
 	//data map[string]interface{}
 	data_str []byte
 }
+func (d*JsonMetaData)Empty()bool{
+	return len(d.data_str) <= 2
+}
 func (d*JsonMetaData)MarshalJSON()([]byte,error){
 	if len(d.data_str) == 0 {
 		return nil,nil
@@ -171,6 +174,13 @@ func checkDBQueryError(err error) APIError{
 	}
 	return exports.RaiseServerError(exports.AILAB_DB_QUERY_FAILED,err.Error())
 }
+func checkDBScanError(err error)APIError{
+	if err == nil {
+		return nil
+	}else{
+		return exports.RaiseServerError(exports.AILAB_DB_READ_ROWS,err.Error())
+	}
+}
 func checkDBUpdateError(err error)APIError{
 	if err == nil{
 		return nil
@@ -190,15 +200,17 @@ func execDBTransaction( executor func(tx*gorm.DB) APIError  ) (err APIError) {
 	 err1 := db.Transaction( func(tx *gorm.DB) error {
 	 	   err = executor(tx)
 	 	   if err == nil {
-			   events, _ = tx.Get("log_events")
+			   events, _ = tx.Get(Log_Events_Multi)
 		   }
 	 	   return err
 	 })
 	 if err1 != nil && err == nil{//execute transaction error
 	 	err = checkDBUpdateError(err1)
 	 }
-	 if evt ,ok := events.(string) ; ok {//notify backend events occur
-		 notifier.NotifyWithEvent(evt)
+	 if event,ok := events.(map[string]uint64);err == nil && ok {
+	 	for k,v := range(event){
+	 		notifier.NotifyWithEvent(k,v)
+		}
 	 }
 	 return
 }

@@ -31,6 +31,14 @@ type DbConfig struct {
 	Debug        bool
 }
 
+type ResourceConfig struct{
+	Model         string
+	Dataset       string
+	Jobsched      string
+	Engine        string
+	Code          string
+}
+
 type TimeConfig struct {
 	TimeZoneStr string
 	TimeZone    *time.Location

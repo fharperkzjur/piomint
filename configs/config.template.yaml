@@ -18,3 +18,9 @@ db:
   maxIdleConns: 2 # 数据库空闲连接池最大数量
   debug:        false #数据库debug模式
 
+resource:
+  model:          http://workshop.bmod:6110    #模型管理接口
+  dataset:        http://adhub.bmod:6120       #数据集管理接口
+  jobsched:       http://job-sched.bmod:6130   #job调度管理接口
+  engine:         http://adharbor.bmod:6140    #镜像管理接口
+  code:           #代码管理暂时由模型工厂托管

@@ -14,6 +14,8 @@ const (
 	AIStudio_labs_visual = "visual"
 	AIStudio_labs_expert = "expert"
 	AIStudio_labs_autodl = "autodl"
+	// scene related labs
+	AIStudio_labs_scenes = "scenes"
 	AISutdio_labs_discard = "**"
 )
 const (
@@ -30,18 +32,22 @@ const (
 	RUN_STATUS_ABORT   = 102
 	RUN_STATUS_SUCCESS = 103
     // wait for cleaning all storage files then delete from db
-	RUN_STATUS_CLEANING = 110
+	RUN_STATUS_PRE_CLEAN = 110
+	// when no refs for this run , discard it eventually
+	RUN_STATUS_DISCARD   = 111
 )
 
 const (
+	// all resource has been prepared successfully
+	RUN_FLAGS_PREPARE_SUCCESS = 0x1
 	// default runs will be multi-instance support
-	RUN_FLAGS_SINGLE_INSTANCE = 0x1
+	RUN_FLAGS_SINGLE_INSTANCE = 0x2
 	// default runs will not deleted automatially when success
-	RUN_FLAGS_AUTO_DELETED = 0x2
+	RUN_FLAGS_AUTO_DELETED = 0x4
 	// support paused&resume semantics
-	RUN_FLAGS_RESUMEABLE = 0x4
+	RUN_FLAGS_RESUMEABLE = 0x8
 	// support graceful stop semantics ?
-	RUN_FLAGS_GRACE_STOP= 0x8
+	RUN_FLAGS_GRACE_STOP= 0x10
 )
 
 const (
@@ -170,16 +176,19 @@ type ReqBatchCreateLab struct {
 
 /*
        type Resource struct{
-          // default will be `resourceName`
-          Type
-          Path
+          Type      // default will be `resourceName`
+          Path      // storage path
           ID
-          Name
           Version
+          Name
+          SubResource: {
+              "code":  "{code url}"
+              "train": "{train}"
+              "infer": "{used for inference}"
+          }
           // any other related fields
           ...
      }
-
 */
 
 type CreateJobRequest struct{
@@ -195,16 +204,16 @@ type CreateJobRequest struct{
 	OutputPath  string                `json:"output"`
 	Creator     string                `json:"creator"`      // user specified creator
 	Description string                `json:"description"`  // user specified description
-	Tags        map[string]string     `json:"tags"`         // user specified tags
-	Config      map[string]interface{}   `json:"config"`    // user specified configs
-	Resource    map[string]interface{}   `json:"resource"`  // platform related resources
-	Cmd         string                   `json:"cmd"`       // user specified command line for startup
+	Tags        RequestTags           `json:"tags"`         // user specified tags
+	Config      RequestObject         `json:"config"`    // user specified configs
+	Resource    RequestObject         `json:"resource"`  // platform related resources
+	Cmd         string                `json:"cmd"`       // user specified command line for startup
 
-	Envs        map[string]string        `json:"envs"`
+	Envs        RequestTags        `json:"envs"`
 	Endpoints       [] PodEndpoint       `json:"endpoints"` // control job scheduler create specific endpoint when create job
 }
 
 type NotifyBackendEvents interface{
-	NotifyWithEvent(evt string)
+	NotifyWithEvent(evt string,lastId uint64)
 }
 

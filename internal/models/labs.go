@@ -68,6 +68,9 @@ func (job*JobStatusChange)EnableResume()bool{
 func (job*JobStatusChange)IsIniting()bool{
 	return job.Status == exports.RUN_STATUS_INIT
 }
+func (job*JobStatusChange)HasInitOK()bool{
+	return (job.Flags & exports.RUN_FLAGS_PREPARE_SUCCESS) != 0
+}
 
 type JobStats  map[string]*LabRunStats
 
@@ -335,11 +338,9 @@ func QueryLabStats(labId uint64, group string)(interface{},APIError){
 			  func(rows *sql.Rows) APIError {
 
 			  	 stats := &JsonMetaData{}
-			  	 if err := rows.Scan(stats);err != nil {
-					 return exports.RaiseAPIError(exports.AILAB_DB_READ_ROWS)
-				 }
+			  	 err   := checkDBScanError(rows.Scan(stats))
 				 lab.Sum(stats)
-			  	 return nil
+			  	 return err
 			  })
 	  	   if err != nil {
 	  	   	  return nil,err

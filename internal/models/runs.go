@@ -118,7 +118,7 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  return run
 }
 
-func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enableRepace bool) (result interface{},err APIError){
+func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enableRepace bool,syncPrepare bool) (result interface{},err APIError){
 
 	err = execDBTransaction(func(tx *gorm.DB) APIError {
 
@@ -139,14 +139,18 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enable
 			run  = newLabRun(mlrun,req)
 			err  = allocateLabRunStg(run,mlrun)
 			if err == nil{
+				//@mark: no resource request !!!
+				if run.Resource == nil || run.Resource.Empty(){
+                    run.Flags |= exports.RUN_FLAGS_PREPARE_SUCCESS
+                    run.Status = exports.RUN_STATUS_STARTING
+				}else if syncPrepare {//@mark: synchronoulsy prepare create deleted run first , then change to starting when prepare success
+					run.DeletedAt = &UnixTime{time.Now()}
+				}
 				err  = wrapDBUpdateError(tx.Create(&run),1)
 			}
 		}
 		if err == nil{
-            err = completeCreateRun(tx,mlrun,req)
-		}
-		if err == nil {
-			err = doLogStartRun(tx,run.RunId)
+            err = completeCreateRun(tx,mlrun,req,run)
 		}
 		if err == nil{
 			result = run
@@ -155,13 +159,16 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enable
 	})
 	return
 }
-func  QueryRunDetail(runId string,unscoped bool) (run*Run,err APIError){
+func  QueryRunDetail(runId string,unscoped bool,status int) (run*Run,err APIError){
 	run  = &Run{}
-	if !unscoped {
-        err = wrapDBQueryError(db.First(run,"id=?",runId))
-	}else{
-		err = wrapDBQueryError(db.Unscoped().First(run,"id=?",runId))
+	inst := db
+	if unscoped {
+		inst = inst.Unscoped()
 	}
+	if status >= 0 {
+		inst = inst.Where("status=?",status)
+	}
+	err =  wrapDBQueryError(inst.First(run,"run_id=?",runId))
 	return
 }
 
@@ -174,12 +181,17 @@ func tryResumeRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint6
 		return 0,exports.RaiseAPIError(exports.AILAB_RUN_CANNOT_RESTART)
 	}
 
-	run.StatusTo = exports.RUN_STATUS_INIT
+	if run.HasInitOK() {
+		run.StatusTo =  exports.RUN_STATUS_STARTING
+	}else{
+		run.StatusTo = exports.RUN_STATUS_INIT
+	}
+
 	err := wrapDBUpdateError(tx.Table("runs").Update("status",run.StatusTo).
 		Where("run_id=?",run.RunId),1)
 	if err == nil {
 		mlrun.JobStatusChange(run)
-		err = doLogStartRun(tx,run.RunId)
+		err = doLogStartingRun(tx,run.RunId,run.StatusTo)
 	}
 	return 1,err
 }
@@ -188,7 +200,9 @@ func tryKillRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint64,
 	if !run.RunActive() {// no need to kill
 		return 0,nil
 	}
-	if run.IsIniting() {// kill to abort immediatley
+	if run.StatusTo >= exports.RUN_STATUS_FAILED {//user defined end status
+
+	}else if run.IsIniting() {// kill to abort immediatley
 		run.StatusTo = exports.RUN_STATUS_ABORT
 	}else{
 		run.StatusTo = exports.RUN_STATUS_KILLING
@@ -224,7 +238,7 @@ func tryForceDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext)(u
 	err := wrapDBUpdateError(tx.Where("run_id=?",run.RunId).Updates(
 		    map[string]interface{}{
 				"deleted_at": UnixTime{time.Now()},
-				"status":     exports.RUN_STATUS_CLEANING,
+				"status":     exports.RUN_STATUS_PRE_CLEAN,
 			}),1)
 	if err == nil {
 		mlrun.JobStatusChange(run)
@@ -237,7 +251,7 @@ func tryCleanRunWithDeleted(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunConte
 		if  run.RunActive() {//cannot delete a active run , should never happen
 			return 0,exports.RaiseAPIError(exports.AILAB_STILL_ACTIVE)
 		}
-	    err := wrapDBUpdateError(tx.Table("runs").UpdateColumn("status",exports.RUN_STATUS_CLEANING).
+	    err := wrapDBUpdateError(tx.Table("runs").UpdateColumn("status",exports.RUN_STATUS_PRE_CLEAN).
 		    Where("run_id=?",run.RunId),1)
 	    if err == nil {
 	    	err = doLogCleanRun(tx,run.RunId)
@@ -266,12 +280,9 @@ func  tryRecursiveOpRuns(tx*gorm.DB, mlrun*BasicMLRunContext,jobType string,deep
 				err = execDBQuerRows(inst.Where("parent=?",result[i].RunId),func(rows*sql.Rows)APIError{
 
 					job := &JobStatusChange{}
-					if err1 := rows.Scan(job);err1 == nil {
-						result = append(result,*job)
-                        return nil
-					}else{
-						return exports.RaiseAPIError(exports.AILAB_DB_READ_ROWS)
-					}
+					err := checkDBScanError(rows.Scan(job))
+					result = append(result,*job)
+                    return err
 
 				})
 			}
@@ -282,7 +293,9 @@ func  tryRecursiveOpRuns(tx*gorm.DB, mlrun*BasicMLRunContext,jobType string,deep
 			counts += cnt
 		}
         // update lab statistics
-		err = mlrun.Save(tx)
+        if err == nil {
+			err = mlrun.Save(tx)
+		}
 		return
 }
 
@@ -353,7 +366,7 @@ func ResumeLabRun(labId uint64,runId string) (mlrun *BasicMLRunContext,err APIEr
 }
 
 func PauseLabRun(labId uint64,runId string) APIError{
-	 return exports.NotImplementError()
+	 return exports.NotImplementError("PauseLabRun")
 }
 func ListAllLabRuns(req*exports.SearchCond,labId uint64) (interface{} ,APIError){
 	inst := db.Select(list_runs_fields)
@@ -362,6 +375,96 @@ func ListAllLabRuns(req*exports.SearchCond,labId uint64) (interface{} ,APIError)
 	}
 	return makePagedQuery(inst,req, &[]Run{})
 }
+
+func  PrepareRunSuccess(runId string,resource* JsonMetaData,isRollback bool) APIError{
+	if isRollback {// process deleted RUN_STATUS_INIT
+		return execDBTransaction(func(tx*gorm.DB)APIError{
+
+			mlrun ,err := getBasicMLRunInfo(tx.Unscoped().Where("runs.deleted_at is not null and runs.status=?",exports.RUN_STATUS_INIT),0 ,runId)
+			if err != nil{
+				if err.Errno() == exports.AILAB_NOT_FOUND {// context not exists
+					return nil
+				}else{
+					return err
+				}
+			}
+			err = wrapDBUpdateError( tx.Table("runs").Where("run_id=?",runId).
+				UpdateColumns(map[string]interface{}{
+					"status" : exports.RUN_STATUS_STARTING,
+					"deleted_at":nil,
+					"flags": gorm.Expr("flags|?",exports.RUN_FLAGS_PREPARE_SUCCESS),
+					"resource":resource,}) ,1)
+			if err == nil {
+				jobs := mlrun.PrepareJobStatusChange()
+				jobs.Status = -1
+				jobs.StatusTo = exports.RUN_STATUS_STARTING
+				mlrun.JobStatusChange(jobs)
+				err = mlrun.Save(tx)
+			}
+			if err == nil {
+				err = doLogStartingRun(tx,runId,exports.RUN_STATUS_STARTING)
+			}
+			return err
+		})
+
+	}else{// process normal RUN_STATUS_INIT
+		return execDBTransaction(func(tx*gorm.DB)APIError{
+
+			err := wrapDBUpdateError( tx.Table("runs").Where("run_id=? and status=?",runId,exports.RUN_STATUS_INIT).
+				Updates(map[string]interface{}{
+					"status" : exports.RUN_STATUS_STARTING,
+					"flags": gorm.Expr("flags|?",exports.RUN_FLAGS_PREPARE_SUCCESS),
+					"resource":resource,}) ,1)
+			if err != nil && err.Errno() == exports.AILAB_DB_UPDATE_UNEXPECT {// context not exists
+				return nil
+			}
+			if err == nil {
+				err = doLogStartingRun(tx,runId,exports.RUN_STATUS_STARTING)
+			}
+			return err
+		})
+	}
+}
+
+func PrepareRunFailed(runId string,isRollback bool) APIError {
+	if isRollback {
+		return execDBTransaction(func(tx*gorm.DB)APIError{
+
+			mlrun,err := getBasicMLRunInfo(tx.Unscoped().Where("deleted_at is not null and status=?",exports.RUN_STATUS_INIT),0,runId)
+			if err != nil{
+				if err.Errno() == exports.AILAB_NOT_FOUND {// context not exists
+					return nil
+				}else{
+					return err
+				}
+			}
+			jobs := mlrun.PrepareJobStatusChange()
+			jobs.Status  = exports.RUN_STATUS_FAILED
+			_,err = tryCleanRunWithDeleted(tx,jobs,mlrun)
+			return err
+		})
+	}else{
+		return execDBTransaction(func(tx*gorm.DB)APIError{
+
+			mlrun,err := getBasicMLRunInfo(tx.Where("status=?",exports.RUN_STATUS_INIT),0,runId)
+			if err != nil{
+				if err.Errno() == exports.AILAB_NOT_FOUND {// context not exists
+					return nil
+				}else{
+					return err
+				}
+			}
+			jobs := mlrun.PrepareJobStatusChange()
+			jobs.StatusTo  = exports.RUN_STATUS_FAILED
+			_,err = tryKillRun(tx,jobs,mlrun)
+			if err == nil{
+				mlrun.Save(tx)
+			}
+			return err
+		})
+	}
+}
+
 func  getBasicMLRunInfo(tx*gorm.DB,labId uint64,runId string) (mlrun*BasicMLRunContext,err APIError){
 
 	  mlrun = &BasicMLRunContext{}
@@ -394,9 +497,9 @@ func tryClearLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError {
 	}else if err.Errno() == exports.AILAB_NOT_FOUND{
 
 		return wrapDBUpdateError(tx.Model(&Run{}).Where("lab_id in ?",labs).UpdateColumns(
-			  map[string]interface{}{
+			  map[string]interface{}{//@todo: clear lab directly without preclean ???
                   "deleted_at" : UnixTime{time.Now()},
-                  "status":     exports.RUN_STATUS_CLEANING,
+                  "status":     exports.RUN_STATUS_DISCARD,
 			  }),0)
 	}else{
 		return err
@@ -412,17 +515,15 @@ func tryCleanLabRunsByGroup(tx*gorm.DB,labs [] uint64) (counts uint64,err APIErr
 		err = execDBQuerRows(tx.Table("runs").Unscoped().Where("lab_id=? and status >= ? and deleted_at is not null",
 			id,exports.RUN_STATUS_FAILED).Select(select_run_status_change), func(rows *sql.Rows) APIError {
 			stats := &JobStatusChange{}
-			if err := rows.Scan(stats);err != nil {
-				return exports.RaiseAPIError(exports.AILAB_DB_READ_ROWS)
+			if err   := checkDBScanError(rows.Scan(stats));err != nil {
+				return err
 			}
 			cnt,err := tryCleanRunWithDeleted(tx,stats,mlrun)
 			counts += cnt
 			return err
 		})
-		err =  mlrun.Save(tx)
-		if err != nil {
-			return
-		}
+		if err == nil {	err =  mlrun.Save(tx)}
+		if err != nil {	return	}
 	}
 	return
 }
@@ -430,23 +531,19 @@ func tryKillLabRunsByGroup(tx*gorm.DB,labs []uint64) (counts uint64,err APIError
 	  var mlrun *BasicMLRunContext
 	  for _,id := range (labs) {
 	  	  mlrun,err = getBasicMLRunInfo(tx,id,"")
-	  	  if err != nil {
-	  	  	 return
-		  }
+	  	  if err != nil { return }
 		  err = execDBQuerRows(tx.Table("runs").Where("lab_id=? and status < ?",
 		  	  id,exports.RUN_STATUS_FAILED).Select(select_run_status_change), func(rows *sql.Rows) APIError {
 		  	  	stats := &JobStatusChange{}
-		  	  	if err := rows.Scan(stats);err != nil {
-		  	  		return exports.RaiseAPIError(exports.AILAB_DB_READ_ROWS)
+		  	  	if err := checkDBScanError(rows.Scan(stats));err != nil {
+		  	  		return err
 				}
 				cnt,err := tryKillRun(tx,stats,mlrun)
 				counts += cnt
 				return err
 		  })
-		  err =  mlrun.Save(tx)
-		  if err != nil {
-		  	return
-		  }
+		  if err == nil { err =  mlrun.Save(tx) }
+		  if err != nil { return}
 	  }
 	  return
 }
@@ -516,7 +613,7 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 	return
 }
 
-func completeCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest) (err APIError){
+func completeCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest,run*Run) (err APIError){
 	 if (req.JobFlags & exports.RUN_FLAGS_SINGLE_INSTANCE) == 0 {
 		 if mlrun.IsLabRun() {//create lab run
 	        err = wrapDBUpdateError(tx.Table("labs").Where("id=?",mlrun.ID).Update("starts",mlrun.Starts),1)
@@ -524,16 +621,18 @@ func completeCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 		 	err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",mlrun.RunId).Update("started",mlrun.Started),1)
 		 }
 	 }
-	 if err == nil{
+	 if err == nil && run.DeletedAt == nil {// asynchronously prepare data
 	 	mlrun.JobStatusChange(&JobStatusChange{
 			JobType:  req.JobType,
 			Status:   -1,
-			StatusTo: exports.RUN_STATUS_INIT,
+			StatusTo: run.Status,
 		})
 	 	err = mlrun.Save(tx)
+	 	if err == nil { err = doLogStartingRun(tx,run.RunId,run.Status) }
 	 }
 	 return err
 }
+
 
 
 

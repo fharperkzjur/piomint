@@ -43,7 +43,7 @@ func submitLabRun(c*gin.Context) (interface{},APIError){
 	 	return nil,exports.ParameterError("invalid json data")
 	 }
 	 req.JobType = exports.AILAB_RUN_TRAINING
-	 return models.CreateLabRun(labId,"",req,false)
+	 return services.ReqCreateRun(labId,"",req,false,true)
 }
 
 func submitLabEvaluate(c*gin.Context)(interface{},APIError){
@@ -56,13 +56,13 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 		return nil,exports.ParameterError("invalid json data")
 	}
 	req.JobType = exports.AILAB_RUN_EVALUATE
-	return models.CreateLabRun(labId,runId,req,false)
+	return services.ReqCreateRun(labId,runId,req,false,true)
 }
 
 func saveLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
 	req.JobType  = exports.AILAB_RUN_SAVE
 	req.JobFlags = exports.RUN_FLAGS_SINGLE_INSTANCE | exports.RUN_FLAGS_AUTO_DELETED
-	run, err := models.CreateLabRun(labId,runId,req,true)
+	run, err := services.ReqCreateRun(labId,runId,req,true,true)
 	if err == nil {// created new run
 		return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start save job ...")
 	}else if err.Errno() == exports.AILAB_STILL_ACTIVE {// exists old job
@@ -77,7 +77,7 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 	if labId == 0 || len(runId) == 0 {
 		return nil,exports.ParameterError("create nest run invalid lab id or run id")
 	}
-	run, err := models.QueryRunDetail(runId,false)
+	run, err := models.QueryRunDetail(runId,false,-1)
 	if err == nil && run.LabId != labId {
 		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
 	}
@@ -85,7 +85,7 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 }
 func sysQueryLabRun(c*gin.Context)(interface{},APIError){
 	_,runId := parseLabRunId(c)
-	return models.QueryRunDetail(runId,true)
+	return models.QueryRunDetail(runId,true,-1)
 }
 
 func getAllLabRuns(c*gin.Context) (interface{},APIError){
@@ -127,6 +127,7 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 		return nil,exports.ParameterError("invalid lab id or run id")
 	}
 	req := &exports.CreateJobRequest{}
+	action:=c.Query("action")
 	switch(c.Query("action")){
 	  case "open_visual":
 	  	   if err := c.ShouldBindJSON(req);err != nil {
@@ -151,7 +152,7 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 	  case "clean":
 	  	  return models.CleanLabRun(labId,runId)
 	  default:
-	  	  return nil,exports.NotImplementError()
+	  	  return nil,exports.NotImplementError("unsupport mlrun action:"+action)
 	}
 }
 
@@ -160,6 +161,7 @@ func sysPostLabRuns(c*gin.Context)(interface{},APIError){
 	if len(runId) == 0 {
 		return nil,exports.ParameterError("invalid run id")
 	}
+	action := c.Query("action")
 	switch(c.Query("action")){
 	case "kill":
 		return models.KillLabRun(0,runId,false)
@@ -170,7 +172,7 @@ func sysPostLabRuns(c*gin.Context)(interface{},APIError){
 	case "clean":
 		return models.CleanLabRun(0,runId)
 	default:
-		return nil,exports.NotImplementError()
+		return nil,exports.NotImplementError("unsupport sys mlrun action:"+action)
 	}
 }
 
@@ -186,7 +188,7 @@ func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (i
 
 	 req.JobFlags = exports.RUN_FLAGS_SINGLE_INSTANCE | exports.RUN_FLAGS_RESUMEABLE
 	 req.JobType  = exports.AILAB_RUN_VISUALIZE
-	 run, err := models.CreateLabRun(labId,runId,req,false)
+	 run, err := services.ReqCreateRun(labId,runId,req,false,true)
 	 if err == nil {// created new run
 	 	return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start visual job ...")
 	 }else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {// exists old job
@@ -211,7 +213,7 @@ func sysCleanLabRuns(c*gin.Context) (interface{},APIError){
 }
 
 func sysResetCleanStrategy(c*gin.Context) (interface{},APIError){
-	 return nil,exports.NotImplementError()
+	 return nil,exports.NotImplementError("sysResetCleanStrategy")
 }
 
 func parseLabRunId(c*gin.Context) (labId uint64,runId string){

@@ -34,6 +34,9 @@ const (
 	AILAB_LOGIC_ERROR
 	AILAB_SINGLETON_RUN_EXISTS
 	AILAB_RUN_CANNOT_RESTART
+	AILAB_REMOTE_NETWORK_ERROR
+	AILAB_REMOTE_REST_ERROR
+	AILAB_REMOTE_GRPC_ERROR
 
 )
 const (
@@ -90,8 +93,8 @@ func ParameterError(msg string) *APIException {
 	return NewAPIException(http.StatusBadRequest, AILAB_PARAM_ERROR, msg)
 }
 
-func NotImplementError()*APIException{
-	return NewAPIException(http.StatusBadRequest,AILAB_NOT_IMPLEMENT,"Not implement by AILab")
+func NotImplementError(msg string)*APIException{
+	return NewAPIException(http.StatusBadRequest,AILAB_NOT_IMPLEMENT,msg)
 }
 
 func DockerImageError()*APIException{

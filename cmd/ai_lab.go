@@ -8,6 +8,7 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/loggers"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/internal/routers"
+	"github.com/apulis/bmod/ai-lab-backend/internal/services"
 	pb "github.com/apulis/bmod/ai-lab-backend/pkg/api"
 	_ "github.com/apulis/sdk/go-utils/logging"
 	"github.com/sirupsen/logrus"
@@ -36,6 +37,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	err = services.InitServices()
+	if err != nil {
+		panic(err)
+	}
 	var httpSrv,grpcSrv interface{}
 	if config.Port != 0 {
 		httpSrv=startHttpServer(config.Port)
@@ -60,8 +65,10 @@ func main() {
 		stopGrpcServer(grpcSrv,5*time.Second)
 		grpcSrv = nil
 	}
-
 	logger.Println("Server exited !")
+
+	services.QuitServices()
+	logger.Println("Server backend tasks exited !")
 }
 
 func startHttpServer(port int ) *http.Server{
