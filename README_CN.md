@@ -95,11 +95,11 @@
 
 ### 现有分支维护状态
 
-| **分支名**   | **当前状态**  | **上线时间**          | **后续状态**                             |**EOL 日期**|
+| **分支名**    | **当前状态**  | **上线时间**          | **后续状态**                             |**EOL 日期**|
 |--------------|--------------|----------------------|---------------------------------------|------------|
-| **v1.6**     | Development  | 2021-10-25 Maintained | Maintained <br> 2022-03-31 estimated |            |
-| **v1.5**     | Maintained   | 2020-12-31           | Unmaintained <br> 2021-06-30 estimated| 2021-09-30 |
-| **v1.3**     | Unmaintained | 2020-10-30           | End Of Life <br> 2020-12-01 estimated | 2020-11-30 |
+| **v1.6**     | Release      | 2021-10-25 Maintained| Maintained <br> 2022-03-31 estimated  |            |
+| **v1.5**     | UnMaintained | 2020-12-31           | Unmaintained <br> 2021-06-30 estimated| 2021-09-30 |
+| **v1.3**     | End Of Life| 2020-10-30           | End Of Life <br> 2020-12-01 estimated | 2020-11-30 |
 | **v0.1.6**   | End Of Life  | 2020-08-31           |                                       | 2020-09-30 |
 | **v0.1.0**   | End Of Life  | 2020-07-01           |                                       | 2020-09-30 |
 
