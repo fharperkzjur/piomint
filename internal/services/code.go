@@ -41,49 +41,60 @@ func (d EngineResourceSrv) CompleteResource(runId string,resource exports.GObjec
 	return nil
 }
 
-func ValidateEngineUrl(engine string,arch string)(string, string, APIError){
+func ValidateEngineUrl(token string, engine string,arch string)(string, string, APIError){
 	 if engine == exports.AILAB_ENGINE_DEFAULT {//use internal init-container engine
 	 	return engine,arch,nil
 	 }else if engineId,err := strconv.ParseUint(engine,10,64);err == nil && engineId > 0 {//resolve id to full name by apharbor
-        return getAPHarborImageUrl(engineId,arch)
+        return getAPHarborImageUrl(token,engineId,arch)
      }else if engine[0] == '#' {//@todo: validate user request name ???
      	return engine[1:],arch,nil
      }else if paths := strings.SplitN(engine,"/",2);len(paths) == 2 && strings.ContainsAny(paths[0],".:"){//already full name
      	return engine,arch,nil
      }else {// resolve relative name:tag to full name by apharbor
-        return getAPHarborImageUrlByName(engine,arch)
+        return getAPHarborImageUrlByName(token,engine,arch)
      }
 }
 
-func getAPHarborImageUrl(id uint64,arch string) (string,string,APIError){
+func getAPHarborImageUrl(token string, id uint64,arch string) (string,string,APIError){
 	 url := fmt.Sprintf("%s/images/imageVersion/%d",configs.GetAppConfig().Resources.ApHarbor)
-	 type ImageVersionInfo struct{
+	 type ImageVersion struct{
 		 ImageFullPath string `json:"imageFullPath"`
 		 Arch          string   //@todo:  no arch information yet ???
 	 }
-	 image := &ImageVersionInfo{}
-	 if err := Request(url,"GET",nil,nil,image);err != nil {
+	 type ImageVersionRsp struct{
+		 ImageVersion ImageVersion `json:"imageVersion"`
+	 }
+	 image := &ImageVersionRsp{}
+	 if err := Request(url,"GET",map[string]string{
+	 	"Authorization" : token,
+	 },nil,image);err != nil {
 	 	return "","",nil
 	 }
-	 if image.Arch == "" {//@todo:  should join this two arch here ?
-	 	image.Arch=arch
+	 if image.ImageVersion.Arch == "" {//@todo:  should join this two arch here ?
+	 	image.ImageVersion.Arch=arch
 	 }
-	 return image.ImageFullPath,image.Arch,nil
+	 return image.ImageVersion.ImageFullPath,image.ImageVersion.Arch,nil
 }
-func getAPHarborImageUrlByName(name string,arch string) (string,string,APIError){
-	url := fmt.Sprintf("%s/imagesByName?name=%s",configs.GetAppConfig().Resources.ApHarbor,name)
-	type ImageVersionInfo struct{
+func getAPHarborImageUrlByName(token string,name string,arch string) (string,string,APIError){
+
+	url := fmt.Sprintf("%s/images/publicImage/%s?tag=",configs.GetAppConfig().Resources.ApHarbor,name)
+	type ImageVersion struct{
 		ImageFullPath string `json:"imageFullPath"`
 		Arch          string   //@todo:  no arch information yet ???
 	}
-	image := &ImageVersionInfo{}
-	if err := Request(url,"GET",nil,nil,image);err != nil {
+	type ImageVersionRsp struct{
+		ImageVersion ImageVersion `json:"imageVersion"`
+	}
+	image := &ImageVersionRsp{}
+	if err := Request(url,"GET",map[string]string{
+		"Authorization" : token,
+	},nil,image);err != nil {
 		return "","",nil
 	}
-	if image.Arch == "" {//@todo:  should join this two arch here ?
-		image.Arch=arch
+	if image.ImageVersion.Arch == "" {//@todo:  should join this two arch here ?
+		image.ImageVersion.Arch=arch
 	}
-	return image.ImageFullPath,image.Arch,nil
+	return image.ImageVersion.ImageFullPath,image.ImageVersion.Arch,nil
 }
 
 type StoreResourceSrv struct{

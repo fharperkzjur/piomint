@@ -235,6 +235,7 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 	  	   if err := c.ShouldBindJSON(req);err != nil {
 	  	   	  return nil,exports.ParameterError("invalid json data")
 		   }
+		   req.Token = getUserToken(c)
 		   return openLabRunVisual(labId,runId,req)
 	  case "close_visual":
 	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_VISUALIZE,false)

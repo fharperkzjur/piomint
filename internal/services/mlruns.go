@@ -82,7 +82,7 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 
 	//@mark: validate engine
 	var err1 APIError
-	if req.Engine,req.Arch,err1 = ValidateEngineUrl(req.Engine,req.Arch);err1 != nil {
+	if req.Engine,req.Arch,err1 = ValidateEngineUrl(req.Token,req.Engine,req.Arch);err1 != nil {
 		return nil,err1
 	}
 	//@mark: validate user endpoints
