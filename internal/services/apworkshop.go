@@ -22,14 +22,14 @@ const (
 
 type APWorkshopRefInfo struct{
 	Context      string         `json:"context,omitempty"`
-	ModelID      interface{}    `json:"modelId,omitempty"`
-	ModelVersion interface{}    `json:"modelVersionId,omitempty"`
+	ModelID      int64    `json:"modelId,omitempty"`
+	ModelVersion int64    `json:"modelVersionId,omitempty"`
 }
 type APWorkshopPrepareInfo struct{
 	UserName     string         `json:"userName"`
 	Context      string         `json:"context,omitempty"`
 	Scope        string         `json:"scope"`
-	ModelID      interface{}    `json:"modelId,omitempty"`
+	ModelID      int64    `json:"modelId,omitempty"`
 	ModelName    string         `json:"modelName"`
 	ModelDescription string     `json:"modelDescription,omitempty"`
 	IsTmp        bool           `json:"isTmp,omitempty"`
@@ -44,8 +44,8 @@ func (d APWorkshopResourceSrv) PrepareResource (runId string,  resource exports.
 		}
 		req :=  &APWorkshopRefInfo{
 			Context:      runId,
-			ModelID:      resource["id"],
-			ModelVersion: resource["version"],
+			ModelID:      safeToNumber(resource["id"]),
+			ModelVersion: safeToNumber(resource["version"]),
 		}
 		result := make(map[string]interface{})
 		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioRef","POST",nil,req, &result)
@@ -56,7 +56,7 @@ func (d APWorkshopResourceSrv) PrepareResource (runId string,  resource exports.
 	}else{//register new model
 		req := &APWorkshopPrepareInfo{
 			Context:      runId,
-			ModelID:      resource["id"],
+			ModelID:      safeToNumber(resource["id"]),
 		}
 		req.Scope,_     =resource["scope"].(string)
 		req.ModelName,_ =resource["name"].(string)
@@ -92,8 +92,8 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,resource exports.GO
 		}
 		req :=  &APWorkshopRefInfo{
 			Context:      runId,
-			ModelID:      resource["id"],
-			ModelVersion: resource["version"],
+			ModelID:      safeToNumber(resource["id"]),
+			ModelVersion: safeToNumber(resource["version"]),
 		}
 		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioUnref","POST",nil,req, nil)
 		if err != nil && err.Errno() == MODEL_REF_NOT_EXISTS {// unref not exists supress not found error
