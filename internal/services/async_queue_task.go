@@ -62,7 +62,7 @@ func KillProcessor(event*models.Event) APIError{
 }
 
 func checkReleaseJobSched(run*models.Run,cleanFlags int,filterStatus int) APIError {
-	if configs.GetAppConfig().Debug && needReleaseJobSched(cleanFlags) && !exports.HasJobCleanupWithJobSched(run.Flags) {
+	if !configs.GetAppConfig().Debug && needReleaseJobSched(cleanFlags) && !exports.HasJobCleanupWithJobSched(run.Flags) {
 		err := DeleteJob(run.RunId)
 		if err == nil {
             err = models.AddRunReleaseFlags(run.RunId,exports.AILAB_RUN_FLAGS_RELEASED_JOB_SCHED,filterStatus)
