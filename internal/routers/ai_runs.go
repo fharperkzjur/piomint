@@ -274,7 +274,7 @@ func viewJobLogs(c*gin.Context) (interface{},APIError){
 func fetchLabRunLogs(c*gin.Context) {
 
 	_,runId := parseLabRunId(c)
-	forwardURL,_ := url.Parse(configs.GetAppConfig().Resources.Jobsched + "/alllogs/" + runId)
+	forwardURL,_ := url.Parse(configs.GetAppConfig().Resources.Jobsched + "/logs/download/" + runId)
 	director := func(req *http.Request) {
 		req.URL.Scheme = forwardURL.Scheme
 		req.URL.Host   = forwardURL.Host
