@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-FROM golang:1.13.7-alpine3.11 as builder
+FROM golang:1.16.4-alpine3.13 as builder
 WORKDIR /go/src/github.com/apulis/bmod/ai-lab-backend
 
 ENV GOPROXY=https://goproxy.cn
@@ -28,7 +28,7 @@ RUN go mod download
 #RUN swag init --parseDependency --parseInternal && GO111MODULE=${GO111MODULE} go build cmd/ai_lab.go -o /go/bin/ai_lab
 RUN  GO111MODULE=${GO111MODULE} go build  -o /go/bin/ai_lab cmd/ai_lab.go
 
-FROM alpine:3.11
+FROM alpine:3.13.5
 RUN apk --no-cache add ca-certificates libdrm
 WORKDIR /app/
 COPY --from=0 /go/bin/ai_lab .
