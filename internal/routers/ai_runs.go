@@ -53,6 +53,9 @@ func submitLabRun(c*gin.Context) (interface{},APIError){
 	 	return nil,exports.ParameterError("invalid json data")
 	 }
 	 req.JobType = exports.AILAB_RUN_TRAINING
+	 if req.UseModelArts {
+	 	req.JobFlags = exports.AILAB_RUN_FLAGS_USE_CLOUD
+	 }
 	 return services.ReqCreateRun(labId,"",req,false,false)
 }
 
@@ -66,6 +69,9 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 		return nil,exports.ParameterError("invalid json data")
 	}
 	req.JobType = exports.AILAB_RUN_EVALUATE
+	if req.UseModelArts {
+		req.JobFlags = exports.AILAB_RUN_FLAGS_USE_CLOUD
+	}
 	return services.ReqCreateRun(labId,runId,req,false,false)
 }
 

@@ -21,7 +21,7 @@ type APIError = exports.APIError
 func genEndpointsUrl(name  ,service ,namespace string,port int) string{
 	 url := configs.GetAppConfig().GatewayUrl
 	 jsonInfo := map[string]interface{}{
-	 	"service":service + "." + namespace + "." + "svc.cluster.local",
+	 	"service":service + "." + namespace + "." + ".svc.cluster.local",
 	 	"port":port,
 	 }
 	 vhost ,_:= json.Marshal(jsonInfo)

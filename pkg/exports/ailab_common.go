@@ -218,10 +218,11 @@ type ReqBatchCreateLab struct {
 
 type CreateJobRequest struct{
 
-	JobType  string                   `json:"-"`           // job type should determined by server (api interface)
-	JobGroup string                   `json:"-"`           // useless now
-	JobFlags uint64                   `json:"-"`           // job flags used internally
-	Name     string                   `json:"name"`        // varchar[255]
+	JobType  string                   `json:"-"`            // job type should determined by server (api interface)
+	JobGroup string                   `json:"-"`            // useless now
+	JobFlags uint64                   `json:"-"`            // job flags used internally
+	UseModelArts  bool                `json:"useModelArts"` // [experimental] associate with modelArts cloud training platform
+	Name     string                   `json:"name"`         // varchar[255]
 	Engine   string                   `json:"engine"`
 	Arch     string                   `json:"arch"`        // user expected arch , empty match all os
 	Quota    interface{}              `json:"quota"`       // user specified device type and number

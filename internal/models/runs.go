@@ -99,6 +99,9 @@ func (ctx*BasicMLRunContext) StatusIsClean() bool{
 func (ctx*BasicMLRunContext) ShouldDiscard() bool{
 	return exports.IsRunStatusDiscard(ctx.Status)
 }
+func (ctx*BasicMLRunContext) IsNativeLocalJob() bool{
+	return len(ctx.RunId) > 0 && !exports.IsJobRunWithCloud(ctx.Flags)
+}
 
 func (ctx*BasicMLRunContext) ChangeStatusTo(status int){
 	if ctx.Statistics == nil {
@@ -192,6 +195,10 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enable
 		}
 		var run * Run
 		if err == nil{
+			//@add: if parent run not resides on cloud, child run cannot resides on cloud also !
+			if mlrun.IsNativeLocalJob() && exports.IsJobRunWithCloud(req.JobFlags) {
+				return exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"native local job cannot create child job run on clouds !!!")
+			}
 			run  = newLabRun(mlrun,req)
 			err  = allocateLabRunStg(run,mlrun)
 			if err == nil{
