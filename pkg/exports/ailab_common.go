@@ -34,7 +34,7 @@ const (
 	AILAB_RUN_STATUS_KILLING   // request kill job , cannot break
 	AILAB_RUN_STATUS_STOPPING  // wait for stopped,  cannot break
 	AILAB_RUN_STATUS_RUN
-	AILAB_RUN_STATUS_COMPLETING    // saving status , pseudo end status ,cannot break
+	AILAB_RUN_STATUS_COMPLETING = 99    // saving status , pseudo end status ,cannot break
 	AILAB_RUN_STATUS_SUCCESS  = 100
 	AILAB_RUN_STATUS_ABORT    = 101
 	AILAB_RUN_STATUS_ERROR    = 102
