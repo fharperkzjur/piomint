@@ -111,7 +111,7 @@ func DoRequest(url, method string, headers map[string]string, rawBody interface{
 		return exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"invalid response data format")
 	}
 	if err != nil {
-		logger.Warnf("[%s] :%s with req:%v error response:%v",method,url,rawBody,rspData)
+		logger.Warnf("[%s] :%s with req:%v error response:%v",method,url,rawBody,string(rspData))
 	}
 
 	return err
