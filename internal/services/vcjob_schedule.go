@@ -324,7 +324,7 @@ func SubmitJobV2(run*models.Run) (int, APIError) {
 		return exports.AILAB_RUN_STATUS_FAIL,err
 	}
 	//@todo:  `default` ???
-	run.Namespace="default"
+	//run.Namespace="default"
 	if len(tasks) > 1 {
 		return SubmitVcJob(run,tasks)
 	}else {
@@ -338,7 +338,7 @@ func CreateJobEndpointImpl(mlrun * models.BasicMLRunContext,userEndPoint * model
 		Namespace:     mlrun.Namespace,
 		ContainerPort: userEndPoint.ToSchedulerPort(),
 	}
-	serviceReq.Namespace="default"
+	//serviceReq.Namespace="default"
 	url  := configs.GetAppConfig().Resources.Jobsched+"/services"
 	serviceRsp := &JOB.CreateServiceRsp{}
 	err  := Request(url,"POST",nil,serviceReq,serviceRsp)
@@ -352,7 +352,7 @@ func CreateJobEndpointImpl(mlrun * models.BasicMLRunContext,userEndPoint * model
 }
 
 func DeleteJobEndPointImpl(mlrun * models.BasicMLRunContext,serviceName string) (APIError,string) {
-	mlrun.Namespace = "default"
+	//mlrun.Namespace = "default"
 	url  := fmt.Sprintf("%s/services?jobId=%s&namespace=%s&serviceName=%s",configs.GetAppConfig().Resources.Jobsched,
 		mlrun.RunId,mlrun.Namespace,serviceName)
 	err   :=Request(url,"DELETE",nil,nil,nil)

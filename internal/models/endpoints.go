@@ -59,7 +59,7 @@ func (d*UserEndpoint)GetAccessEndpoint(namespace string) exports.ServiceEndpoint
 			accessPoint.Url=fmt.Sprintf("%s:%d",configs.GetAppConfig().ExtranetAddress,d.NodePort)
 		}else if d.NodePort == 0 {
 			//@todo: hardcode service name in `default` namespace
-			namespace="default"
+			//namespace="default"
 			jsonInfo := map[string]interface{}{
 				"service":d.ServiceName + "." + namespace + ".svc.cluster.local",
 				"port":d.Port,
