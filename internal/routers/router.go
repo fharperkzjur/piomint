@@ -39,7 +39,8 @@ func InitRouter() *gin.Engine {
 	r.Use(loggers.GinLogger(logger))
 	r.Use(gin.Recovery())
 
-
+    AddGroupAILab(r)
+	AddGroupTraining(r)
 
 	return r
 }

@@ -31,6 +31,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/postgres v1.1.0
 	gorm.io/gorm v1.21.9
+	k8s.io/apimachinery v0.21.1
 )
 
 replace github.com/apulis/simple-gin-logger v0.0.0 => ./deps/simple-gin-logger

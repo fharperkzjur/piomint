@@ -22,37 +22,33 @@ message ReplyHeader {
     // used for some more specific response
     string detail = 3;
 }
-
-
-enum QueryOrder{
-   ORDER_DEFAULT = 0;
-   ORDER_ASC     = 1;
-   ORDER_DESC    = 2;
-}
 enum ShowScoped{
    SHOW_NORMAL = 0;
    SHOW_WITH_DELETED = 1;
    SHOW_ONLY_DELETED = 2;
+}
+enum RunStatus {
+   RUN_STATUS_INIT = 0;
+
 }
 
 message QueryFilters {
    //start from 1~N
    uint32      pageNum    =1;
    uint32      pageSize   =2;
-   string      orderBy    =3;
-   QueryOrder  order      =4;
+   string      sort       =3;
    // list by app group
-   string      group      =5;
+   string      group      =4;
    // indicate "group" list match recursively !
-   bool        matchAll   =6;
+   bool        matchAll   =5;
    // search by keyword
-   string      searchWord =7;
+   string      searchWord =6;
    //enumeration for need detail return
-   int32       detail     =8;
+   int32       detail     =7;
    //enumeration for deleted item search
-   ShowScoped  show       =9;
+   ShowScoped  show       =8;
    // filters by predefined key=value pairs
-   map<string,string>equalFilters=10;
+   map<string,string>equalFilters=9;
 }
 
 // define AILab list informations
@@ -70,15 +66,17 @@ message AILabItem {
      map<string,string>tags = 10;
      // statistics runs
      map<string,uint32>statistics=11;
+     // system defined run status
+     uint32  status=12;
+     //some more details about the AILab defined by app
+     google.protobuf.Struct meta =13;
 }
 
 message AILabDetail {
-   AILabItem item = 1;
-   //some more details about the AILab defined by app
-   google.protobuf.Struct meta=2;
-   string                 group=3;
-   string                 location=4;
-   string                 namespace=5;
+     AILabItem item = 1;
+     string                 group=2;
+     string                 location=3;
+     string                 namespace=4;
 }
 
 message PagedInfo {
@@ -145,5 +143,6 @@ service AILab {
    rpc DeleteLab(ReqTarget)    returns (ReplyHeader) {}
    rpc UpdateLab(ReqUpdateLab) returns (ReplyHeader) {}
    rpc BatchCreateLab(ReqBatchCreateLab) returns (ReplyHeader) {}
-   rpc BatchDeleteLab(ReqTarget) returns (ReplyHeader) {}
 }
+
+

@@ -24,7 +24,6 @@ type AILabClient interface {
 	DeleteLab(ctx context.Context, in *ReqTarget, opts ...grpc.CallOption) (*ReplyHeader, error)
 	UpdateLab(ctx context.Context, in *ReqUpdateLab, opts ...grpc.CallOption) (*ReplyHeader, error)
 	BatchCreateLab(ctx context.Context, in *ReqBatchCreateLab, opts ...grpc.CallOption) (*ReplyHeader, error)
-	BatchDeleteLab(ctx context.Context, in *ReqTarget, opts ...grpc.CallOption) (*ReplyHeader, error)
 }
 
 type aILabClient struct {
@@ -89,15 +88,6 @@ func (c *aILabClient) BatchCreateLab(ctx context.Context, in *ReqBatchCreateLab,
 	return out, nil
 }
 
-func (c *aILabClient) BatchDeleteLab(ctx context.Context, in *ReqTarget, opts ...grpc.CallOption) (*ReplyHeader, error) {
-	out := new(ReplyHeader)
-	err := c.cc.Invoke(ctx, "/bmod.ai_lab.AILab/BatchDeleteLab", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AILabServer is the server API for AILab service.
 // All implementations must embed UnimplementedAILabServer
 // for forward compatibility
@@ -108,7 +98,6 @@ type AILabServer interface {
 	DeleteLab(context.Context, *ReqTarget) (*ReplyHeader, error)
 	UpdateLab(context.Context, *ReqUpdateLab) (*ReplyHeader, error)
 	BatchCreateLab(context.Context, *ReqBatchCreateLab) (*ReplyHeader, error)
-	BatchDeleteLab(context.Context, *ReqTarget) (*ReplyHeader, error)
 	mustEmbedUnimplementedAILabServer()
 }
 
@@ -133,9 +122,6 @@ func (UnimplementedAILabServer) UpdateLab(context.Context, *ReqUpdateLab) (*Repl
 }
 func (UnimplementedAILabServer) BatchCreateLab(context.Context, *ReqBatchCreateLab) (*ReplyHeader, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchCreateLab not implemented")
-}
-func (UnimplementedAILabServer) BatchDeleteLab(context.Context, *ReqTarget) (*ReplyHeader, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchDeleteLab not implemented")
 }
 func (UnimplementedAILabServer) mustEmbedUnimplementedAILabServer() {}
 
@@ -258,24 +244,6 @@ func _AILab_BatchCreateLab_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AILab_BatchDeleteLab_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqTarget)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AILabServer).BatchDeleteLab(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/bmod.ai_lab.AILab/BatchDeleteLab",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AILabServer).BatchDeleteLab(ctx, req.(*ReqTarget))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AILab_ServiceDesc is the grpc.ServiceDesc for AILab service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -306,10 +274,6 @@ var AILab_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BatchCreateLab",
 			Handler:    _AILab_BatchCreateLab_Handler,
-		},
-		{
-			MethodName: "BatchDeleteLab",
-			Handler:    _AILab_BatchDeleteLab_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

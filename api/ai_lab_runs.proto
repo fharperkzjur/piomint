@@ -1,0 +1,79 @@
+
+syntax="proto3";
+
+option go_package = "pkg/api" ;
+import "ai_lab.proto";
+
+enum RunStatus{
+    RUN_STATUS_INIT = 0;
+    RUN_STATUS_STARTING = 1;
+    RUN_STATUS_QUEUE = 2;
+    RUN_STATUS_SCHEDULE = 3;
+    RUN_STATUS_RUN      = 4;
+    RUN_STATUS_KILLING  = 5;
+    RUN_STATUS_STOPPING = 6;
+    RUN_STATUS_FAILED   = 7;
+    RUN_STATUS_ERROR    = 8;
+    RUN_STATUS_SUCCESS  = 9;
+    RUN_STATUS_ABORT    = 10;
+    RUN_STATUS_CLEANING = 11;
+}
+
+message ReqCreateTrain {
+
+
+}
+message ReqCreateTrainEval{
+
+}
+message ReqSaveTrain{
+
+}
+message ReqStartTrainVisual{
+
+}
+message ReqStopTrainVisual{
+
+}
+message ReqListRuns{
+
+}
+message AILabRunList{
+
+}
+message ReqCtrlRun{
+
+}
+message AILabRunDetail{
+
+}
+message ReqStatsRuns{
+
+}
+message AILabRunStats{
+
+}
+message ReqCleanStrategy{
+
+}
+
+// lab run service
+service AILabRun {
+  rpc CreateTrain(ReqCreateTrain) returns (bmod.ai_lab.ReplyHeader) {}
+  rpc CreateTrainEvaluate(ReqCreateTrainEval) returns (bmod.ai_lab.ReplyHeader) {}
+  rpc SaveTrain(ReqSaveTrain) returns (bmod.ai_lab.ReplyHeader) {}
+  rpc StartTrainVisual(ReqStartTrainVisual) returns (bmod.ai_lab.ReplyHeader) {}
+  rpc StopTrainVisual(ReqStopTrainVisual)   returns (bmod.ai_lab.ReplyHeader) {}
+
+  rpc ListRuns(ReqListRuns)    returns (AILabRunList) {}
+  // pause|resume|kill runs , need run code support !
+  rpc CtrlRun(ReqCtrlRun)      returns (bmod.ai_lab.ReplyHeader)  {}
+  rpc QueryRun(bmod.ai_lab.ReqTarget)      returns (AILabRunDetail) {}
+  rpc StatsRuns(ReqStatsRuns)  returns (AILabRunStats)  {}
+
+  rpc DeleteLabRuns(bmod.ai_lab.ReqTarget) returns (bmod.ai_lab.ReplyHeader) {}
+  // manually cleanup labs & runs
+  rpc CleanLabRuns(bmod.ai_lab.ReqTarget)  returns (bmod.ai_lab.ReplyHeader) {}
+  // set auto cleanup strategy
+  rpc SetCleanStrategy(ReqCleanStrategy) returns (bmod.ai_lab.ReplyHeader) {}
+}
