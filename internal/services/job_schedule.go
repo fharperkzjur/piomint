@@ -109,7 +109,7 @@ func CheckResourceMounts(cmds []string,resources exports.GObject) ([]string, []J
 	 		if len(subname) > 0 {// has subsource
 	 			subresource,_ := rsc["subResource"].(exports.GObject)
 	 			if subresource != nil{
-	 				subpath,_ = subresource[subname].(string)
+	 				subpath = safeToString(subresource[subname])
 				}
 			}
 			mounts,value = tryResourceMounts(name,path,rpath,access,subname,subpath,maps,mounts)
