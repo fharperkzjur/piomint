@@ -3,8 +3,11 @@ package routers
 import (
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
+	"log"
 	"math"
+	"strconv"
 	"strings"
+	"time"
 )
 
 //normalize sort fields
@@ -43,12 +46,33 @@ func checkSearchCond(c*gin.Context,filters exports.QueryFilterMap) (cond*exports
 	 }
 	 if len(filters) > 0 {
 			cond.EqualFilters=make(map[string]string)
+			cond.AdvanceOpFilters=make(map[string]interface{})
 			for f,field := range filters {
-				if value := c.Query(f);len(value) > 0 {
-					cond.EqualFilters[field] = value
+				value := c.Query(f)
+				if len(value) == 0 {
+					value = c.Param(f)
+				}
+				if len(value) > 0 {
+					if  field[0] == ':' {//@add: support advanced operator
+						cond.AdvanceOpFilters[field[1:]]=value
+					}else if field[1] == ':'{
+						var v interface{}
+						switch field[0]{
+						  case 'd':   v,_ =strconv.ParseInt(value,0,64)
+						  case 'u':   v,_ =strconv.ParseUint(value,0,64)
+						  case 'f':   v,_ = strconv.ParseFloat(value,64)
+						  case 't':   t,_ :=strconv.ParseInt(value,0,64)
+						              v=time.Unix(t/1000,t%1000*1000000).UTC()
+						  default:  log.Fatalf("invalid advance seach condition vlaue type:%c",field[0])
+						}
+						cond.AdvanceOpFilters[field[2:]] = v
+					}else{
+						cond.EqualFilters[field] = value
+					}
 				}
 			}
 	}
+
 	return
 }
 

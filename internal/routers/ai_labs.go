@@ -162,6 +162,11 @@ func checkBatchCreateLab(req*exports.ReqBatchCreateLab)(labs []models.Lab,err AP
 			 Bind:        req.Group,
 			 Creator:     req.Creator,
 			 Namespace:   req.Namespace,
+			 ProjectName: req.ProjectName,
+			 //@add: retrieve org & group information from jwt context
+			 OrgId:       req.OrgId,
+			 OrgName:     req.OrgName,
+			 UserGroupId: req.UserGroupId,
 		 })
 
 	  	 err  = func(lab*models.Lab)APIError{

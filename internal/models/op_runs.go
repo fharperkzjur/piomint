@@ -275,3 +275,25 @@ func QueryLabRealStats(labId uint64, group string)(interface{},APIError) {
 		return stats,nil
 	}
 }
+
+type ApscRunInfo struct {
+	ID          string   `json:"id"`
+	Status      int      `json:"status"`
+	Type        string   `json:"type"`
+	ProjectName string   `json:"projectName"`
+	OwnerUser	string   `json:"ownerUser"`
+	OwnerOrg    string   `json:"ownerOrg"`
+	UserGroup   string   `json:"userGroup"`
+	CreatedAt   UnixTime `json:"createdAt"`
+	StartTime   UnixTime `json:"startTime"`
+	EndTime     UnixTime `json:"endTime"`
+	Resources	*JsonMetaData `json:"resources"`
+}
+
+func SysGetAllRuns(req*exports.SearchCond) (data interface{} ,err APIError){
+	result := []ApscRunInfo{}
+	data,err = makePagedQuery(db.Model(&Run{}).Select(`run_id as id,status,job_type as type,project_name,runs.created_at,start_time,end_time,
+         runs.creator as owner_user,org_name as owner_org,namespace as user_group,quota as resources`).
+	     Joins("left join labs on lab_id=labs.id"),req,&result)
+	return
+}

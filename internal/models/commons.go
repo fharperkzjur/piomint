@@ -188,6 +188,11 @@ func checkCommonQuery(db*gorm.DB,req*exports.SearchCond)*gorm.DB{
 	if len(req.EqualFilters) > 0{//@todo: here need to check all exists fields ???
 		db = db.Where(req.EqualFilters)
 	}
+	if len(req.AdvanceOpFilters) > 0 {
+		for cond,value := range req.AdvanceOpFilters {
+			db = db.Where(cond,value)
+		}
+	}
 	return db
 }
 func makePagedQuery(db*gorm.DB, req*exports.SearchCond,resultSet interface{})(interface{}, APIError){

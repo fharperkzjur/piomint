@@ -151,6 +151,8 @@ type SearchCond struct {
 	Show   int32        `form:"show"`
 	// filters by predefined key=value pairs
 	EqualFilters map[string]string
+	// filters by advacned operator
+	AdvanceOpFilters map[string]interface{}
 }
 
 type CommResponse struct{
@@ -218,6 +220,7 @@ type ReqCreateLab struct{
 	Tags      RequestTags              `json:"tags"`      // user defined tags
 	Meta      RequestObject            `json:"meta"`
 	Namespace  string                  `json:"namespace"` // system namespace this lab belong to
+	ProjectName string                 `json:"projectName"`
 }
 
 type ReqBatchCreateLab struct {
@@ -226,6 +229,11 @@ type ReqBatchCreateLab struct {
 	App       string `json:"app,omitempty"`
 	Creator   string `json:"creator,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
+	ProjectName string `json:"projectName,omitempty"`
+
+	OrgId       uint64 `json:"orgId"`
+	OrgName     string `json:"orgName"`
+	UserGroupId uint64 `json:"userGroupId"`
 	// at least 1 lab configuration must be exists
 	Labs      []ReqCreateLab `json:"labs"`
 }

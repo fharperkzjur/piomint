@@ -28,6 +28,10 @@ type Lab struct{
 	Meta      *JsonMetaData   `json:"meta,omitempty"  `
 	Location   string         `json:"location,omitempty"`                           // storage url identify for experiments output data
 	Namespace  string         `json:"namespace,omitempty" gorm:"type:varchar(255)"` // system namespace this lab belong to
+	OrgId        uint64       `json:"orgId,omitempty"`
+	OrgName      string       `json:"orgName,omitempty" gorm:"type:varchar(255)"`
+	UserGroupId  uint64       `json:"userGroupId"`
+	ProjectName  string       `json:"projectName" gorm:"type:varchar(512)"`
 }
 
 type BasicLabInfo struct{
