@@ -4,6 +4,7 @@ import (
 	"errors"
 	loggerconfs "github.com/apulis/simple-gin-logger/pkg/configs"
 	"github.com/spf13/viper"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -27,7 +28,7 @@ type AppConfig struct {
 	InitToolImage    string
 	HttpClient  HttpClient
 	GatewayUrl  string
-	KubeVipAddress string
+	ExtranetAddress string
 	ClusterId   string
 	VersionControl VCSConfigTable
 }
@@ -120,6 +121,10 @@ func InitConfig() (*AppConfig, error) {
 
 	if pg_passwd , exists := os.LookupEnv("POSTGRES_PASSWORD");exists && !strings.HasPrefix(pg_passwd,"vault:") {
 		appConfig.Db.Password=pg_passwd
+	}
+	//@add: parse gateway url into nodePort address
+	if uri , err := url.Parse(appConfig.GatewayUrl);err == nil {
+		appConfig.ExtranetAddress=uri.Hostname()
 	}
 	return appConfig, nil
 }

@@ -52,11 +52,11 @@ func (d*UserEndpoint)GetAccessEndpoint(namespace string) exports.ServiceEndpoint
 	}
 	if d.Name == exports.AILAB_SYS_ENDPOINT_SSH {//use ssh protocol
 		if d.NodePort > 0 {
-            accessPoint.Url=fmt.Sprintf("ssh -p %d %s@%s",d.NodePort,d.AccessKey,configs.GetAppConfig().KubeVipAddress)
+            accessPoint.Url=fmt.Sprintf("ssh -p %d %s@%s",d.NodePort,d.AccessKey,configs.GetAppConfig().ExtranetAddress)
 		}
 	}else{// use http protocol
 		if d.NodePort > 0 {
-			accessPoint.Url=fmt.Sprintf("%s:%d",configs.GetAppConfig().KubeVipAddress,d.NodePort)
+			accessPoint.Url=fmt.Sprintf("%s:%d",configs.GetAppConfig().ExtranetAddress,d.NodePort)
 		}else if d.NodePort == 0 {
 			//@todo: hardcode service name in `default` namespace
 			namespace="default"
@@ -66,14 +66,13 @@ func (d*UserEndpoint)GetAccessEndpoint(namespace string) exports.ServiceEndpoint
 			}
 			vhost ,_:= json.Marshal(jsonInfo)
             //@todo: delete `$` when generate endpoints url ......
-            if d.Name[0] == '$' {
-	            accessPoint.Url=fmt.Sprintf("%s/endpoints/%s/%s/",configs.GetAppConfig().GatewayUrl,
-		            strings.ReplaceAll(d.Name,"$",""),base64.StdEncoding.EncodeToString(vhost))
-            }else{
-	            accessPoint.Url=fmt.Sprintf("%s/endpoints/mindinsight/%s/",configs.GetAppConfig().GatewayUrl,
-	            	base64.StdEncoding.EncodeToString(vhost))
-            }
-
+            if d.Name == exports.AILAB_SYS_ENDPOINT_JUPYTER {
+				accessPoint.Url=fmt.Sprintf("%s/endpoints/%s/%s/",configs.GetAppConfig().GatewayUrl,
+					strings.ReplaceAll(d.Name,"$",""),base64.StdEncoding.EncodeToString(vhost))
+			}else{
+				accessPoint.Url=fmt.Sprintf("%s/endpoints/mindinsight/%s/",configs.GetAppConfig().GatewayUrl,
+					base64.StdEncoding.EncodeToString(vhost))
+			}
 		}
 	}
 	return accessPoint
