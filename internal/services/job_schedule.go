@@ -153,6 +153,9 @@ func checkEnableSSH(run*models.Run,job * JOB.Job) bool {
 
 func checkSpeciaEnvs(run*models.Run,job *JOB.Job)   {
 
+	 //@todo: create all job in default namespace
+	 job.Namespace = "default"
+
 	 if !strings.HasSuffix(job.Cmd[0],"_launcher"){// cmd not launcher , start target container directly !!!
 		return
 	 }
