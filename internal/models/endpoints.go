@@ -66,7 +66,7 @@ func (d*UserEndpoint)GetAccessEndpoint(namespace string) exports.ServiceEndpoint
 			}
 			vhost ,_:= json.Marshal(jsonInfo)
             //@todo: delete `$` when generate endpoints url ......
-			accessPoint.Url=fmt.Sprintf("%s/endpoints/%s/%s",configs.GetAppConfig().GatewayUrl,
+			accessPoint.Url=fmt.Sprintf("%s/endpoints/%s/%s/",configs.GetAppConfig().GatewayUrl,
 			strings.ReplaceAll(d.Name,"$",""),base64.StdEncoding.EncodeToString(vhost))
 		}
 	}
