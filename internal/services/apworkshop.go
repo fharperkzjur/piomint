@@ -15,9 +15,9 @@ const APWORKSHOP_MGR_MODULE_ID = 2400
 
 const (
 	APWORKSHOP_ERROR_CODE_BEGIN    = APWORKSHOP_MGR_MODULE_ID*100000 + iota
-	APWORKSHOP_REF_NOT_EXISTS      = APWORKSHOP_MGR_MODULE_ID*100000 + 40001         // ref不存在,  ref 和 unref返回
-	APWORKSHOP_COMMIT_FAIL         = APWORKSHOP_MGR_MODULE_ID*100000 + 20002         // commit  新模型失败 ; rollback不会失败
-	APWORKSHOP_ROLLBACK_NOT_EXISTS = APWORKSHOP_MGR_MODULE_ID*100000 + 20003         // rollback 模型失败 ; rollback不会失败
+	APWORKSHOP_REF_NOT_EXISTS      = APWORKSHOP_MGR_MODULE_ID*100000 + 20401         // ref不存在,  ref 和 unref返回
+	APWORKSHOP_COMMIT_FAIL         = APWORKSHOP_MGR_MODULE_ID*100000 + 20301         // commit  新模型失败 ; rollback不会失败
+	APWORKSHOP_ROLLBACK_NOT_EXISTS = APWORKSHOP_MGR_MODULE_ID*100000 + 20302         // rollback 模型失败 ; rollback不会失败
 )
 
 type APWorkshopRefInfo struct{

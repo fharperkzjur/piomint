@@ -52,7 +52,7 @@ type Run struct{
 	 UserGroupId uint64       `json:"-" gorm:"-"`
 	 ViewStatus int           `json:"viewStatus,omitempty" gorm:"-"`
 	 RegisterStatus int       `json:"registerStatus,omitempty" gorm:"-"`
-	 ScratchStatus  int       `json:"scratchStatus" gorm:"-"`
+	 ScratchStatus  int       `json:"scratchStatus,omitempty" gorm:"-"`
 }
 
 const (
