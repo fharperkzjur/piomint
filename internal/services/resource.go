@@ -56,6 +56,7 @@ func init(){
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_HARBOR,  HarborResourceSrv{})
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_OUTPUT, MlrunOutputSrv{} )
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_STORE,  StoreResourceSrv{})
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_APWORKSHOP,APWorkshopResourceSrv{})
 }
 
 func UseResource(ty string, ctx string,resource exports.GObject) (interface{},APIError) {

@@ -50,7 +50,7 @@ type ResourceConfig struct{
 	Dataset       string
 	Jobsched      string
 	ApHarbor      string
-	ApWorkshp     string
+	ApWorkshop     string
 	Code          string
 }
 

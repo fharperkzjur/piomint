@@ -23,7 +23,7 @@ db:
   serverType: postgres # 数据库服务器类型当前模板可选(postgres postgresql)
   username: postgres # 用户名
   password: root # 密码
-  host:    dockerhost # 服务器host
+  host:    localhost # 服务器host
   port:    5432 # 服务端口
   database: ai_lab # db名称
   maxOpenConns: 10 # 数据库连接池最大数量
@@ -41,6 +41,7 @@ resources:
   dataset:        https://119.147.212.162:51080/iqi/api/v1/ad-hub         #数据集管理接口
   jobsched:       http://192.168.3.137:10100/api/v1              #job调度管理接口
   apharbor:       http://192.168.3.137:7100/api/v1                      #镜像管理接口
+  apworkshop:     http://apworkshop-backend.default:80/api/v1
   code:                                                                 #代码管理暂时由实验管理厂托管
 
 storage: pvc://aiplatform-ailab-data-pvc

@@ -42,8 +42,8 @@ resources:
   engine:
   jobsched:   http://job-scheduler.default:80/api/v1                #job调度管理接口
   model:      http://apworkshop-backend-svc.default:80/api/v1          #模型管理接口
-  apHarbor:   http://apharbor-backend.default:80/api/v1
-  apWorkshop: http://apworkshop-backend.default:80/api/v1
+  apharbor:   http://apharbor-backend.default:80/api/v1
+  apworkshop: http://apworkshop-backend.default:80/api/v1
 
 storage: pvc://aiplatform-ailab-data-pvc
 
