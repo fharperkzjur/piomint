@@ -298,17 +298,26 @@ func  SyncJobStatus(runId string,statusFrom int, statusTo int,err APIError) APIE
 func  MonitorJobStatus(event broker.Event) error{
 	  jobs := &JOB.JobMsg{}
 	  if json.Unmarshal(event.Message().Body,jobs) == nil {
-		  statusTo := translateJobStatus(jobs.JobState.Status)
-		  if statusTo == exports.AILAB_RUN_STATUS_INVALID {
-		  	logger.Warnf("receive unknown job state from mq:%s",string(event.Message().Body))
-		  }else if jobs.ServiceState.NodePort > 0 {
-			logger.Info("receive mq serviceState message:%s",string(event.Message().Body))
-			return models.ChangeEndpointStatus(jobs.ServiceState.JobId,jobs.ServiceState.Name,int(jobs.ServiceState.NodePort))
-		  }else{
-		  	logger.Info("receive mq message:%s",string(event.Message().Body))
-		  	return models.ChangeJobStatus(jobs.JobId,exports.AILAB_RUN_STATUS_INVALID,statusTo,jobs.JobState.Msg)
-		  }
-	  }
+	  	  if jobs.MsgType == JOB.MSG_TYPE_JOB_UPDATE {
+		      statusTo := translateJobStatus(jobs.JobState.Status)
+		      if statusTo == exports.AILAB_RUN_STATUS_INVALID {
+			      logger.Warnf("receive unknown job state from mq:%s",string(event.Message().Body))
+			      return nil
+		      }else {
+			      logger.Info("receive JOB_UPDATE  mq message:%s",string(event.Message().Body))
+			      return models.ChangeJobStatus(jobs.JobId,exports.AILAB_RUN_STATUS_INVALID,statusTo,jobs.JobState.Msg)
+		      }
+	      }else if jobs.MsgType == JOB.MSG_TYPE_SERVICE_UPDATE{
+	      	serviceState := JOB.ServiceState{}
+	      	json.Unmarshal([]byte(jobs.Body),&serviceState)
+	      	if serviceState.NodePort > 0 {
+		        logger.Info("receive SERVICE_UPDATE mq message:%s",string(event.Message().Body))
+		        return models.ChangeEndpointStatus(jobs.JobId,serviceState.Name,int(serviceState.NodePort))
+	        }
+	      }else{
+		      logger.Warnf("receive unknown message type from mq:%s",string(event.Message().Body))
+	      }
+      }
 	  return nil
 }
 
