@@ -185,6 +185,9 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 	job.SetContainerPorts(ports)
 	 }
 	 job.Cmd,job.MountPoints = CheckResourceMounts(job.Cmd,resource)
+	 if job.Envs == nil{
+	 	job.Envs = make(map[string]string)
+	 }
 	 checkAILabEnvs(run,job.Envs)
 	 //@todo:  add pre-start scripts ???
 	 job.MountPoints,job.PreStartScripts = checkNpuDriverMounts(&job.Quota,job.MountPoints)
@@ -241,6 +244,13 @@ func DeleteJob(runId string) APIError{
 	 }else{
 		return err
 	 }
+}
+
+func GetJobLogs(runId string,pageNum string) (interface{},APIError){
+	 url := fmt.Sprintf("%s/logs/%s?pageNum=%s",configs.GetAppConfig().Resources.Jobsched,runId,pageNum)
+	 var result interface{}
+	 err := Request(url,"GET",nil,nil,&result)
+	 return result,err
 }
 
 func  SyncJobStatus(runId string,statusFrom int, statusTo int,err APIError) APIError{

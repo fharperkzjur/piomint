@@ -1,11 +1,14 @@
 package routers
 
 import (
+	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/internal/services"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strconv"
 )
 
@@ -23,7 +26,10 @@ func AddGroupTraining(r*gin.Engine){
 	group.GET("/stats",wrapper(queryLabRunStats))
 
 	group.GET( "/runs/:runId/files",   wrapper(listLabRunFiles))
-	group.GET("/runs/:runId/view",     viewLabRunFiles)
+	group.GET("/runs/:runId/logs",     wrapper(viewJobLogs))
+
+	group.GET("/runs/:runId/fetch-logs",fetchLabRunLogs)
+	group.GET("/runs/:runId/view",      viewLabRunFiles)
 
 	group.DELETE("/runs/:runId", wrapper(delLabRun))
     // following interfce should only be called by admin role users
@@ -260,4 +266,21 @@ func viewLabRunFiles(c*gin.Context){
 		}
 }
 
+func viewJobLogs(c*gin.Context) (interface{},APIError){
+	  _,runId := parseLabRunId(c)
+	  return services.GetJobLogs(runId,c.DefaultQuery("pageNum","1"))
+}
 
+func fetchLabRunLogs(c*gin.Context) {
+
+	_,runId := parseLabRunId(c)
+	forwardURL,_ := url.Parse(configs.GetAppConfig().Resources.Jobsched + "/alllogs/" + runId)
+	director := func(req *http.Request) {
+		req.URL.Scheme = forwardURL.Scheme
+		req.URL.Host   = forwardURL.Host
+		req.URL.Path   = forwardURL.Path
+	}
+	proxy := &httputil.ReverseProxy{Director: director}
+	proxy.ServeHTTP(c.Writer, c.Request)
+
+}
