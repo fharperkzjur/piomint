@@ -14,37 +14,37 @@
 
     |服务名称|代码库|版本tag|
     |:----|:----|:---|
-    |AAA 前端|git@gitee.com:apulisplatform/aaa-aistudio-frontend.git|1.6.0
-    |AAA 后端|git@gitee.com:apulisplatform/aistudio-iam-backendaistudio-iam-backend.git|1.6.0
-    |AIArts 前端|git@gitee.com:apulisplatform/aiarts-frontend.git|1.6.0
-    |AIArts 后端|git@gitee.com:apulisplatform/aiarts-backend.git|1.6.0
-    |AILab实验管理|git@gitee.com:apulisplatform/Apulis-AI-Platform.git|1.6.0
-    |Init-Container工具镜像|git@gitee.com:apulisplatform/init-container.git|1.6.0
-    |APSC前端|git@gitee.com:apulisplatform/apsc-frontend.git|1.6.0
-    |APSC后端|git@gitee.com:apulisplatform/aistudio-aom-backend.git|1.6.0
-    |APSC聚合层|git@gitee.com:apulisplatform/apsc-bff.git|1.6.0
-    |ADHub后端|git@gitee.com:apulisplatform/ad-hub-backend.git|1.6.0
-    |ADHub聚合层|git@gitee.com:apulisplatform/ad-hub-bff.git|1.6.0
-    |ADHub前端|git@gitee.com:apulisplatform/ad-hub-frontend.git|1.6.0
-    |ADMagic前端|git@gitee.com:apulisplatform/ad-magic-frontend.git|1.6.0
-    |ADMagic后端|git@gitee.com:apulisplatform/ad-magic-backend.git|1.6.0
-    |ADMagic聚合层|git@gitee.com:apulisplatform/ad-magic-bff.git|1.6.0
-    |镜像中心后端|git@gitee.com:apulisplatform/apharbor-backend.git|1.6.0
-    |算法镜像仓库|git@gitee.com:apulisplatform/apharbor-backend.git|1.6.0
-    |模型工厂后端|git@gitee.com:apulisplatform/ap-workshop-backend.git|1.6.0
-    |推理中心BFF后端|git@gitee.com:apulisplatform/docker-zoo.git|1.6.0
-    |推理中心后端|git@gitee.com:apulisplatform/inference-backend.git|1.6.0
-    |推理服务框架|git@gitee.com:apulisplatform/inference-serving.git|1.6.0
-    |节点和边缘推理后端|git@gitee.com:apulisplatform/apedge.git|1.6.0
-    |镜像中心前端|git@gitee.com:apulisplatform/apharbor-frontend.git|1.6.0
-    |模型工厂前端|git@gitee.com:apulisplatform/ap-workshop-frontend.git|1.6.0
-    |推理中心前端|git@gitee.com:apulisplatform/apflow.git|1.6.0
-    |模型工厂算法|git@gitee.com:apulisplatform/model-gallery.git|1.6.0
-    |gitea|git@gitee.com:apulisplatform/apulis-gitea.git|1.6.0
-    |job-scheduler|git@gitee.com:apulisplatform/job-scheduler.git|1.6.0
-    |go-business|git@gitee.com:apulisplatform/go-business.git|1.6.0
-    |file-server|git@gitee.com:apulisplatform/file-server.git|1.6.0
-    |go-util|git@gitee.com:apulisplatform/go-utils.git|1.6.0
+    |AAA 前端|https://gitee.com:apulisplatform/aaa-aistudio-frontend.git|1.6.0
+    |AAA 后端|https://gitee.com:apulisplatform/aistudio-iam-backendaistudio-iam-backend.git|1.6.0
+    |AIArts 前端|https://gitee.com:apulisplatform/aiarts-frontend.git|1.6.0
+    |AIArts 后端|https://gitee.com:apulisplatform/aiarts-backend.git|1.6.0
+    |AILab实验管理|https://gitee.com:apulisplatform/Apulis-AI-Platform.git|1.6.0
+    |Init-Container工具镜像|https://gitee.com:apulisplatform/init-container.git|1.6.0
+    |APSC前端|https://gitee.com:apulisplatform/apsc-frontend.git|1.6.0
+    |APSC后端|https://gitee.com:apulisplatform/aistudio-aom-backend.git|1.6.0
+    |APSC聚合层|https://gitee.com:apulisplatform/apsc-bff.git|1.6.0
+    |ADHub后端|https://gitee.com:apulisplatform/ad-hub-backend.git|1.6.0
+    |ADHub聚合层|https://gitee.com:apulisplatform/ad-hub-bff.git|1.6.0
+    |ADHub前端|https://gitee.com:apulisplatform/ad-hub-frontend.git|1.6.0
+    |ADMagic前端|https://gitee.com:apulisplatform/ad-magic-frontend.git|1.6.0
+    |ADMagic后端|https://gitee.com:apulisplatform/ad-magic-backend.git|1.6.0
+    |ADMagic聚合层|https://gitee.com:apulisplatform/ad-magic-bff.git|1.6.0
+    |镜像中心后端|https://gitee.com:apulisplatform/apharbor-backend.git|1.6.0
+    |算法镜像仓库|https://gitee.com:apulisplatform/apharbor-backend.git|1.6.0
+    |模型工厂后端|https://gitee.com:apulisplatform/ap-workshop-backend.git|1.6.0
+    |推理中心BFF后端|https://gitee.com:apulisplatform/docker-zoo.git|1.6.0
+    |推理中心后端|https://gitee.com:apulisplatform/inference-backend.git|1.6.0
+    |推理服务框架|https://gitee.com:apulisplatform/inference-serving.git|1.6.0
+    |节点和边缘推理后端|https://gitee.com:apulisplatform/apedge.git|1.6.0
+    |镜像中心前端|https://gitee.com:apulisplatform/apharbor-frontend.git|1.6.0
+    |模型工厂前端|https://gitee.com:apulisplatform/ap-workshop-frontend.git|1.6.0
+    |推理中心前端|https://gitee.com:apulisplatform/apflow.git|1.6.0
+    |模型工厂算法|https://gitee.com:apulisplatform/model-gallery.git|1.6.0
+    |gitea|https://gitee.com:apulisplatform/apulis-gitea.git|1.6.0
+    |job-scheduler|https://gitee.com:apulisplatform/job-scheduler.git|1.6.0
+    |go-business|https://gitee.com:apulisplatform/go-business.git|1.6.0
+    |file-server|https://gitee.com:apulisplatform/file-server.git|1.6.0
+    |go-util|https://gitee.com:apulisplatform/go-utils.git|1.6.0
 
 
 
