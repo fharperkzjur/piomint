@@ -44,7 +44,7 @@ gen-swagger:
 	swag init -g cmd/${image_name}.go -o api
 
 dist: testarch
-	docker build -t ${image_name} .
+	docker build -t ${image_name} -f build/Dockerfile .
 	docker tag ${image_name} ${harbor_addr}/${arch}:${tag}
 	docker push ${harbor_addr}/${arch}:${tag}
 manifest:
