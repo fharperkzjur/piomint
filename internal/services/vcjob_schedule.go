@@ -71,7 +71,7 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask,quota*models.UserResourceQ
 	if endPointsInits == "" && !strings.HasSuffix(task.Container.Cmd[0],"_launcher"){// cmd not launcher , start target container directly !!!
 		return
 	}
-	preStart := "01.init_user.sh"
+	preStart := "01.init_user.sh" + endPointsInits
 	if exports.IsJobRunWithCloud(run.Flags) {//does not need any local devices
 		task.Container.ResourceQuota.Request.Device=JOB.Device{}
 		task.Container.ResourceQuota.Limit.Device  =JOB.Device{}
@@ -93,7 +93,7 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask,quota*models.UserResourceQ
 		}
 	}
 
-	preStart += endPointsInits
+	//preStart += endPointsInits
 	task.InitContainer=&JOB.Container{
 		ContainerName: "init-tools",
 		ImageName:     configs.GetAppConfig().InitToolImage,
