@@ -107,6 +107,7 @@ config:
       dataset:        http://adhub-backend.default:80/api/v1                   #数据集管理接口
       jobsched:       http://job-scheduler.default:80/api/v1        #job调度管理接口
       engine:                                                      #镜像管理接口
+      iam:            http://192.168.3.137:80/iam/api/v1
       code:                                                    #代码管理暂时由模型工厂托管
    gatewayUrl: https://123.60.231.101:80
    kubeVipAddress: "192.168.3.137"

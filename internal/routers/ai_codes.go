@@ -9,14 +9,15 @@ import (
 
 func AddGroupAICode(r *gin.Engine){
 
-	group := r.Group( exports.AILAB_API_VERSION +  "/repos")
+	rg := r.Group( exports.AILAB_API_VERSION +  "/repos")
 
-	group.GET("/apps/*bind", wrapper(getAllRepos))
-	group.DELETE("/apps/*bind", wrapper(deleteRepo))
-	group.GET("/:repo", wrapper(queryRepo))
-	group.PUT("/:repo", wrapper(updateRepo))
-	group.POST("", wrapper(createRepo))
+	group := (*IAMRouteGroup)(rg)
 
+	group.GET("/apps/*bind", wrapper(getAllRepos),  "list:repos")
+	group.DELETE("/apps/*bind", wrapper(deleteRepo),"delete:repo")
+	group.GET("/:repo", wrapper(queryRepo),         "view:repo")
+	group.PUT("/:repo", wrapper(updateRepo),        "update:repo")
+	group.POST("", wrapper(createRepo),             "create:repo")
 }
 
 func getAllRepos(c*gin.Context)(interface{},APIError){

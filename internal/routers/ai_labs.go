@@ -10,17 +10,20 @@ import (
 
 func AddGroupAILab(r *gin.Engine){
 
-	group := r.Group( exports.AILAB_API_VERSION +  "/labs")
+	rg := r.Group( exports.AILAB_API_VERSION +  "/labs")
 
-	group.GET("", wrapper(getAllLabs))
-	group.GET("/:lab", wrapper(queryLab))
-	group.PUT("/:lab", wrapper(updateLab))
-	group.POST("", wrapper(createLab))
-	group.POST("/batch", wrapper(batchCreateLab))
-	group.POST("/deletes",wrapper(batchDeleteLab))
-	group.POST("/kills",wrapper(batchKillLab))
-	group.POST("/clear",wrapper(batchClearLab))
-	group.DELETE("/:lab", wrapper(deleteLab))
+	group := (*IAMRouteGroup)(rg)
+
+	group.GET("", wrapper(getAllLabs),   "list:labs")
+	group.GET("/:lab", wrapper(queryLab),"view:lab")
+	group.PUT("/:lab", wrapper(updateLab),"modify:lab")
+	group.POST("", wrapper(createLab),    "create:lab")
+	group.POST("/batch", wrapper(batchCreateLab),"create:labs")
+	group.POST("/deletes",wrapper(batchDeleteLab),"delete:labs")
+	group.POST("/kills",wrapper(batchKillLab), "kill:labs")
+	group.POST("/clear",wrapper(batchClearLab),"clear:labs")
+	group.DELETE("/:lab", wrapper(deleteLab),  "delete:lab")
+
 }
 
 func getAllLabs(c*gin.Context)(interface{},APIError){

@@ -9,11 +9,13 @@ import (
 
 
 func AddGroupSysRuns(r*gin.Engine){
- 	  group := r.Group(exports.AILAB_API_VERSION + "/job-management/:app")
+ 	  rg := r.Group(exports.AILAB_API_VERSION + "/job-management/:app")
 
-	  group.GET("/jobs", wrapper(sysGetRunList))
-	  group.GET("/metaInfo",wrapper(sysGetRunMetaInfo))
-	  group.POST("/:runId/stop",wrapper(sysKillRun))
+	  group := (*IAMRouteGroup)(rg)
+
+	  group.GET("/jobs", wrapper(sysGetRunList),       "apsc-list:runs")
+	  group.GET("/metaInfo",wrapper(sysGetRunMetaInfo),"apsc-get:meta")
+	  group.POST("/:runId/stop",wrapper(sysKillRun),   "apsc-kill:run")
 }
 
 

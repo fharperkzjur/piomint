@@ -44,6 +44,7 @@ resources:
   jobsched:       http://192.168.3.137:10100/api/v1              #job调度管理接口
   apharbor:       http://192.168.3.137:7100/api/v1                      #镜像管理接口
   apworkshop:     http://apworkshop-backend.default:80/api/v1
+  iam:            http://192.168.3.137:80/iam/api/v1                    # iam注册所有暴露的请求
   code:                                                                 #代码管理暂时由实验管理厂托管
 
 storage: pvc://aiplatform-ailab-data-pvc

@@ -51,8 +51,9 @@ type ResourceConfig struct{
 	Dataset       string
 	Jobsched      string
 	ApHarbor      string
-	ApWorkshop     string
+	ApWorkshop    string
 	Code          string
+	Iam           string
 }
 
 type TimeConfig struct {
