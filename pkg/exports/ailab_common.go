@@ -300,11 +300,15 @@ type ReqBatchCreateLab struct {
 }
 
 type ReqEditLab struct{
+	LabID       uint64                 `json:"labId"`
+	Group       string                 `json:"group,omitempty"`
 	Description string                 `json:"description" `
 	Name      string                   `json:"name"  `     // user defined name
 	Editor    string                   `json:"editor"`
+	UserId    uint64                   `json:"userId"`
 	Tags      RequestTags              `json:"tags"`      // user defined tags
 	Meta      RequestObject            `json:"meta"`
+	ProjectName string                 `json:"projectName"`
 }
 type ReqBatchEditLab struct{
 	// override per lab configuration
