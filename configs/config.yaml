@@ -24,9 +24,9 @@ log:
 db:
   serverType: postgres # 数据库服务器类型当前模板可选(postgres postgresql)
   username: postgres # 用户名
-  password: root # 密码
-  host:    localhost # 服务器host
-  port:    5432 # 服务端口
+  password: IUQtImOzLdsTs1C7 # 密码
+  host:    192.168.3.137 # 服务器host
+  port:    3390 # 服务端口
   database: ai_lab # db名称
   maxOpenConns: 10 # 数据库连接池最大数量
   maxIdleConns: 2 # 数据库空闲连接池最大数量

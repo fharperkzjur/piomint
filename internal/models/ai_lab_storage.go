@@ -8,6 +8,7 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/utils"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -122,7 +123,7 @@ func GetRealFilePath(path string,prefix string)(string,APIError){
 		return "",exports.RaiseAPIError(exports.AILAB_FILE_NOT_FOUND,"pvc file path not found !")
 	}
 	if s,err := os.Stat(path);err != nil {
-		return "",exports.RaiseAPIError(exports.AILAB_FILE_NOT_FOUND,err.Error())
+		return "",exports.RaiseHttpError(http.StatusOK,exports.AILAB_FILE_NOT_FOUND,err.Error())
 	}else if(!s.Mode().IsRegular()){
 		return "",exports.RaiseAPIError(exports.AILAB_NO_AUTH,"cannot access none regular files!")
 	}else{

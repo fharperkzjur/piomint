@@ -2,10 +2,12 @@ package services
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -210,6 +212,19 @@ func ServeFile(labId uint64,runId string,prefix string,c*gin.Context) APIError{
 			return exports.RaiseAPIError(exports.AILAB_OS_IO_ERROR,err.Error())
 		}
 		c.JSON(http.StatusOK,content)
+	}else if ext == ".json" && c.Query("format") == "1" {// wrap json file to common message
+		contents,err := ioutil.ReadFile(targetPath)
+		if err != nil {
+			return exports.RaiseAPIError(exports.AILAB_OS_IO_ERROR,err.Error())
+		}
+		var jst  interface{}
+		err = json.Unmarshal(contents,&jst)
+		if err != nil {
+			return exports.RaiseAPIError(exports.AILAB_INVALID_FORMAT,"invalid json data")
+		}
+		c.JSON(http.StatusOK,exports.CommResponse{
+			Data: jst,
+		})
 	}else{
 		c.Writer.WriteHeader(http.StatusOK)
 		c.Writer.Header().Add("Content-Type", MapMimeContentType(ext))
