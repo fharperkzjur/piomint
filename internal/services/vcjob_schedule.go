@@ -260,7 +260,7 @@ func SubmitVcJob(run*models.Run, tasks []JOB.VcJobTask) (int, APIError) {
 		JobId:       run.RunId,
 		ResType:     JOB.RESOURCE_TYPE_DISTRIBUTED_JOB,
 		Owner:       run.Creator,
-		UserGroupId: 0,  //@todo:  retrive actually user group ???
+		UserGroupId: uint32(run.UserGroupId),
 		Namespace:   run.Namespace,
 	  }
 	 vcjob.Tasks=tasks
@@ -273,7 +273,7 @@ func SubmitSingleJob(run*models.Run,task * JOB.VcJobTask) (int,APIError){
 		ModId:           exports.AILAB_MODULE_ID,
 		JobId:           run.RunId,
 		Owner:           run.Creator,
-		UserGroupId:     0, //@todo:  retrive actually user group ???
+		UserGroupId:     uint32(run.UserGroupId),
 		ResType:         JOB.RESOURCE_TYPE_JOB,
 		ImageName:       task.Container.ImageName,
 		Cmd:             task.Container.Cmd,

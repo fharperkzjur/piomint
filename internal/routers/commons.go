@@ -96,7 +96,7 @@ func makePagedQueryResult(req* exports.SearchCond,data interface{},err APIError)
 func getUserToken(c*gin.Context) string{
 	authHeader := c.Request.Header.Get("Authorization")
 	if authHeader == "" {
-		return ""
+		return c.Query("token")
 	}
 	parts := strings.SplitN(authHeader, " ", 2)
 	if !(len(parts) == 2 && parts[0] == "Bearer") {

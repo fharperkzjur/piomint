@@ -20,6 +20,9 @@ func AddGroupTraining(r*gin.Engine){
 	group.POST("/runs", wrapper(submitLabRun))
 	group.POST("/runs/:runId/evaluates", wrapper(submitLabEvaluate))
 	group.POST("/code-labs",wrapper(submitCodeLabRun))
+	group.POST("/runs/:runId/nni-devs",wrapper(createNNIDevExperiment))
+	group.POST("/nni",wrapper(submitNNIExperimentRun))
+	group.POST("/nni/:runId/trials",wrapper(submitNNITrials))
     // operates on lab runs : open_visual/close_visual  , pause|resume|kill|stop
 	group.POST("/runs/:runId", wrapper(postLabRuns))
     // support train&evaluate job list
@@ -138,7 +141,7 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 	if labId == 0 || len(runId) == 0 {
 		return nil,exports.ParameterError("queryLabRun invalid lab id or run id")
 	}
-	run, err := models.QueryRunDetail(runId,false,-1)
+	run, err := models.QueryRunDetail(runId,false,0)
 	if err == nil && run.LabId != labId {
 		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
 	}
@@ -177,7 +180,7 @@ func deleteLabRunEndPoint(c*gin.Context)(interface{},APIError){
 
 func sysQueryLabRun(c*gin.Context)(interface{},APIError){
 	_,runId := parseLabRunId(c)
-	return models.QueryRunDetail(runId,true,-1)
+	return models.QueryRunDetail(runId,true,0)
 }
 
 func getAllLabRuns(c*gin.Context) (interface{},APIError){
@@ -317,7 +320,6 @@ func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (i
 	 	return nil,err
 	 }
 }
-
 
 func sysCleanLabRuns(c*gin.Context) (interface{},APIError){
 	 req := &ReqTargetLab{}

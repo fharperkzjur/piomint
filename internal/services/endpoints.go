@@ -27,7 +27,7 @@ func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},API
 	}
 }
 func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
-	run, err := models.QueryRunDetail(runId,false,-1)
+	run, err := models.QueryRunDetail(runId,false,0)
 	if err != nil {
 		return nil,err
 	}

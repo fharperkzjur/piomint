@@ -45,6 +45,7 @@ type Run struct{
 	 Flags      uint64        `json:"flags,omitempty"`   // some system defined attributes this run behaves
 	 Token      string        `json:"token,omitempty"`   // @todo:  should not return to client user ???
 	 Namespace  string        `json:"-" gorm:"-"`
+	 UserGroupId uint64       `json:"-" gorm:"-"`
 	 ViewStatus int           `json:"viewStatus,omitempty" gorm:"-"`
 	 RegisterStatus int       `json:"registerStatus,omitempty" gorm:"-"`
 	 ScratchStatus  int       `json:"scratchStatus" gorm:"-"`
@@ -153,7 +154,7 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 		  Token:       req.Token,
 	  }
 	  run.Cmd.Save(req.Cmd)
-	  if !exports.IsJobSingleton(req.JobFlags) && !exports.IsJobSingletonByUser(req.JobFlags) {
+	  if !exports.IsJobShouldSingleton(req.JobFlags) {
 	  	 if mlrun.IsLabRun() {
 	  	 	run.Num = mlrun.Starts
 		 }else{
@@ -267,24 +268,18 @@ func  QueryRunDetail(runId string,unscoped bool,status int) (run*Run,err APIErro
 	if unscoped {
 		inst = inst.Unscoped()
 	}
-	if status >= 0 {
+	if status > 0 {
 		inst = inst.Where("status=?",status)
 	}
 	err =  wrapDBQueryError(inst.First(run,"run_id=?",runId))
 	//if err == nil && exports.IsRunStatusStarting(status) {
 	if err == nil {
-		err = checkDBQueryError(db.Table("labs").Select("namespace").
-			Where("id=?",run.LabId).Row().Scan(&run.Namespace))
+		err = checkDBQueryError(db.Table("labs").Select("namespace,user_group_id").
+			Where("id=?",run.LabId).Row().Scan(&run.Namespace,&run.UserGroupId))
 	}
 	if err != nil {
 		run = nil
 	}
-	return
-}
-func QueryRunStarting(runId string) (run*Run,err APIError){
-
-	run  = &Run{RunId: runId}
-	err  = wrapDBQueryError(db.Model(run).Select("runs.*,namesapce").Joins("left join labs on runs.lab_id=labs.id").Scan(run))
 	return
 }
 
@@ -708,12 +703,20 @@ func tryDeleteLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError{
 	}
 }
 
+func checkReturnSingleon(err APIError) APIError {
+	if err == nil{//exists singleton instance
+		return exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
+	}else if err.Errno() == exports.AILAB_NOT_FOUND {
+		return nil
+	}else{
+		return err
+	}
+}
 
 func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest) (old*JobStatusChange,err APIError) {
 
 	if mlrun.IsLabRun()  {//create lab run
-		if exports.IsJobSingleton(req.JobFlags) || exports.IsJobSingletonByUser(req.JobFlags){
-
+		if exports.IsJobShouldSingleton(req.JobFlags) {
 			old = &JobStatusChange{}
 			if exports.IsJobSingleton(req.JobFlags) {
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
@@ -722,18 +725,18 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
 					First(old, "lab_id=? and job_type=? and creator=?", mlrun.ID, req.JobType,req.Creator))
 			}
-			if err == nil{//exists singleton instance
-				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
-			}else if err.Errno() == exports.AILAB_NOT_FOUND {
-				return nil,nil
-			}else{
-				return nil,err
+			err = checkReturnSingleon(err)
+		}else {
+			if exports.IsJobIdentifyName(req.JobFlags){
+				old = &JobStatusChange{}
+				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
+					First(old, "lab_id=? and job_type=? and name=?", mlrun.ID, req.JobType,req.Name))
+				err = checkReturnSingleon(err)
 			}
-		}else{//track lab run starts
 			mlrun.Starts ++
 		}
 	}else{// create nest run
-		if exports.IsJobSingleton(req.JobFlags) || exports.IsJobSingletonByUser(req.JobFlags){
+		if exports.IsJobShouldSingleton(req.JobFlags) {
 			old = &JobStatusChange{}
 			if exports.IsJobSingleton(req.JobFlags) {
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
@@ -742,22 +745,22 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
 					First(old, "parent=? and job_type=? and creator=?", mlrun.RunId, req.JobType,req.Creator))
 			}
-			if err == nil{//exists singleton instance
-				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
-			}else if err.Errno() == exports.AILAB_NOT_FOUND {
-				return nil,nil
-			}else{
-				return nil,err
-			}
-		}else{//track run nested starts
-			mlrun.Started++
+			err = checkReturnSingleon(err)
+		}else {
+			 if exports.IsJobIdentifyName(req.JobFlags){
+				old = &JobStatusChange{}
+				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
+					First(old, "parent=? and job_type=? and name=?", mlrun.RunId, req.JobType,req.Name))
+				err = checkReturnSingleon(err)
+			 }
+			 mlrun.Started++
 		}
 	}
 	return
 }
 
 func completeCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest,run*Run) (err APIError){
-	 if !exports.IsJobSingleton(req.JobFlags) && !exports.IsJobSingletonByUser(req.JobFlags){//@modify: add singleton user runs
+	 if !exports.IsJobShouldSingleton(req.JobFlags){//@modify: add singleton user runs
 		 if mlrun.IsLabRun() {//create lab run
 	        err = wrapDBUpdateError(tx.Table("labs").Where("id=? and deleted_at =0",mlrun.ID).
 	        	Update("starts",mlrun.Starts),1)

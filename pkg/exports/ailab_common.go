@@ -71,6 +71,10 @@ const (
 	AILAB_RUN_FLAGS_SCHEDULE_AFFINITY=0x100
 	// whether use compact master node
 	AILAB_RUN_FLAGS_COMPACT_MASTER=0x200
+	// singleton by user name
+	AILAB_RUN_FLAGS_IDENTIFY_NAME = 0x400
+	// virtual experiment run , not actually running job
+	AILAB_RUN_FLAGS_VIRTUAL_EXPERIMENT = 0x800
 
 	// have prepare all resource complete
 	AILAB_RUN_FLAGS_PREPARE_OK           = 0x10000
@@ -115,6 +119,9 @@ const (
 	AILAB_RUN_SCRATCH   = "scratch"       // standalone docker image scratch tool
 	//AILAB_RUN_MINDINSIGHT = "mindinsight"
 	//AILAB_RUN_TENSORBOARD = "tensorboard"
+	AILAB_RUN_NNI_DEV = "nni-dev"        //  created from `dev` job internally
+	AILAB_RUN_NNI_TRAIN = "nni"          //  nni train started by platform
+	AILAB_RUN_NNI_TRIAL = "nni-trial"    //  nni trails started by paltform
 )
 
 const (
@@ -334,6 +341,12 @@ func  IsJobSingleton(flags uint64)       bool{
 func  IsJobSingletonByUser(flags uint64) bool {
 	return (flags & AILAB_RUN_FLAGS_SINGLETON_USER) != 0
 }
+func  IsJobShouldSingleton(flags uint64) bool {
+	return (flags &(AILAB_RUN_FLAGS_SINGLE_INSTANCE | AILAB_RUN_FLAGS_SINGLETON_USER)) != 0
+}
+func  IsJobIdentifyName(flags uint64) bool {
+	return (flags & AILAB_RUN_FLAGS_IDENTIFY_NAME) != 0
+}
 func  IsJobNeedSave(flags uint64)    bool{
 	return (flags & AILAB_RUN_FLAGS_NEED_SAVE) != 0
 }
@@ -365,3 +378,7 @@ func  IsJobNeedAffinity(flags uint64) bool {
 func  IsJobDistributeCompactMaster(flags uint64) bool {
 	return (flags & AILAB_RUN_FLAGS_COMPACT_MASTER) != 0
 }
+func  IsJobVirtualExperiment(flags uint64) bool {
+	return (flags & AILAB_RUN_FLAGS_VIRTUAL_EXPERIMENT) != 0
+}
+
