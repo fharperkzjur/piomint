@@ -18,16 +18,11 @@ func FileExists(path string) bool {
 
 	return true
 }
-
 func FileSize(path string) int64 {
-
-	return 0
-
 	fi, err := os.Stat(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	return fi.Size()
 }
 
