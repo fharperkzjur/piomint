@@ -262,12 +262,22 @@ func KillJob(run*models.Run) (int,APIError) {
 	 if exports.IsJobVirtualExperiment(run.Flags) {
 	 	return exports.AILAB_RUN_STATUS_SUCCESS,nil
 	 }
-	 if err := DeleteJob(run.RunId);err == nil{
+
+	 //if err := DeleteJob(run.RunId);err == nil{
 	 	//return exports.AILAB_RUN_STATUS_ABORT,nil
-	 	return exports.AILAB_RUN_STATUS_STOPPING,nil
-	 }else{
-	 	return exports.AILAB_RUN_STATUS_INVALID,err
-	 }
+	 	//return exports.AILAB_RUN_STATUS_STOPPING,nil
+	 //}else{
+	 	//return exports.AILAB_RUN_STATUS_INVALID,err
+	 //}
+	url  := fmt.Sprintf("%s/jobs/%s",configs.GetAppConfig().Resources.Jobsched,run.RunId)
+	err  := Request(url,"DELETE",nil,nil,nil)
+	if err == nil {
+		return exports.AILAB_RUN_STATUS_STOPPING,nil
+	}else if err.Errno() == JOB.ERR_CODE_RESOURCE_NOT_EXIST {//abort already
+		return exports.AILAB_RUN_STATUS_ABORT,nil
+	}else{
+		return exports.AILAB_RUN_STATUS_INVALID,err
+	}
 }
 
 func DeleteJob(runId string) APIError{
