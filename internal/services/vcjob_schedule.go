@@ -282,6 +282,9 @@ func SubmitSingleJob(run*models.Run,task * JOB.VcJobTask) (int,APIError){
 		PreStartScripts: "", //@mark:  donot use this parameters any more !!!
 		InitContainer:   task.InitContainer,
 	}
+	if len(task.Container.Ports) > 0 {
+		job.SetContainerPorts(task.Container.Ports)
+	}
 
 	url  := configs.GetAppConfig().Resources.Jobsched+"/jobs"
 	return submitJobInternal(run,url,job)
