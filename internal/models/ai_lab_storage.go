@@ -140,7 +140,7 @@ func WriteJsonFile(dir string,file string,v interface{}) APIError {
 	}
 	rpath =  path.Join(rpath,file)
 	content,_ := json.Marshal(v)
-	if err := ioutil.WriteFile(rpath,content,0440) ;err != nil {
+	if err := ioutil.WriteFile(rpath,content,0444) ;err != nil {
 		return exports.RaiseAPIError(exports.AILAB_OS_CREATE_FILE)
 	}
 	return nil

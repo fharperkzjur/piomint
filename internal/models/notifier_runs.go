@@ -62,7 +62,7 @@ func (d*RunStatusNotifier)getMsgSubject(msgType string)string{
 		  case  exports.AILAB_RUN_STATUS_FAIL:      return fmt.Sprintf("失败-%s-任务-%s",jobType,d.RunId)
 		  case  exports.AILAB_RUN_STATUS_SAVE_FAIL: return fmt.Sprintf("保存失败-%s-任务-%s",jobType,d.RunId)
 		  default://should never happen
-			  logger.Fatalf("getMsgSubject encounter unexpected run status !!!")
+			  logger.Fatalf("[%s] getMsgSubject encounter unexpected run status %d !!!",d.RunId,d.Status)
 			  return fmt.Sprintf("未知结束-%s-任务-%s",jobType,d.RunId)
 		  }
 	  default:
