@@ -49,6 +49,7 @@ type LabRunStats struct{
 	Errors       int  `json:"error,omitempty"`
 	Aborts       int  `json:"abort,omitempty"`
 	Success      int  `json:"success,omitempty"`
+	Active       int  `json:"active,omitempty"`
 }
 
 type JobStatusChange struct {
@@ -91,6 +92,26 @@ func (d*LabRunStats)Sum(s * LabRunStats){
      d.Errors      += s.Errors
      d.Aborts      += s.Aborts
      d.Success     += s.Success
+}
+func (d*LabRunStats)Collect(status int) {
+	 switch status{
+		 case exports.AILAB_RUN_STATUS_INIT,
+			 exports.AILAB_RUN_STATUS_STARTING,
+			 exports.AILAB_RUN_STATUS_QUEUE,
+			 exports.AILAB_RUN_STATUS_SCHEDULE:     d.RunStarting++
+		 case exports.AILAB_RUN_STATUS_RUN,
+			 exports.AILAB_RUN_STATUS_COMPLETING:   d.RunStarting++
+		 case exports.AILAB_RUN_STATUS_KILLING,
+			 exports.AILAB_RUN_STATUS_STOPPING:     d.Stopping++
+		 case exports.AILAB_RUN_STATUS_FAIL,exports.AILAB_RUN_STATUS_SAVE_FAIL:	d.Fails++
+		 case exports.AILAB_RUN_STATUS_ERROR:       d.Errors++
+		 case exports.AILAB_RUN_STATUS_ABORT:       d.Aborts++
+		 case exports.AILAB_RUN_STATUS_SUCCESS:     d.Success++
+	 }
+	 if exports.IsRunStatusActive(status){
+	 	d.Active++
+	 }
+
 }
 
 func (d*JobStats) Sum(s JobStats) {

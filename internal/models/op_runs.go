@@ -253,3 +253,25 @@ func GetLabRunDefaultSaveModelName(runId string) (scope string,name string,err A
 
 	return
 }
+
+func QueryLabRealStats(labId uint64, group string)(interface{},APIError) {
+	if len(group) > 0 {
+		return nil,exports.NotImplementError("QueryLabRealStats search for group search not implement yet !!!")
+	}
+	stats := &LabRunStats{}
+	err := execDBQuerRows(db.Model(&Run{}).Where("lab_id=?",labId).Select("status"),
+		func(tx*gorm.DB,rows *sql.Rows) APIError {
+			status := 0
+			if err   := checkDBScanError(rows.Scan(&status));err == nil {
+				stats.Collect(status)
+				return nil
+			}else{
+				return err
+			}
+		})
+	if err != nil {
+		return nil,err
+	}else{
+		return stats,nil
+	}
+}

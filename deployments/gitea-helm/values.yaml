@@ -88,7 +88,8 @@ resources: {}
 ##
 # schedulerName:
 
-nodeSelector: {}
+nodeSelector:
+   archType: amd64
 
 tolerations: []
 

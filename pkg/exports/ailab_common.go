@@ -64,6 +64,8 @@ const (
 	AILAB_RUN_FLAGS_GRACE_STOP = 0x20
 	// [experimental] need run on cloud
 	AILAB_RUN_FLAGS_USE_CLOUD  = 0x40
+	// singleton by user among valid scope
+	AILAB_RUN_FLAGS_SINGLETON_USER = 0x80
 
 	// have prepare all resource complete
 	AILAB_RUN_FLAGS_PREPARE_OK           = 0x10000
@@ -92,13 +94,16 @@ const (
 	AILAB_RESOURCE_TYPE_OUTPUT  = AILAB_OUTPUT_NAME
 	AILAB_RESOURCE_TYPE_CODE    = "code"
 	AILAB_RESOURCE_TYPE_ENGINE  = "engine"
+	AILAB_RESOURCE_TYPE_STORE   = "store"
 )
 
 const (
 	AILAB_RUN_TRAINING = "train"
 	AILAB_RUN_EVALUATE = "eval"
-	AILAB_RUN_SAVE     = "save"
+	AILAB_RUN_CODE_DEVELOP   = "dev"
+	AILAB_RUN_MODEL_REGISTER = "register"  // standalone model register tool
 	AILAB_RUN_VISUALIZE = "view"
+	AILAB_RUN_SCRATCH   = "scratch"       // standalone docker image scratch tool
 	//AILAB_RUN_MINDINSIGHT = "mindinsight"
 	//AILAB_RUN_TENSORBOARD = "tensorboard"
 )
@@ -287,6 +292,9 @@ func  IsJobResumable(flags uint64)       bool{
 }
 func  IsJobSingleton(flags uint64)       bool{
 	return (flags & AILAB_RUN_FLAGS_SINGLE_INSTANCE) != 0
+}
+func  IsJobSingletonByUser(flags uint64) bool {
+	return (flags & AILAB_RUN_FLAGS_SINGLETON_USER) != 0
 }
 func  IsJobNeedSave(flags uint64)    bool{
 	return (flags & AILAB_RUN_FLAGS_NEED_SAVE) != 0

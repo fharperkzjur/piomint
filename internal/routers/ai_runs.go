@@ -18,12 +18,14 @@ func AddGroupTraining(r*gin.Engine){
 
 	group.POST("/runs", wrapper(submitLabRun))
 	group.POST("/runs/:runId/evaluates", wrapper(submitLabEvaluate))
+	group.POST("/code-labs",wrapper(submitCodeLabRun))
     // operates on lab runs : open_visual/close_visual  , pause|resume|kill|stop
 	group.POST("/runs/:runId", wrapper(postLabRuns))
     // support train&evaluate job list
 	group.GET("/runs", wrapper(getAllLabRuns))
 	group.GET("/runs/:runId",wrapper(queryLabRun))
 	group.GET("/stats",wrapper(queryLabRunStats))
+	group.GET("/real-stats",wrapper(queryLabRunRealStats))
 
 	group.GET( "/runs/:runId/files",   wrapper(listLabRunFiles))
 	group.GET("/runs/:runId/logs",     wrapper(viewJobLogs))
@@ -60,6 +62,24 @@ func submitLabRun(c*gin.Context) (interface{},APIError){
 	 return services.ReqCreateRun(labId,"",req,false,false)
 }
 
+func submitCodeLabRun(c*gin.Context)(interface{},APIError){
+	labId, _ := parseLabRunId(c)
+	if labId == 0 {
+		return nil,exports.ParameterError("create code-lab invalid lab id")
+	}
+	req := &exports.CreateJobRequest{}
+	if err := c.ShouldBindJSON(req);err != nil{
+		return nil,exports.ParameterError("invalid json data")
+	}
+	req.JobType = exports.AILAB_RUN_CODE_DEVELOP
+	if req.UseModelArts {
+		req.JobFlags = exports.AILAB_RUN_FLAGS_USE_CLOUD
+	}
+	req.JobFlags |= exports.AILAB_RUN_FLAGS_SINGLETON_USER
+	req.Token=getUserToken(c)
+	return services.ReqCreateRun(labId,"",req,true,false)
+}
+
 func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 	labId,runId := parseLabRunId(c)
 	if labId == 0 || len(runId) == 0 {
@@ -77,14 +97,27 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 	return services.ReqCreateRun(labId,runId,req,false,false)
 }
 
-func saveLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
-	req.JobType  = exports.AILAB_RUN_SAVE
+func registerLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
+	req.JobType  = exports.AILAB_RUN_MODEL_REGISTER
 	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_AUTO_DELETED
 	run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	if err == nil {// created new run
-		return nil,exports.RaiseReqWouldBlock("wait to start save job ...")
+		return nil,exports.RaiseReqWouldBlock("wait to start model register job ...")
 	}else if err.Errno() == exports.AILAB_STILL_ACTIVE {// exists old job
-		return nil,exports.RaiseAPIError(exports.AILAB_SERVER_BUSY, "old save job still active ...")
+		return nil,exports.RaiseAPIError(exports.AILAB_SERVER_BUSY, "old register job still active ...")
+	}else{
+		return run,err
+	}
+}
+
+func scratchLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
+	req.JobType  = exports.AILAB_RUN_SCRATCH
+	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_AUTO_DELETED
+	run, err := services.ReqCreateRun(labId,runId,req,true,false)
+	if err == nil {// created new run
+		return nil,exports.RaiseReqWouldBlock("wait to start docker image scratch job ...")
+	}else if err.Errno() == exports.AILAB_STILL_ACTIVE {// exists old job
+		return nil,exports.RaiseAPIError(exports.AILAB_SERVER_BUSY, "old docker image scratch job still active ...")
 	}else{
 		return run,err
 	}
@@ -140,6 +173,11 @@ func queryLabRunStats(c*gin.Context) (interface{},APIError){
 	return models.QueryLabStats(labId,c.Query("group"))
 }
 
+func queryLabRunRealStats(c*gin.Context) (interface{},APIError){
+	labId,_ := parseLabRunId(c)
+	return models.QueryLabRealStats(labId,c.Query("group"))
+}
+
 func sysQueryLabRunStats(c*gin.Context)(interface{},APIError){
     return models.QueryLabStats(0,c.Query("group"))
 }
@@ -158,13 +196,20 @@ func postLabRuns(c*gin.Context)(interface{},APIError) {
 		   return openLabRunVisual(labId,runId,req)
 	  case "close_visual":
 	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_VISUALIZE,false)
-	  case "save":
+	  case "register":
 		  if err := c.ShouldBindJSON(req);err != nil {
 			  return nil,exports.ParameterError("invalid json data")
 		  }
-		  return saveLabRun(labId,runId,req)
-	  case "cancel_save":
-	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_SAVE,false)
+		  return registerLabRun(labId,runId,req)
+	  case "cancel_register":
+	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_MODEL_REGISTER,false)
+	  case "scratch":
+		  if err := c.ShouldBindJSON(req);err != nil {
+			  return nil,exports.ParameterError("invalid json data")
+		  }
+		  return scratchLabRun(labId,runId,req)
+	  case "cancel_scratch":
+	  	   return models.KillNestRun(labId,runId,exports.AILAB_RUN_SCRATCH,false)
 	  case "kill":
 	  	  return  models.KillLabRun(labId,runId,false)
 	  case "pause":

@@ -45,7 +45,8 @@ type Run struct{
 	 Token      string        `json:"token,omitempty"`   // @todo:  should not return to client user ???
 	 Namespace  string        `json:"-" gorm:"-"`
 	 ViewStatus int           `json:"viewStatus,omitempty" gorm:"-"`
-	 SaveStatus int           `json:"saveStatus,omitempty" gorm:"-"`
+	 RegisterStatus int       `json:"registerStatus,omitempty" gorm:"-"`
+	 ScratchStatus  int       `json:"scratchStatus" gorm:"-"`
 }
 
 const (
@@ -137,7 +138,7 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 		  Token:       req.Token,
 	  }
 	  run.Cmd.Save(req.Cmd)
-	  if !exports.IsJobSingleton(req.JobFlags) {
+	  if !exports.IsJobSingleton(req.JobFlags) && !exports.IsJobSingletonByUser(req.JobFlags) {
 	  	 if mlrun.IsLabRun() {
 	  	 	run.Num = mlrun.Starts
 		 }else{
@@ -363,8 +364,9 @@ func ListAllLabRuns(req*exports.SearchCond,labId uint64,isNeedNestStatus bool) (
 					return err
 				}
 				switch jobType {
-				case exports.AILAB_RUN_VISUALIZE: jobData[parent].ViewStatus=status
-				case exports.AILAB_RUN_SAVE:      jobData[parent].SaveStatus=status
+				case exports.AILAB_RUN_VISUALIZE:           jobData[parent].ViewStatus=status
+				case exports.AILAB_RUN_MODEL_REGISTER:      jobData[parent].RegisterStatus=status
+				case exports.AILAB_RUN_SCRATCH:             jobData[parent].ScratchStatus=status
 				}
 				return nil
 		})
@@ -679,11 +681,16 @@ func tryDeleteLabRunsByGroup(tx*gorm.DB, labs []uint64) APIError{
 func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest) (old*JobStatusChange,err APIError) {
 
 	if mlrun.IsLabRun()  {//create lab run
-		if exports.IsJobSingleton(req.JobFlags) {
+		if exports.IsJobSingleton(req.JobFlags) || exports.IsJobSingletonByUser(req.JobFlags){
 
 			old = &JobStatusChange{}
-			err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
-				First(old,"lab_id=? and job_type=?",mlrun.ID,req.JobType))
+			if exports.IsJobSingleton(req.JobFlags) {
+				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
+					First(old, "lab_id=? and job_type=?", mlrun.ID, req.JobType))
+			}else{
+				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
+					First(old, "lab_id=? and job_type=? and creator=?", mlrun.ID, req.JobType,req.Creator))
+			}
 			if err == nil{//exists singleton instance
 				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
 			}else if err.Errno() == exports.AILAB_NOT_FOUND {
@@ -695,10 +702,15 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 			mlrun.Starts ++
 		}
 	}else{// create nest run
-		if exports.IsJobSingleton(req.JobFlags){
+		if exports.IsJobSingleton(req.JobFlags) || exports.IsJobSingletonByUser(req.JobFlags){
 			old = &JobStatusChange{}
-			err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
-				First(old,"parent=? and job_type=?",mlrun.RunId,req.JobType))
+			if exports.IsJobSingleton(req.JobFlags) {
+				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
+					First(old, "parent=? and job_type=?", mlrun.RunId, req.JobType))
+			}else{
+				err = wrapDBQueryError(tx.Model(&Run{}).Select(select_run_status_change).
+					First(old, "parent=? and job_type=? and creator=?", mlrun.RunId, req.JobType,req.Creator))
+			}
 			if err == nil{//exists singleton instance
 				return old,exports.RaiseAPIError(exports.AILAB_SINGLETON_RUN_EXISTS,"singleton run exists")
 			}else if err.Errno() == exports.AILAB_NOT_FOUND {
@@ -714,7 +726,7 @@ func preCheckCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 }
 
 func completeCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJobRequest,run*Run) (err APIError){
-	 if !exports.IsJobSingleton(req.JobFlags) {
+	 if !exports.IsJobSingleton(req.JobFlags) && !exports.IsJobSingletonByUser(req.JobFlags){//@modify: add singleton user runs
 		 if mlrun.IsLabRun() {//create lab run
 	        err = wrapDBUpdateError(tx.Table("labs").Where("id=? and deleted_at =0",mlrun.ID).
 	        	Update("starts",mlrun.Starts),1)

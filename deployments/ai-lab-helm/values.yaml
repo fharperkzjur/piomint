@@ -151,8 +151,8 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
-nodeSelector: 
-  #ai-lab: active
+nodeSelector:
+  archType: amd64
 
 tolerations: []
 
