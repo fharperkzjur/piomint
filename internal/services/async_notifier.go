@@ -95,6 +95,8 @@ func postMessageCenterRunMsg(notifier*models.RunStatusNotifier,MsgType string) A
 	 err := publishMsg(wsmsg.MESSAGE_CENTER_TOPIC_NAME,msg)
 	 if err != nil {
 	 	logger.Warnf("postMessageCenterRunMsg with message:%v failed:%s",msg,err.Error())
+	 }else{
+	 	logger.Infof("postMessageCenterRunMsg with topic %s message:%v success !",wsmsg.MESSAGE_CENTER_TOPIC_NAME,msg)
 	 }
 	 return err
 }
