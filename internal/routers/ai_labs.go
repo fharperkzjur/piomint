@@ -14,15 +14,15 @@ func AddGroupAILab(r *gin.Engine){
 
 	group := (*IAMRouteGroup)(rg)
 
-	group.GET("", wrapper(getAllLabs),   "list:labs")
-	group.GET("/:lab", wrapper(queryLab),"view:lab")
-	group.PUT("/:lab", wrapper(updateLab),"modify:lab")
-	group.POST("", wrapper(createLab),    "create:lab")
-	group.POST("/batch", wrapper(batchCreateLab),"create:labs")
-	group.POST("/deletes",wrapper(batchDeleteLab),"delete:labs")
-	group.POST("/kills",wrapper(batchKillLab), "kill:labs")
-	group.POST("/clear",wrapper(batchClearLab),"clear:labs")
-	group.DELETE("/:lab", wrapper(deleteLab),  "delete:lab")
+	group.GET("", wrapper(getAllLabs),   "lab:list")
+	group.GET("/:lab", wrapper(queryLab),"lab:view")
+	group.PUT("/:lab", wrapper(updateLab),"lab:update")
+	group.POST("", wrapper(createLab),    "lab:create")
+	group.POST("/batch", wrapper(batchCreateLab),"labs:create")
+	group.POST("/deletes",wrapper(batchDeleteLab),"labs:delete")
+	group.POST("/kills",wrapper(batchKillLab), "labs:kill")
+	group.POST("/clear",wrapper(batchClearLab),"labs:clear")
+	group.DELETE("/:lab", wrapper(deleteLab),  "lab:delete")
 
 }
 

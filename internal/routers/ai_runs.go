@@ -18,43 +18,45 @@ func AddGroupTraining(r*gin.Engine){
 	rg := r.Group(exports.AILAB_API_VERSION + "/labs/:lab")
 	group := (*IAMRouteGroup)(rg)
 
-	group.POST("/runs", wrapper(submitLabRun),"submit:train")
-	group.POST("/runs/:runId/evaluates", wrapper(submitLabEvaluate),"submit:eval")
-	group.POST("/code-labs",wrapper(submitCodeLabRun),"submit:dev")
-	group.POST("/runs/:runId/nni-devs",wrapper(createNNIDevExperiment),"submit:nni-dev")
-	group.POST("/nni",wrapper(submitNNIExperimentRun),"submit:nni")
-	group.POST("/nni/:runId/trials",wrapper(submitNNITrials),"submit:nni-trial")
+	group.POST("/runs", wrapper(submitLabRun),"train:create")
+	group.POST("/runs/:runId/evaluates", wrapper(submitLabEvaluate),"eval:create")
+	group.POST("/code-labs",wrapper(submitCodeLabRun),"dev:create")
+	group.POST("/runs/:runId/nni-devs",wrapper(createNNIDevExperiment),"nni-dev:create")
+	group.POST("/nni",wrapper(submitNNIExperimentRun),"nni:create")
+	group.POST("/nni/:runId/trials",wrapper(submitNNITrials),"nni-trial:create")
     // operates on lab runs : open_visual/close_visual  , pause|resume|kill|stop
-	group.POST("/runs/:runId", wrapper(postLabRuns),"ops:run")
+	group.POST("/runs/:runId", wrapper(postLabRuns),"run:ops")
     // support train&evaluate job list
-	group.GET("/runs", wrapper(getAllLabRuns),"list:runs")
-	group.GET("/runs/:runId",wrapper(queryLabRun),"view:run")
+	group.GET("/runs", wrapper(getAllLabRuns),"run:list")
+	group.GET("/runs/:runId",wrapper(queryLabRun),"run:view")
+	group.PUT("/runs/:runId",wrapper(updateLabRun),"run:update")
 
-	group.GET("runs/:runId/endpoints",wrapper(queryLabRunEndpoints),"view:endpoints")
-	group.POST("runs/:runId/endpoints",wrapper(createLabRunEndPoint),"create:endpoints")
-	group.DELETE("runs/:runId/endpoints/:name",wrapper(deleteLabRunEndPoint),"delete:endpoints")
+	group.GET("runs/:runId/endpoints",wrapper(queryLabRunEndpoints),"endpoint:list")
+	group.POST("runs/:runId/endpoints",wrapper(createLabRunEndPoint),"endpoint:create")
+	group.DELETE("runs/:runId/endpoints/:name",wrapper(deleteLabRunEndPoint),"endpoint:delete")
 
-	group.GET("/stats",wrapper(queryLabRunStats),         "view:stats")
-	group.GET("/real-stats",wrapper(queryLabRunRealStats),"view:real-stats")
+	group.GET("/stats",wrapper(queryLabRunStats),         "stats:view")
+	group.GET("/real-stats",wrapper(queryLabRunRealStats),"real-stats:view")
 
-	group.GET( "/runs/:runId/files",   wrapper(listLabRunFiles),"list:files")
-	group.GET("/runs/:runId/logs",     wrapper(viewJobLogs),    "list:logs")
+	group.GET( "/runs/:runId/files",   wrapper(listLabRunFiles),"files:list")
+	group.GET("/runs/:runId/logs",     wrapper(viewJobLogs),    "logs:list")
 
-	group.GET("/runs/:runId/fetch-logs",fetchLabRunLogs,"fetch:log")
-	group.GET("/runs/:runId/view",      viewLabRunFiles,"fetch:file")
+	group.GET("/runs/:runId/fetch-logs",fetchLabRunLogs,"log:fetch")
+	group.GET("/runs/:runId/view",      viewLabRunFiles,"file:fetch")
 
-	group.DELETE("/runs/:runId", wrapper(delLabRun),"delete:run")
+	group.DELETE("/runs/:runId", wrapper(delLabRun),"run:delete")
 
     // following interfce should only be called by admin role users
 	rg = r.Group(exports.AILAB_API_VERSION +"/runs")
 	group = (*IAMRouteGroup)(rg)
-	group.GET("",wrapper(sysGetAllLabRuns),         "sys-list:runs")
-	group.GET("/:runId",wrapper(sysQueryLabRun),    "sys-view:run")
-	group.GET("/stats",wrapper(sysQueryLabRunStats),"sys-view:stats")
-	group.POST("/:runId", wrapper(sysPostLabRuns),  "sys-ops:run")
+	group.GET("/:runId/uinfo",wrapper(queryRunUserInfo),"run:uinfo")
+	group.GET("",wrapper(sysGetAllLabRuns),         "sys-run:list")
+	group.GET("/:runId",wrapper(sysQueryLabRun),    "sys-run:view")
+	group.GET("/stats",wrapper(sysQueryLabRunStats),"sys-stats:view")
+	group.POST("/:runId", wrapper(sysPostLabRuns),  "sys-run:ops")
 
-	group.POST("/clean",wrapper(sysCleanLabRuns),           "sys-clean:runs")
-	group.POST("/clean-stgy",wrapper(sysResetCleanStrategy),"sys-reset-clean:stgy")
+	group.POST("/clean",wrapper(sysCleanLabRuns),           "sys-run:clean")
+	group.POST("/clean-stgy",wrapper(sysResetCleanStrategy),"sys-stgy:reset-clean")
 }
 
 func submitLabRun(c*gin.Context) (interface{},APIError){
@@ -135,6 +137,18 @@ func scratchLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (in
 	}else{
 		return run,err
 	}
+}
+
+func updateLabRun(c*gin.Context) (interface{},APIError){
+	labId,runId := parseLabRunId(c)
+	if labId == 0 || len(runId) == 0 {
+		return nil,exports.ParameterError("updateLabRun invalid lab id or run id")
+	}
+	req := exports.RequestObject{}
+	if err := c.ShouldBindJSON(&req);err != nil {
+		return nil,exports.ParameterError("invalid json data")
+	}
+	return nil,models.UpdateLabRun(labId,runId,req)
 }
 
 func queryLabRun(c*gin.Context) (interface{},APIError){
@@ -301,6 +315,10 @@ func sysPostLabRuns(c*gin.Context)(interface{},APIError){
 	default:
 		return nil,exports.NotImplementError("unsupport sys mlrun action:"+action)
 	}
+}
+
+func queryRunUserInfo(c*gin.Context)(interface{},APIError){
+	return models.QueryRunUserInfo(c.Param("runId"))
 }
 
 func delLabRun(c*gin.Context) (interface{},APIError){

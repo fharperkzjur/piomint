@@ -13,9 +13,9 @@ func AddGroupSysRuns(r*gin.Engine){
 
 	  group := (*IAMRouteGroup)(rg)
 
-	  group.GET("/jobs", wrapper(sysGetRunList),       "apsc-list:runs")
-	  group.GET("/metaInfo",wrapper(sysGetRunMetaInfo),"apsc-get:meta")
-	  group.POST("/:runId/stop",wrapper(sysKillRun),   "apsc-kill:run")
+	  group.GET("/jobs", wrapper(sysGetRunList),       "apsc-run:list")
+	  group.GET("/metaInfo",wrapper(sysGetRunMetaInfo),"apsc-meta:view")
+	  group.POST("/:runId/stop",wrapper(sysKillRun),   "apsc-run:kill")
 }
 
 

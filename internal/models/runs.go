@@ -333,6 +333,17 @@ func  QueryRunDetail(runId string,unscoped bool,status int,needChild bool) (run*
 	return
 }
 
+func QueryRunUserInfo(runId string) (*exports.LabRunUserInfo,APIError){
+	  uinfo := &exports.LabRunUserInfo{}
+	  err := wrapDBQueryError(db.Model(&Run{}).Select("labs.user_id as lab_user_id,labs.bind as lab_bind, labs.user_group_id,app,runs.user_id,lab_id,job_type").
+	  	Joins("left join labs on runs.lab_id=labs.id").First(uinfo,"run_id=?",runId))
+	  if err != nil {
+	  	return nil,err
+	  }else{
+	  	return uinfo,nil
+	  }
+}
+
 func SelectAnyLabRun(labId uint64) (run*Run,err APIError){
 	run = &Run{}
 	return run,wrapDBQueryError(db.Unscoped().First(run,"lab_id=?",labId))
@@ -410,6 +421,12 @@ func ResumeLabRun(labId uint64,runId string) (mlrun *BasicMLRunContext,err APIEr
 		return err
 	})
 	return
+}
+
+func UpdateLabRun(labId uint64,runId string,req exports.RequestObject) (APIError) {
+	TranslateJsonMeta(req,"progress","result")
+	return wrapDBUpdateError(db.Model(&Run{}).Select("description","progress","result").
+		Where("run_id=? and lab_id=?",runId,labId).Updates(req),1)
 }
 
 func PauseLabRun(labId uint64,runId string) APIError{

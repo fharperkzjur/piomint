@@ -228,6 +228,18 @@ type FileListItem struct{
 	IsDir     bool       `json:"isDir"`
 }
 
+type LabRunUserInfo struct{
+	LabUserId    uint64   `json:"labUserId"`
+	LabId        uint64   `json:"labId"`
+	UserGroupId  uint64   `json:"userGroupId"`
+	App          string   `json:"app"`
+	LabBind      string   `json:"labBind"`
+
+
+	UserId       uint64   `json:"userId"`
+	JobType      string   `json:"jobType"`
+}
+
 
 type ReqCreateLab struct{
 	Description string                 `json:"description" `
