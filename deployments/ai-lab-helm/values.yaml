@@ -105,7 +105,7 @@ storage:
     configs:
         - name:       ai-lab-cm
           subPath:    config.yaml
-          mountPath:  /app/config.yaml
+          mountPath:  /app/configs/config.yaml
 
 autoscaling:
   enabled: false

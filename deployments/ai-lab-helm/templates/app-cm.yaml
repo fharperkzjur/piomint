@@ -8,7 +8,7 @@ data:
         # 服务端口
         port:  {{ .port }}
         grpc:  {{ .grpc }}
-        debug: {{ .debug }}  true # gin debug模式
+        debug: {{ .debug }}  # gin debug模式
         # 数据库设置
         db:
           {{- toYaml .db | nindent 10 }} 

@@ -9,7 +9,7 @@ buildPlugin ( {
             'preBuild':[],
             'imageName': 'apulistech/ai-lab',
             'directory': '.',
-            'dockerfilePath': '',
+            'dockerfilePath': 'build/Dockerfile',
             'arch': ['amd64','arm64']
         ]
     ]
