@@ -2,12 +2,12 @@
 
 buildPlugin ( {
     repoName = 'ai-lab-backend'
-    project = ["songshanhu"]
+    project = ["aistudio"]
     dockerImages = [
         [
             'compileContainer': '',
             'preBuild':[],
-            'imageName': 'apulistech/ai-lab',
+            'imageName': 'bmod/ai-lab',
             'directory': '.',
             'dockerfilePath': 'build/Dockerfile',
             'arch': ['amd64','arm64']
