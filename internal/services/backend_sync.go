@@ -30,7 +30,7 @@ type BackendEventSync struct {
 
 var g_backend_srv BackendEventSync
 
-func (d *BackendEventSync)NotifyWithEvent(evt string,lastId uint64){
+func (d *BackendEventSync)HandleEvent(evt string,lastId uint64){
 
 	d.SetLastEventID(lastId)
     if task,ok := d.tasks[evt];ok {
@@ -39,8 +39,8 @@ func (d *BackendEventSync)NotifyWithEvent(evt string,lastId uint64){
 		log.Fatalf("no handler for event name:%s",evt)
 	}
 }
-func (d*BackendEventSync)JobStatusChange(runId string){
-	d.async_notify_task.Notify(runId)
+func (d*BackendEventSync)Notify(notify *exports.NotifierData){
+	d.async_notify_task.Notify(notify)
 }
 
 func (d*BackendEventSync)SetLastEventID(lastId uint64){
@@ -59,7 +59,7 @@ func (d*BackendEventSync)StartAsyncNotifier() {
 	  	panic("async notify task already exists !!!")
 	  }
 	  d.async_notify_task = &AsyncWSNotifier{
-	  	notify:  make(chan string,200),
+	  	notify:  make(chan exports.NotifierData,200),
 	  }
 	  d.sync_group.Add(1)
 	  go func(task*AsyncWSNotifier){

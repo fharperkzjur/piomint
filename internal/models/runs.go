@@ -181,6 +181,7 @@ func (r*Run) GetNotifierData() * RunStatusNotifier {
 type UserResourceQuota struct{
 	JOB.ResourceQuota
 	Node int          `json:"node"`
+	Arch string       `json:"arch"`
 }
 
 
@@ -691,8 +692,6 @@ func  CleanupDone(runId string,extra int,filterStatus int) APIError{
 		  	  if err == nil{
 		  	  	err = tryDiscardRun(tx,runId,track)
 			  }
-		  }else if status == exports.AILAB_RUN_STATUS_SAVE_FAIL {
-			  err = change_run_status(tx,runId,&status,0,mlrun.Flags,track)
 		  }else if mlrun.DeletedAt == 0{
 		  	  err = wrapDBUpdateError(tx.Table("runs").Where("run_id=?",runId).
 		  	  	 UpdateColumns(map[string]interface{}{

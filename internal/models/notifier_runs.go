@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/apulis/go-business/pkg/wsmsg"
+	"gorm.io/gorm"
 	"gorm.io/plugin/soft_delete"
 )
 
@@ -97,7 +98,8 @@ func (d*RunStatusNotifier)GetPublishMsg(msgType string)*wsmsg.ReqPublishMessage 
 }
 
 const (
-	 select_notifier_fields = "labs.bind,user_group_id,run_id,parent,job_type,runs.created_at,runs.deleted_at,status,result,progress,msg,runs.name,runs.creator,runs.user_id,start_time,end_time"
+	 select_notifier_fields         = "labs.bind,user_group_id,run_id,parent,job_type,runs.created_at,runs.deleted_at,status,result,progress,msg,runs.name,runs.creator,runs.user_id,start_time,end_time"
+	 select_status_notifier_fields  = "labs.bind,user_group_id,parent,deleted_at,status,job_type"
 )
 
 func QueryRunNotifierData(runId string) (*RunStatusNotifier,APIError){
@@ -109,4 +111,24 @@ func QueryRunNotifierData(runId string) (*RunStatusNotifier,APIError){
 	}else{
 		return &notifyData,nil
 	}
+}
+
+func QueryRunStatusNotifierData(tx*gorm.DB,runId string)(*RunStatusNotifier,APIError) {
+	var notifyData RunStatusNotifier
+	err := wrapDBQueryError(tx.Table("runs").Select(select_status_notifier_fields).Joins("left join labs on lab_id=labs.id").
+		First(&notifyData,"run_id=?",runId))
+	if err != nil {
+		return nil,err
+	}
+	notifyData.RunId=runId
+	return &notifyData,nil
+}
+
+func QueryRunDeletedNotifierData(tx*gorm.DB,jobType string,runId string)(*RunStatusNotifier,APIError){
+	switch jobType {
+		case exports.AILAB_RUN_TRAINING,
+			exports.AILAB_RUN_EVALUATE:
+		default: return nil,nil
+	}
+	return QueryRunStatusNotifierData(tx,runId)
 }

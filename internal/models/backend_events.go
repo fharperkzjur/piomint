@@ -50,12 +50,36 @@ const (
 
 type JobEvent struct{
     runId   string
-    evtent  string
+    event   string
     eventID uint64
 }
 
-type BackendEvents map[string]uint64
-type EventsTrack *[]JobEvent
+
+
+//type BackendEvents map[string]uint64
+//type EventsTrack *[]JobEvent
+type EventsTrack = * EventCollector
+
+type EventCollector struct {
+	 BackendEvents   []JobEvent //collect for backend events
+	 Notifiers       []exports.NotifierData
+}
+
+func (collect*EventCollector) PushEvent(runId string,event string,eventID uint64){
+      collect.BackendEvents=append(collect.BackendEvents,JobEvent{
+	      runId:   runId,
+	      event:   event,
+	      eventID: eventID,
+      })
+}
+func (collect*EventCollector) PushNotifier(cmd string,runId string,scope interface{},payload interface{}) {
+	 collect.Notifiers=append(collect.Notifiers,exports.NotifierData{
+		 Cmd:     cmd,
+		 RunId:   runId,
+		 Scope:   scope,
+		 Payload: payload,
+	 })
+}
 
 //@mark: usually within a transaction
 func  LogBackendEvent(tx * gorm.DB , ty , data string,extra interface{},events EventsTrack) APIError{
@@ -72,11 +96,12 @@ func  LogBackendEvent(tx * gorm.DB , ty , data string,extra interface{},events E
 	err := wrapDBUpdateError(tx.Create(evt),1)
 	if err == nil {
 		// mark this transaction need check backend events
-		*events=append(*events,JobEvent{
-			runId:   data,
-			evtent:  ty,
-			eventID: evt.ID,
-		})
+		//*events=append(*events,JobEvent{
+		//	runId:   data,
+		//	evtent:  ty,
+		//	eventID: evt.ID,
+		//})
+		events.PushEvent(data,ty,evt.ID)
 	}
 	return err
 }
@@ -129,5 +154,3 @@ func logDiscardRun(tx*gorm.DB,runId string,events EventsTrack) APIError{
 func logClearLab(tx*gorm.DB,labId uint64,events EventsTrack) APIError{
 	return LogBackendEvent(tx,Evt_clear_lab,fmt.Sprintf("%d",labId),nil,events)
 }
-
-

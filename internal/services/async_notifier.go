@@ -13,17 +13,17 @@ import (
 
 type AsyncWSNotifier struct{
 
-	notify chan  string
+	notify chan  exports.NotifierData
 
 }
 
-func (d*AsyncWSNotifier) Notify(runId string){
-	d.notify <- runId
+func (d*AsyncWSNotifier) Notify(notify*exports.NotifierData){
+	d.notify <- *notify
 }
 
-func (d*AsyncWSNotifier) Fetch() string{
-	runId := <- d.notify
-	return runId
+func (d*AsyncWSNotifier) Fetch() exports.NotifierData{
+	notify := <- d.notify
+	return notify
 }
 
 func (d*AsyncWSNotifier) Quit() {
@@ -34,50 +34,48 @@ func (d*AsyncWSNotifier) Quit() {
 func (d*AsyncWSNotifier) Run() {
 
 	 for {
-	 	runId := d.Fetch()
-	 	if len(runId) == 0 {
+	 	notify := d.Fetch()
+	 	if len(notify.Cmd) == 0 {
 	 		break
 	    }
-		if notifyData,err := models.QueryRunNotifierData(runId);err == nil{
-
-			    notifyRunStatusChange(notifyData,exports.AILAB_NOTIFY_CMD_STATUS_RUN)
-
-                //notifyRunDeleted(notifyData)
-
-		}else if err.Errno() == exports.AILAB_NOT_FOUND{//should not error
-			logger.Warnf("query runId %s for async notify not found !",runId)
-		}else{
-			logger.Errorf("query runId %s for async notify error:%s drop it !",runId,err.Error())
-		}
+	    scope,_   := notify.Scope.(*models.RunNotifyScope)
+	    payload,_ := notify.Payload.(*models.RunNotifyPayload)
+	    if notify.Scope != nil{
+		     notifyRunStatusChange(scope,payload,notify.Cmd)
+		     if notify.Cmd == exports.AILAB_NOTIFY_CMD_DEL_RUN {
+		     	runNotifierData := &models.RunStatusNotifier{
+			        RunNotifyScope:   *scope,
+		        }
+		        if payload != nil{
+		        	runNotifierData.RunNotifyPayload=*payload
+		        }
+		     	postMessageCenterRunMsg(runNotifierData,exports.AILAB_MCT_MESSAGE_TYPE_DEL)
+		     }
+	    }
 	 }
-}
-
-func notifyRunDeleted(notifier * models.RunStatusNotifier) APIError {
-      postMessageCenterRunMsg(notifier,exports.AILAB_MCT_MESSAGE_TYPE_DEL)
-	  return notifyRunStatusChange(notifier,exports.AILAB_NOTIFY_CMD_DEL_RUN)
 }
 
 func notifyRunCreated(notifier * models.RunStatusNotifier) APIError {
   	  postMessageCenterRunMsg(notifier,exports.AILAB_MCT_MESSAGE_TYPE_NEW)
-	  return notifyRunStatusChange(notifier,exports.AILAB_NOTIFY_CMD_NEW_RUN)
+	  return notifyRunStatusChange(&notifier.RunNotifyScope, &notifier.RunNotifyPayload,exports.AILAB_NOTIFY_CMD_NEW_RUN)
 }
 
 func notifyRunComplete(notifier * models.RunStatusNotifier) APIError {
   	  postMessageCenterRunMsg(notifier,exports.AILAB_MCT_MESSAGE_TYPE_COMPLETE)
-	  return notifyRunStatusChange(notifier,exports.AILAB_NOTIFY_CMD_STATUS_RUN)
+	  return notifyRunStatusChange(&notifier.RunNotifyScope, &notifier.RunNotifyPayload,exports.AILAB_NOTIFY_CMD_STATUS_RUN)
 }
 
-func notifyRunStatusChange(notifier * models.RunStatusNotifier,cmd string) APIError{
+func notifyRunStatusChange(scope*models.RunNotifyScope,payload*models.RunNotifyPayload,cmd string) APIError{
 	 notifyData := wsmsg.PushMsg{
 		 Header:  wsmsg.PushMsgHeader{
 			 ReqId:       utils.GenerateReqId(),
 			 ModId:       exports.AILAB_MODULE_ID,
 			 Cmd:         cmd,
 			 PushType:    wsmsg.PushTypeUserGroup,
-			 PushTargets: []string{strconv.FormatUint(notifier.UserGroupId,10)},
+			 PushTargets: []string{strconv.FormatUint(scope.UserGroupId,10)},
 		 },
-		 Payload: &notifier.RunNotifyPayload,
-		 Scope:   &notifier.RunNotifyScope,
+		 Payload: scope,
+		 Scope:   payload,
 	 }
 	 url := fmt.Sprintf("%s/ws/inner/publish")
 	 return DoRequest(url,"PUT",nil,&notifyData,nil)

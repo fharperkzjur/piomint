@@ -345,9 +345,16 @@ type CreateJobRequest struct{
 	Endpoints    [] ServiceEndpoint   `json:"endpoints"` // control job scheduler create specific endpoint when create job
 }
 
+type NotifierData struct{
+	Cmd     string
+	RunId   string
+	Scope   interface{}
+	Payload interface{}
+}
+
 type NotifyBackendEvents interface{
-	NotifyWithEvent(evt string,lastId uint64)
-	JobStatusChange(runId string)
+	HandleEvent(evt string,lastId uint64)
+	Notify(notifer *NotifierData)
 }
 func  IsRunStatusIniting(status int) bool{
 	return status == AILAB_RUN_STATUS_INIT

@@ -12,9 +12,12 @@ import (
 	"time"
 )
 
-func checkUserEndpointInits(run*models.Run, container * JOB.Container) (helper string) {
+func checkUserEndpointInits(run*models.Run, container * JOB.Container,quota*models.UserResourceQuota) (helper string) {
 	    endpoints :=  models.UserEndpointList{}
 	    run.Endpoints.Fetch(&endpoints)
+
+	    enableSSH := false
+	    enableNNI := false
 
 		for _,v := range(endpoints) {
 			if v.Name == exports.AILAB_SYS_ENDPOINT_SSH {// force ssh to be nodePort service
@@ -23,18 +26,28 @@ func checkUserEndpointInits(run*models.Run, container * JOB.Container) (helper s
 					container.Envs["SSH_PASSWD"] = string(sk)
 					container.Envs["SSH_USER"]   = v.AccessKey
 				}
-				helper += " 03.setup_ssh.sh"
+				enableSSH=true
+				//helper += " 03.setup_ssh.sh"
 				continue
 			}
 			if v.Name == exports.AILAB_SYS_ENDPOINT_NNI{
-				helper += " 04.patch_nni.sh"
+				enableNNI=true
+				//helper += " 04.patch_nni.sh"
 			}
 		}
 		container.Ports=endpoints.ToSchedulerPorts()
+		//@add: check ssh setup
+		if enableSSH {
+			helper += " 03.setup_ssh.sh"
+		}
+		if enableNNI {
+			helper += " 04.patch_nni.sh"
+		}
+
 		return
 }
 
-func checkAppUsage(run*models.Run,task* JOB.VcJobTask)   {
+func checkAppUsage(run*models.Run,task* JOB.VcJobTask,quota*models.UserResourceQuota)   {
 
 
 
@@ -50,7 +63,7 @@ func checkAppUsage(run*models.Run,task* JOB.VcJobTask)   {
 		}
 		return
 	}
-	endPointsInits := checkUserEndpointInits(run,task.Container)
+	endPointsInits := checkUserEndpointInits(run,task.Container,quota)
 
 	if endPointsInits == "" && !strings.HasSuffix(task.Container.Cmd[0],"_launcher"){// cmd not launcher , start target container directly !!!
 		return
@@ -133,9 +146,9 @@ func CreateVcWorkerTask(task*JOB.VcJobTask, node int,compactMaster bool ) []JOB.
 
 	 task.Container.Envs[exports.AILAB_ENV_JOB_TASK_NAME] = task.TaskName
 
-	 if task.ArchType == "" {//@todo: here must specify arch type ???
-	 	task.ArchType="amd64"
-	 }
+	 //if task.ArchType == "" {//@todo: here must specify arch type ???
+	 	//task.ArchType="amd64"
+	 //}
 
 	 worker := JOB.VcJobTask{
 		 TaskName:      "worker",
@@ -220,7 +233,7 @@ func CreateVcJobTask(run*models.Run) ([]JOB.VcJobTask,APIError){
 	container.Envs[exports.AILAB_ENV_DEVICE_NUM] = quota.Request.Device.DeviceNum
 	task.Container=container
 
-	checkAppUsage(run,&task)
+	checkAppUsage(run,&task,quota)
 	if quota.Node < 2 {
 		return []JOB.VcJobTask{task},nil
 	}

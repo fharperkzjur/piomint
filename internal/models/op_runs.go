@@ -61,6 +61,10 @@ func tryDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint6
 	if err == nil {
 		run.StatusTo = exports.AILAB_RUN_STATUS_INVALID
 		mlrun.JobStatusChange(run)
+		//@add: do notify if needed
+		if notifyData,_ := QueryRunDeletedNotifierData(tx,run.RunId,run.JobType);notifyData != nil {
+			mlrun.events.PushNotifier(exports.AILAB_NOTIFY_CMD_DEL_RUN,run.RunId,&notifyData.RunNotifyScope,&notifyData.RunNotifyPayload)
+		}
 	}
 	return 1,err
 }
@@ -147,7 +151,8 @@ func  ChangeJobStatus(runId string,from,to int,msg string) APIError{
 	     exports.AILAB_RUN_STATUS_COMPLETING,
 	     exports.AILAB_RUN_STATUS_CLEAN,
 	     exports.AILAB_RUN_STATUS_DISCARDS,
-	     exports.AILAB_RUN_STATUS_LAB_DISCARD:
+	     exports.AILAB_RUN_STATUS_LAB_DISCARD,
+	     exports.AILAB_RUN_STATUS_SAVE_FAIL:
 		logger.Warnf("ChangeJobStatus runId:%s to:%d logic error!!!",runId,to)
 		return exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"[error] cannot change status to pending state by external !!!")
 	}
@@ -249,6 +254,12 @@ func change_run_status(tx*gorm.DB,runId string,status *int,cleanFlags int,runFla
 		case exports.AILAB_RUN_STATUS_CLEAN:
 			err = logCleanRun(tx, runId,track)
 		}
+	}
+	//@add: push status change to clients
+	if err == nil{
+		 if notifyData,_ := QueryRunStatusNotifierData(tx,runId);notifyData != nil{
+		 	track.PushNotifier(exports.AILAB_NOTIFY_CMD_STATUS_RUN,runId,&notifyData.RunNotifyScope,&notifyData.RunNotifyPayload)
+		 }
 	}
 	return err
 }

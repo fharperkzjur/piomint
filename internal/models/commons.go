@@ -250,7 +250,7 @@ var notifier exports.NotifyBackendEvents
 
 func execDBTransaction( executor func(*gorm.DB, EventsTrack) APIError  ) (err APIError) {
 
-	 var events  EventsTrack=&[]JobEvent{}
+	 events := &EventCollector{}
 
 	 err1 := db.Transaction( func(tx *gorm.DB) error {
 	 	   err = executor(tx,events)
@@ -260,15 +260,11 @@ func execDBTransaction( executor func(*gorm.DB, EventsTrack) APIError  ) (err AP
 	 	err = checkDBUpdateError(err1)
 	 }
 	 if err1 == nil && events != nil{//notify async queue task work immediatley
-
-		 events_map :=make(BackendEvents)
-
-		 for _,v := range(*events){
-		 	 events_map[v.evtent]=v.eventID
-			 notifier.JobStatusChange(v.runId)
+		 for _,v := range(events.Notifiers){
+		 	  notifier.Notify(&v)
 		 }
-		 for k,v := range(events_map){
-		 	notifier.NotifyWithEvent(k,v)
+		 for _,v := range(events.BackendEvents){
+		 	notifier.HandleEvent(v.event,v.eventID)
 		 }
 	 }
 	 return
