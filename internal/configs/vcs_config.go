@@ -14,6 +14,7 @@ type VcsConfig struct{
 	Passwd    string
 	Host      string
 	SshHost   string
+	UseHttp   bool
 	Extranet  VcsExtranet
 }
 

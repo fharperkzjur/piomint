@@ -120,9 +120,15 @@ func (d*GiteaDriver)resolveRepoAddr(name,owner string,extranet bool) (string,str
 	var http_url , ssh_url string
 	if !extranet {
 		if len(d.Host) > 0 {
-           http_url=fmt.Sprintf("http://%s/%s/%s.git",d.Host,owner,name)
+			if d.UseHttp {
+				if token,err := d.ensureUserToken();err == nil {
+					http_url=fmt.Sprintf("http://%s@%s/%s/%s.git",token, d.Host,owner,name)
+				}
+			}else{
+				http_url=fmt.Sprintf("http://%s/%s/%s.git",d.Host,owner,name)
+			}
 		}
-		if len(d.SshHost) > 0{
+		if !d.UseHttp && len(d.SshHost) > 0{
            if strings.ContainsRune(d.SshHost,':') {
            	 ssh_url =fmt.Sprintf("ssh://git@%s/%s/%s.git",d.SshHost,owner,name)
            }else{
@@ -131,9 +137,15 @@ func (d*GiteaDriver)resolveRepoAddr(name,owner string,extranet bool) (string,str
 		}
 	}else{
 		if len(d.Extranet.Host) > 0 {
-			http_url=fmt.Sprintf("http://%s%s/%s/%s.git",d.Extranet.Host,d.Extranet.Prefix,owner,name)
+			if d.UseHttp {
+				if token,err := d.ensureUserToken();err == nil {
+					http_url=fmt.Sprintf("http://%s@%s%s/%s/%s.git",token,d.Extranet.Host,d.Extranet.Prefix,owner,name)
+				}
+			}else{
+				http_url=fmt.Sprintf("http://%s%s/%s/%s.git",d.Extranet.Host,d.Extranet.Prefix,owner,name)
+			}
 		}
-		if len(d.Extranet.SshHost) > 0{
+		if !d.UseHttp && len(d.Extranet.SshHost) > 0{
 			if strings.ContainsRune(d.Extranet.SshHost,':') {
 				ssh_url =fmt.Sprintf("ssh://git@%s/%s/%s.git",d.Extranet.SshHost,owner,name)
 			}else{

@@ -61,6 +61,7 @@ VersionControl:
     passwd:   apulis123   #管理员密码
     host:     gitea-http.default:3000
     sshHost:  gitea-ssh.default
+    useHttp:  false
     extranet:
       host:     "dockerhost:88"
       sshHost:  "dockerhost:89"

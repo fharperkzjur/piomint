@@ -66,6 +66,7 @@ VersionControl:
     passwd:   apulis123   #管理员密码
     host:     gitea-http.default:3000
     sshHost:  gitea-ssh.default
+    useHttp: false     #返回 user token操作git repo, 安全风险
     extranet:
       host:     "dockerhost:88"
       sshHost:  "dockerhost:89"

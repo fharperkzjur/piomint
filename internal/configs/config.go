@@ -83,7 +83,7 @@ func InitConfig() (*AppConfig, error) {
 			MaxIdleConns :100,
 			MaxConnsPerHost:100,
 			MaxIdleConnsPerHost:100,
-			TimeoutSeconds:5,
+			TimeoutSeconds:10,
 		},
 	}
 	err = viper.Unmarshal(&appConfig)

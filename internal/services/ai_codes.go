@@ -84,6 +84,10 @@ func QueryAppRepoDetail(repoId string,isExtranet bool)(interface{},APIError){
 				owner = code.Creator
 			}
             code.HttpUrl,code.SshUrl = vcs.resolveRepoAddr(code.RepoId,owner,isExtranet)
+            if len(code.SshUrl) == 0 {
+            	code.AccessKey=""
+            	code.SecretKey=""
+            }
 		}
 	}
 	return code,err
