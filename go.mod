@@ -25,7 +25,6 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/swaggo/gin-swagger v1.3.0
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
-	golang.org/x/sys v0.0.0-20210608053332-aa57babbf139 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/tools v0.1.2 // indirect
 	google.golang.org/grpc v1.38.0
@@ -38,7 +37,8 @@ require (
 	gorm.io/driver/postgres v1.1.0
 	gorm.io/gorm v1.21.9
 	gorm.io/plugin/soft_delete v1.0.1
-	k8s.io/apimachinery v0.21.1
+	k8s.io/apimachinery v0.22.2
+	k8s.io/kubectl v0.22.2 // indirect
 )
 
 replace (

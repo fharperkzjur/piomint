@@ -24,10 +24,12 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk --no-cache add git pkgconfig build-base
 
 # Cache go modules
-COPY go.mod .
-COPY go.sum .
-ADD . .
+ADD go.mod .
+ADD go.sum .
+ADD deps deps
 RUN go mod download
+ADD . .
+
 
 #RUN swag init --parseDependency --parseInternal && GO111MODULE=${GO111MODULE} go build cmd/ai_lab.go -o /go/bin/ai_lab
 RUN  GO111MODULE=${GO111MODULE} go build -buildmode=pie  -o /go/bin/$project cmd/$project.go

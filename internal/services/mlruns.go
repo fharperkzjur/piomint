@@ -151,6 +151,7 @@ func ReqCreateRun(labId uint64,parent string,req*exports.CreateJobRequest,enable
 			req.JobFlags |= exports.AILAB_RUN_FLAGS_NEED_REFS
 			req.OutputPath = exports.AILAB_OUTPUT_NAME
 			rsc["access"]  = 1
+			rsc["rpath"]   = getPVCMappedPath(exports.AILAB_OUTPUT_NAME,"","")
 		}else{
 			if id:= safeToString(rsc["id"]);len(id) == 0{
 				return nil,exports.ParameterError("invalid resource id with name:" + name)
