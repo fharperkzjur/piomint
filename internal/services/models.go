@@ -14,9 +14,10 @@ type ModelResourceSrv struct{
 const MODEL_MGR_MODULE_ID = 2400
 
 const (
-	MODEL_ERROR_CODE_BEGIN = MODEL_MGR_MODULE_ID*100000 + iota
-	MODEL_REF_NOT_EXISTS   = MODEL_MGR_MODULE_ID*100000 + 40001          // ref不存在,  ref 和 unref返回
-	MODEL_COMMIT_FAIL      = MODEL_MGR_MODULE_ID*100000 + 20002         // commit  新模型失败 ; rollback不会失败
+	MODEL_ERROR_CODE_BEGIN    = MODEL_MGR_MODULE_ID*100000 + iota
+	MODEL_REF_NOT_EXISTS      = MODEL_MGR_MODULE_ID*100000 + 40001          // ref不存在,  ref 和 unref返回
+	MODEL_COMMIT_FAIL         = MODEL_MGR_MODULE_ID*100000 + 20002         // commit  新模型失败 ; rollback不会失败
+	MODEL_ROLLBACK_NOT_EXISTS = MODEL_MGR_MODULE_ID*100000 + 20003         // rollback 模型失败 ; rollback不会失败
 )
 
 type ModelRefInfo struct{
@@ -116,8 +117,13 @@ func (d ModelResourceSrv) CompleteResource(runId string,resource exports.GObject
 				      "lock" : resource["lock"],
 				      "status":status,
 				  }, nil)
-			if err != nil && err.Errno() == MODEL_COMMIT_FAIL {
-				err = exports.RaiseAPIError(exports.AILAB_CANNOT_COMMIT,"commit saved model error:"+err.Error())
+			if err != nil {
+				if commitOrCancel == true && err.Errno() == MODEL_COMMIT_FAIL{
+					err = exports.RaiseAPIError(exports.AILAB_CANNOT_COMMIT,"cannot commit saved model :"+err.Error())
+				}else if commitOrCancel == false && err.Errno() == MODEL_ROLLBACK_NOT_EXISTS{
+					logger.Warnf("rollback runId: %s with lock:%v not exists !",runId,resource["lock"])
+                    err = nil
+				}
 			}
 			return err
 		}
