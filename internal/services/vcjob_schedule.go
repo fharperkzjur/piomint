@@ -108,6 +108,7 @@ func TagAILabEnvs(run*models.Run,envs map[string]string ){
 	envs[exports.AILAB_ENV_ADDR]   = fmt.Sprintf("http://ai-lab.default:%d%s",configs.GetAppConfig().Port,exports.AILAB_API_VERSION)
 	envs[exports.AILAB_ENV_LAB_ID] = fmt.Sprintf("%d",run.LabId)
 	envs[exports.AILAB_ENV_CLUSTER_ID] = configs.GetAppConfig().ClusterId
+	envs[exports.AILAB_ENV_JOB_TYPE]   = run.JobType
 	envs[exports.AILAB_ENV_USER_TOKEN] = run.Token
 }
 
