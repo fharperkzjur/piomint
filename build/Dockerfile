@@ -30,7 +30,7 @@ RUN  GO111MODULE=${GO111MODULE} go build -buildmode=pie  -o /go/bin/ai_lab cmd/a
 RUN  strip /go/bin/ai_lab
 
 
-FROM alpine:3.13.5
+FROM alpine:3.11
 RUN apk --no-cache add ca-certificates libdrm
 COPY --from=0 /usr/local/go/lib/time/zoneinfo.zip /opt/zoneinfo.zip
 ENV ZONEINFO /opt/zoneinfo.zip
