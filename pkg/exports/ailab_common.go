@@ -22,7 +22,8 @@ const (
 	AILAB_API_VERSION = "/api/v1"
 	AILAB_ENV_ADDR   = "AILAB_ADDR"
 	AILAB_ENV_LAB_ID = "AILAB_LAB_ID"
-	AILAB_CLUSTER_ID = "APULIS_CLUSTER_ID"
+	AILAB_ENV_USER_TOKEN = "AILAB_TOKEN"
+	AILAB_ENV_CLUSTER_ID = "APULIS_CLUSTER_ID"
 )
 const (
 	AILAB_RUN_STATUS_INVALID  = iota
@@ -222,6 +223,7 @@ type CreateJobRequest struct{
 	JobType  string                   `json:"-"`            // job type should determined by server (api interface)
 	JobGroup string                   `json:"-"`            // useless now
 	JobFlags uint64                   `json:"-"`            // job flags used internally
+	Token    string                   `json:"-"`            // user token to access resource
 	UseModelArts  bool                `json:"useModelArts"` // [experimental] associate with modelArts cloud training platform
 	Name     string                   `json:"name"`         // varchar[255]
 	Engine   string                   `json:"engine"`

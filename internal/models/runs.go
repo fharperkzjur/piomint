@@ -42,6 +42,7 @@ type Run struct{
 	 Progress   *JsonMetaData `json:"progress,omitempty"`
 	 Result     *JsonMetaData `json:"result,omitempty"`
 	 Flags      uint64        `json:"flags,omitempty"`   // some system defined attributes this run behaves
+	 Token      string        `json:"token,omitempty"`   // @todo:  should not return to client user ???
 	 Namespace  string        `json:"-" gorm:"-"`
 	 ViewStatus int           `json:"viewStatus,omitempty" gorm:"-"`
 	 SaveStatus int           `json:"saveStatus,omitempty" gorm:"-"`
@@ -133,6 +134,7 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 		  Output:      req.OutputPath,
 		  Flags:       req.JobFlags,
 		  Cmd:         &JsonMetaData{},
+		  Token:       req.Token,
 	  }
 	  run.Cmd.Save(req.Cmd)
 	  if !exports.IsJobSingleton(req.JobFlags) {

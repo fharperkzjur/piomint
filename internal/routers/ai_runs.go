@@ -56,6 +56,7 @@ func submitLabRun(c*gin.Context) (interface{},APIError){
 	 if req.UseModelArts {
 	 	req.JobFlags = exports.AILAB_RUN_FLAGS_USE_CLOUD
 	 }
+	 req.Token=getUserToken(c)
 	 return services.ReqCreateRun(labId,"",req,false,false)
 }
 
@@ -72,6 +73,7 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 	if req.UseModelArts {
 		req.JobFlags = exports.AILAB_RUN_FLAGS_USE_CLOUD
 	}
+	req.Token=getUserToken(c)
 	return services.ReqCreateRun(labId,runId,req,false,false)
 }
 

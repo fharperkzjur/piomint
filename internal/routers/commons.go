@@ -4,6 +4,7 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/gin-gonic/gin"
 	"math"
+	"strings"
 )
 
 //normalize sort fields
@@ -67,3 +68,17 @@ func makePagedQueryResult(req* exports.SearchCond,data interface{},err APIError)
 	}
 	return result,err
 }
+
+func getUserToken(c*gin.Context) string{
+	authHeader := c.Request.Header.Get("Authorization")
+	if authHeader == "" {
+		return ""
+	}
+	parts := strings.SplitN(authHeader, " ", 2)
+	if !(len(parts) == 2 && parts[0] == "Bearer") {
+		return ""
+	}
+	return parts[1]
+}
+
+
