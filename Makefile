@@ -39,14 +39,11 @@ bin: get-deps
 docker:
 	docker build -f Dockerfile . -t ai-lab:v0.1.0
 
-dist: docker
-	docker tag ai-lab:v0.1.0 harbor.apulis.cn:8443/release/apulistech/ai-lab:v0.1.0
-	docker push harbor.apulis.cn:8443/release/apulistech/ai-lab:v0.1.0
 gen-swagger:
 	swag init -g cmd/ai_lab.go -o api
 
 dist:test
-	docker build -t ${image_name} -f build/Dockerfile
+	docker build -t ${image_name} .
 	docker tag ${image_name} ${harbor_addr}/${arch}:${tag}
 	docker push ${harbor_addr}/${arch}:${tag}
 manifest:
