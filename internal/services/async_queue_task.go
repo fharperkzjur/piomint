@@ -107,8 +107,10 @@ func doCleanupResource(event*models.Event,status int) APIError {
 		}
 		if err == nil {
 			err = models.CleanupDone(run.RunId,extra,status)
+			run.Status=extra&0xFF
 		}else if exports.IsRunStatusSuccess(extra&0xFF) && err.Errno() == exports.AILAB_CANNOT_COMMIT{
             err = models.CleanupDone(run.RunId,(extra & 0xFFFFFF00) | exports.AILAB_RUN_STATUS_SAVE_FAIL,status)
+            run.Status=exports.AILAB_RUN_STATUS_SAVE_FAIL
 		}
 		//@add: notify complete msg
 		if err == nil{
