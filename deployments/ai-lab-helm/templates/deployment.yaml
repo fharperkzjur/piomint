@@ -33,9 +33,6 @@ spec:
           command: [ 'sh', '-c', "until nc -vz {{ .Values.config.db.host }} {{ .Values.config.db.port }}; do echo 'Waiting for postgres service'; sleep 2; done;" ]
       containers:
         - name: {{ .Chart.Name }}
-          command:
-            - sleep 
-            - infinity
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}"

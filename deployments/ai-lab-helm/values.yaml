@@ -99,12 +99,11 @@ storage:
         capacity: 20Gi
         claimCapacity: 5Gi
         path:     /mnt/disk-c/data/nfs/pvc/ai-labs-data
-    root:             ai-labs-data
-    mounts:
+    mounts: #first pvc mounted as main storage
         - name:       ai-labs-data
           mountPath:  /app/ai-labs-data
     configs:
-        - name:       ai-labs-cm
+        - name:       ai-lab-cm
           subPath:    config.yaml
           mountPath:  /app/config.yaml
 

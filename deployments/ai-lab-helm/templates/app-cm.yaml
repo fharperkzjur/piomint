@@ -16,7 +16,7 @@ data:
           {{- toYaml .rabbitmq | nindent 10 }} 
         resources:
           {{- toYaml .resources | nindent 10 }} 
-        storage: pvc://{{   $.Values.storage.root  }}
+        storage: pvc://{{  (first $.Values.storage.mounts).name  }}
         mounts:
           {{- range $.Values.storage.mounts }}
              {{ .name }} : {{ .mountPath }}
