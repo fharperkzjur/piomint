@@ -10,9 +10,9 @@ debug: true # gin debug模式
 db:
   serverType: postgres # 数据库服务器类型当前模板可选(postgres postgresql)
   username: postgres # 用户名
-  password: root # 密码
-  host:    127.0.0.1 # 服务器host
-  port: 5432 # 服务端口
+  password: AbdgdJVvBwYMAZeD # 密码
+  host:    192.168.1.217 # 服务器host
+  port:    3388 # 服务端口
   database: ai_lab # db名称
   maxOpenConns: 10 # 数据库连接池最大数量
   maxIdleConns: 2 # 数据库空闲连接池最大数量
@@ -25,8 +25,8 @@ rabbitmq:
   port:     0 #5678 # mq端口 5672
 
 resources:
-  model:          http://192.168.1.187:12335/apworkshop/api/v1              #模型管理接口
-  dataset:        http://192.168.1.185:8018/api/v1                        #数据集管理接口
+  model:          https://119.147.212.162:51080/apworkshop/api/v1         #模型管理接口
+  dataset:        https://119.147.212.162:51080/iqi/api/v1/ad-hub         #数据集管理接口
   jobsched:       http://119.147.212.162:51080/job-scheduler/api/v1       #job调度管理接口
   engine:         http://adharbor.bmod:6140/api/v1                #镜像管理接口
   code:                                                    #代码管理暂时由模型工厂托管

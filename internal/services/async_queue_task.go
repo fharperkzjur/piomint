@@ -96,9 +96,9 @@ func doCleanupResource(event*models.Event,status int) APIError {
 		event.Fetch(&extra)
 		cleanFlags :=getCleanupFlags(extra,exports.IsRunStatusClean(status))
 
-		err = checkReleaseJobSched(run,cleanFlags,exports.AILAB_RUN_STATUS_COMPLETING)
+		err = checkReleaseJobSched(run,cleanFlags,status)
 		if err == nil {
-			err = checkReleaseResources(run,cleanFlags,exports.AILAB_RUN_STATUS_COMPLETING)
+			err = checkReleaseResources(run,cleanFlags,status)
 		}
 		if err == nil {
 			err = models.CleanupDone(run.RunId,extra,status)

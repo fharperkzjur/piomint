@@ -181,7 +181,7 @@ func change_run_status(tx*gorm.DB,runId string,status *int,cleanFlags int,track 
 			          UpdateColumn("status",*status),1)
 	}else if cleanFlags == 0 {// no clean
 
-		if exports.IsRunStatusNonActive(*status)  {
+		if  exports.IsRunStatusNeedComplete(*status)  {
 			extra,*status = *status | (Evt_clean_only<<8),exports.AILAB_RUN_STATUS_COMPLETING
 		}
 		updates := map[string]interface{}{
