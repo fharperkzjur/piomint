@@ -1,4 +1,3 @@
-// +build linux
 /* ******************************************************************************
 * 2019 - present Contributed by Apulis Technology (Shenzhen) Co. LTD
 *
@@ -16,6 +15,8 @@
 *
 * SPDX-License-Identifier: MIT
 ******************************************************************************/
+// +build linux
+
 package utils
 
 import (
