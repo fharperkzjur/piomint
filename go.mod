@@ -41,7 +41,7 @@ require (
 )
 
 replace (
-	github.com/apulis/go-business v0.0.0 => ./deps/go-business
-	github.com/apulis/sdk/go-utils v0.0.0 => ./deps/go-utils
-	github.com/apulis/simple-gin-logger v0.0.0 => ./deps/simple-gin-logger
+	github.com/apulis/go-business => ./deps/go-business
+	github.com/apulis/sdk/go-utils => ./deps/go-utils
+	github.com/apulis/simple-gin-logger => ./deps/simple-gin-logger
 )
