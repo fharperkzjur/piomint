@@ -165,19 +165,11 @@ func checkBatchCreateLab(req*exports.ReqBatchCreateLab)(labs []models.Lab,err AP
 		 })
 
 	  	 err  = func(lab*models.Lab)APIError{
+	  	 	 lab.Description = item.Description
+	  	 	 lab.Name = item.Name
+	  	 	 lab.Classify = item.Classify
+	  	 	 lab.Type = item.Type
 
-	  	 	 if v ,ok := item["description"];ok {
-				 lab.Description,_ = v.(string)
-			 }
-			 if v ,ok := item["name"];ok {
-				 lab.Name ,_= v.(string)
-			 }
-			 if v ,ok := item["classify"];ok {
-				 lab.Classify,_ = v.(string)
-			 }
-			 if v ,ok := item["type"];ok {
-				 lab.Type,_ = v.(string)
-			 }
 
 			 if len(lab.Name) == 0 {
 			 	return exports.ParameterError("invalid lab name")

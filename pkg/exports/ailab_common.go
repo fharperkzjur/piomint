@@ -122,6 +122,7 @@ type RequestObject map[string]interface{}
 type RespObject    map[string]interface{}
 type GObject           =   map[string]interface{}
 type QueryFilterMap    =   map[string]string
+type RequestTags           =   map[string]string
 
 // define for common file informations
 type FileListItem struct{
@@ -141,6 +142,20 @@ type MountPoint struct {
 	ReadOnly        bool               `json:"readOnly"`
 }
 
+
+type ReqCreateLab struct{
+	Description string                 `json:"description" `
+	App       string                   `json:"app;not null"`
+	Group     string                   `json:"group" `    // user defined group
+	Name      string                   `json:"name"  `    // user defined name
+	Classify  string                   `json:"classify,omitempty"`    // user defined classify
+	Type      string                   `json:"type"`                  // system defined type preset,visual,expert,autodl,scenes
+	Creator   string                   `json:"creator"`
+	Tags      RequestTags              `json:"tags"`      // user defined tags
+	Meta      RequestObject            `json:"meta"`
+	Namespace  string                  `json:"namespace"` // system namespace this lab belong to
+}
+
 type ReqBatchCreateLab struct {
 	// override per lab configuration
 	Group     string `json:"group,omitempty"`
@@ -148,8 +163,10 @@ type ReqBatchCreateLab struct {
 	Creator   string `json:"creator,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	// at least 1 lab configuration must be exists
-	Labs      []RequestObject `json:"labs"`
+	Labs      []ReqCreateLab `json:"labs"`
 }
+
+
 
 /*
        type Resource struct{
@@ -190,3 +207,4 @@ type CreateJobRequest struct{
 type NotifyBackendEvents interface{
 	NotifyWithEvent(evt string)
 }
+
