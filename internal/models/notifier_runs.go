@@ -86,7 +86,9 @@ func (d*RunStatusNotifier)GetPublishMsg(msgType string)*wsmsg.ReqPublishMessage 
 	case exports.AILAB_MCT_MESSAGE_TYPE_NEW:
 		  msg.CreatedAt = d.CreatedAt.UTC().UnixNano()/1e6
 	case exports.AILAB_MCT_MESSAGE_TYPE_COMPLETE:
-		  msg.CreatedAt = d.EndTime.UTC().UnixNano()/1e6
+		  if d.EndTime != nil {
+			  msg.CreatedAt = d.EndTime.UTC().UnixNano()/1e6
+		  }
 	case exports.AILAB_MCT_MESSAGE_TYPE_DEL:
 		  msg.CreatedAt = int64(d.DeletedAt*1000)
 	}
@@ -95,7 +97,7 @@ func (d*RunStatusNotifier)GetPublishMsg(msgType string)*wsmsg.ReqPublishMessage 
 }
 
 const (
-	 select_notifier_fields = "labs.bind,user_group_id,run_id,parent,job_type,runs.created_at,runs.deleted_at,status,result,progress,msg,runs.name,runs.creator,runs.user_id"
+	 select_notifier_fields = "labs.bind,user_group_id,run_id,parent,job_type,runs.created_at,runs.deleted_at,status,result,progress,msg,runs.name,runs.creator,runs.user_id,start_time,end_time"
 )
 
 func QueryRunNotifierData(runId string) (*RunStatusNotifier,APIError){
