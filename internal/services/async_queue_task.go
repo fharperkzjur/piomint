@@ -142,7 +142,7 @@ func ClearLabProcessor(event*models.Event) APIError{
 			err = models.DisposeRun(run)
 		}
 		if err == nil {
-			err = exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK)
+			err = exports.RaiseReqWouldBlock("would clear lab in background !")
 		}
 		return err
 	}else if err.Errno() == exports.AILAB_NOT_FOUND{

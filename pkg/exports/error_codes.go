@@ -104,6 +104,10 @@ func DockerImageError()*APIException{
 	return NewAPIException(http.StatusBadRequest,AILAB_DOCKER_IMAGE_ERROR,"docker image error")
 }
 
+func RaiseReqWouldBlock(msg string) *APIException{
+	return NewAPIException(http.StatusOK,AILAB_WOULD_BLOCK,msg)
+}
+
 func RaiseAPIError(code int , args ... string) APIError{
 	if len(args) > 0 {
 		return NewAPIException(http.StatusBadRequest, code, args[0])

@@ -74,7 +74,7 @@ func saveLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (inter
 	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_AUTO_DELETED
 	run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	if err == nil {// created new run
-		return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start save job ...")
+		return nil,exports.RaiseReqWouldBlock("wait to start save job ...")
 	}else if err.Errno() == exports.AILAB_STILL_ACTIVE {// exists old job
 		return nil,exports.RaiseAPIError(exports.AILAB_SERVER_BUSY, "old save job still active ...")
 	}else{
@@ -204,7 +204,7 @@ func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (i
 	 req.JobType  = exports.AILAB_RUN_VISUALIZE
 	 run, err := services.ReqCreateRun(labId,runId,req,false,false)
 	 if err == nil {// created new run
-	 	return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start visual job ...")
+	 	return nil,exports.RaiseReqWouldBlock("wait to start visual job ...")
 	 }else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {// exists old job
 	 	 job := run.(*models.JobStatusChange)
 	 	 run, err := models.ResumeLabRun(labId,job.RunId)
