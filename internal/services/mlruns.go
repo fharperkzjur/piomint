@@ -26,7 +26,7 @@ func genEndpointsUrl(name  ,service ,namespace string,port int) string{
 	 }
 	 vhost ,_:= json.Marshal(jsonInfo)
 
-	 return fmt.Sprintf("%s/endpoints/%s/%s",url,name, base64.StdEncoding.EncodeToString(vhost))
+	 return fmt.Sprintf("%s/endpoints/%s/%s/",url,name, base64.StdEncoding.EncodeToString(vhost))
 }
 
 
