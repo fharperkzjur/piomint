@@ -139,6 +139,13 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 	if labId == 0 || len(runId) == 0 {
 		return nil,exports.ParameterError("queryLabRun invalid lab id or run id")
 	}
+	if ancestor :=  c.Query("ancestor") ; len(ancestor) != 0 {
+		var err APIError
+		if runId,_,err = models.RefParentResource(runId,ancestor);err != nil {
+			return nil,err
+		}
+	}
+
 	run, err := models.QueryRunDetail(runId,false,0)
 	if err == nil && run.LabId != labId {
 		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
