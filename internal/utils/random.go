@@ -37,7 +37,7 @@ func GenerateRandomPasswd(n int) []byte {
 func GenerateReqId() string{
 	seqno := time.Now().UTC().UnixNano()/1000
 	seqno = seqno*1000 + rand.Int63n(1000)
-	return strconv.FormatInt(seqno,0)
+	return strconv.FormatInt(seqno,10)
 }
 
 
