@@ -342,7 +342,7 @@ func ListAllLabRuns(req*exports.SearchCond,labId uint64,isNeedNestStatus bool) (
 		}
 		err = execDBQuerRows(db.Table("runs").Where("parent in ? and deleted_at=0 and flags&? != 0 ",
 			jobIds,exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE).
-			Select("parent,status,job_type,run_id"), func(tx *gorm.DB, rows *sql.Rows) APIError {
+			Select("parent,status,job_type"), func(tx *gorm.DB, rows *sql.Rows) APIError {
 
 				parent := ""
 				status := 0

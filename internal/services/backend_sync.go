@@ -22,7 +22,9 @@ type BackendEventSync struct {
 	 max_event_id  uint64
 	 sync_group    sync.WaitGroup
 
-	 tasks         map[string]*BackendTask
+	 tasks          map[string]*BackendTask
+
+	 async_notify_task* AsyncWSNotifier
 }
 
 
@@ -38,8 +40,7 @@ func (d *BackendEventSync)NotifyWithEvent(evt string,lastId uint64){
 	}
 }
 func (d*BackendEventSync)JobStatusChange(runId string){
-	//@todo: notify status change to application ???
-
+	d.async_notify_task.Notify(runId)
 }
 
 func (d*BackendEventSync)SetLastEventID(lastId uint64){
@@ -51,6 +52,22 @@ func (d*BackendEventSync)SetLastEventID(lastId uint64){
 			break
 		}
 	}
+}
+
+func (d*BackendEventSync)StartAsyncNotifier() {
+	  if d.async_notify_task != nil {
+	  	panic("async notify task already exists !!!")
+	  }
+	  d.async_notify_task = &AsyncWSNotifier{
+	  	notify:  make(chan string,200),
+	  }
+	  d.sync_group.Add(1)
+	  go func(task*AsyncWSNotifier){
+	  	 defer d.sync_group.Done()
+
+	  	 task.Run()
+
+	  }(d.async_notify_task)
 }
 
 func (d*BackendEventSync)AddTaskQueue(name string, process func(event *models.Event)APIError ,fail_delay int,
@@ -86,6 +103,9 @@ func (d*BackendEventSync)AddTaskQueue(name string, process func(event *models.Ev
 func  (d*BackendEventSync)QuitAllTask() {
 	  for _,item := range(d.tasks) {
 	  	 item.Quit()
+	  }
+	  if d.async_notify_task !=nil{
+	  	d.async_notify_task.Quit()
 	  }
 	  d.sync_group.Wait()
 	  log.Printf("all backend tasks quit !")
@@ -179,6 +199,8 @@ func InitServices() error {
 	 }else if rolls > 0{
 	 	logger.Warnf("rollback all prepare failed runs num :%d",rolls)
 	 }
+	 getBackendSyncer().StartAsyncNotifier()
+
 	 getBackendSyncer().AddTaskQueue(models.Evt_init_run, InitProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_start_run,StartProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_kill_run, KillProcessor,0,nil)
