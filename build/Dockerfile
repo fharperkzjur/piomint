@@ -36,6 +36,7 @@ RUN  strip /go/bin/$project
 
 FROM alpine:3.11
 ARG project=ai-lab
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk --no-cache add ca-certificates libdrm
 COPY --from=0 /usr/local/go/lib/time/zoneinfo.zip /opt/zoneinfo.zip
 ENV ZONEINFO /opt/zoneinfo.zip

@@ -23,7 +23,7 @@ version: 0.1.0
 appVersion: 0.1.0
 
 # kube version dependency
-kubeVersion: 1.18.x
+kubeVersion: ">=1.18.x"
 
 # keywords use in search
 keywords:
