@@ -1,8 +1,8 @@
 # note: call scripts from /scripts
 
-image_name =ai-lab
-harbor_addr=harbor.apulis.cn:8443/huawei630/apulistech/${image_name}
-tag        =v0.1.0
+image_name ?=ai-lab
+harbor_addr=harbor.apulis.cn:8443/aistudio/bmod/${image_name}
+tag        =aistudio-v0.1.0
 arch       =$(shell arch)
 
 testarch:
@@ -34,13 +34,14 @@ gosec-check-all: get-deps
 	gosec ./...
 
 bin: get-deps
-	go build -o ai_lab cmd/ai_lab.go
+	go build -o ${image_name} cmd/${image_name}.go
 
 docker:
-	docker build -f Dockerfile . -t ai-lab:v0.1.0
-
+	docker build -f build/Dockerfile . -t ${image_name}:${tag} --build-arg project=${image_name}
+kind:docker
+	kind load docker-image ${image_name}:${tag} --name river
 gen-swagger:
-	swag init -g cmd/ai_lab.go -o api
+	swag init -g cmd/${image_name}.go -o api
 
 dist: testarch
 	docker build -t ${image_name} .

@@ -6,6 +6,18 @@ grpc: 10001
 
 debug: false # gin debug模式
 
+# 时间相关设置
+time:
+  timezoneStr: Asia/Shanghai # 时区名称
+
+log:
+  writeFile: false #enable file logger
+  fileDir:   /app/ai-labs-data/_logs_
+  fileName:  ai-lab.log
+  level:
+  maxSize:   10 # 10MB , > 0 open file as rotate logger
+  maxAge:    30
+  maxBackups: 30
 # 数据库设置
 db:
   serverType: postgres # 数据库服务器类型当前模板可选(postgres postgresql)

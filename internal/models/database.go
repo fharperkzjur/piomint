@@ -56,6 +56,8 @@ func InitDb()  error {
 	if configs.GetAppConfig().Db.Debug{
 		db = db.Debug()
 	}
+	//@add: create database for gitea
+	db.Exec("create database gitea")
 
 	return  initTables()
 }

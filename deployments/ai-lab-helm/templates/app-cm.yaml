@@ -9,6 +9,10 @@ data:
         port:  {{ .port }}
         grpc:  {{ .grpc }}
         debug: {{ .debug }}  # gin debug模式
+        log:
+          {{- toYaml .log | nindent 10 }}
+        time:
+          {{- toYaml .time | nindent 10 }}
         # 数据库设置
         db:
           {{- toYaml .db | nindent 10 }} 

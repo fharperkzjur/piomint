@@ -6,12 +6,24 @@ grpc: 6101
 
 debug: false # gin debug模式
 
+time:
+  timezoneStr: Asia/Shanghai # 时区名称
+
+log:
+  writeFile: true #enable file logger
+  fileDir:
+  fileName:
+  level:
+  maxSize:    10 # 10MB , > 0 open file as rotate logger
+  maxAge:     30
+  maxBackups: 30
+
 # 数据库设置
 db:
   serverType: postgres # 数据库服务器类型当前模板可选(postgres postgresql)
   username: postgres # 用户名
   password: root # 密码
-  host:    127.0.0.1 # 服务器host
+  host:    dockerhost # 服务器host
   port:    5432 # 服务端口
   database: ai_lab # db名称
   maxOpenConns: 10 # 数据库连接池最大数量

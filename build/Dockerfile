@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 FROM golang:alpine
-WORKDIR /go/src/github.com/apulis/bmod/ai-lab-backend
+
+ARG project=ai-lab
+
+WORKDIR /go/src/github.com/apulis/bmod/$project
+
 
 ENV GOPROXY=https://goproxy.cn
 ENV GO111MODULE=on
@@ -26,14 +30,17 @@ ADD . .
 RUN go mod download
 
 #RUN swag init --parseDependency --parseInternal && GO111MODULE=${GO111MODULE} go build cmd/ai_lab.go -o /go/bin/ai_lab
-RUN  GO111MODULE=${GO111MODULE} go build -buildmode=pie  -o /go/bin/ai_lab cmd/ai_lab.go
-RUN  strip /go/bin/ai_lab
+RUN  GO111MODULE=${GO111MODULE} go build -buildmode=pie  -o /go/bin/$project cmd/$project.go
+RUN  strip /go/bin/$project
 
 
 FROM alpine:3.11
+ARG project
 RUN apk --no-cache add ca-certificates libdrm
 COPY --from=0 /usr/local/go/lib/time/zoneinfo.zip /opt/zoneinfo.zip
 ENV ZONEINFO /opt/zoneinfo.zip
+ENV PROJECT_NAME=$project
 WORKDIR /app/
-COPY --from=0 /go/bin/ai_lab .
-CMD ["./ai_lab"]
+COPY --from=0 /go/bin/$project .
+
+CMD ./${PROJECT_NAME}

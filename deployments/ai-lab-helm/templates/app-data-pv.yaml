@@ -1,5 +1,5 @@
-{{- $setNfs := (eq .Values.storage.persistentVolumeType "nfs") }}
-{{- if $setNfs }}
+{{- $pvType := .Values.storage.persistentVolumeType  }}
+{{- if or (eq $pvType "nfs") (eq $pvType "hostPath") }}
 {{- range .Values.storage.persistentVolumes }}
 ---
 apiVersion: v1
@@ -12,6 +12,8 @@ spec:
   accessModes:
     - ReadWriteMany
   storageClassName: {{ .name }}-sc
+  persistentVolumeReclaimPolicy: Retain
+{{- if eq $pvType "nfs"  }}
   mountOptions:
     - timeo=20
     - tcp
@@ -22,7 +24,11 @@ spec:
     {{- if not (empty .path) }}
     path: {{ .path }}
     {{- end }}
-{{- end }}
+{{- else }}
+  hostPath:
+    path: {{ .path }}
+{{- end  }}
+{{- end  }}
 {{- range .Values.storage.persistentVolumes }}
 ---
 kind: PersistentVolumeClaim

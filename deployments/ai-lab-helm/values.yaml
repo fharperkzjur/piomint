@@ -6,8 +6,8 @@ replicaCount: 1
 
 image:
   #harbor.internal.cn/apulistech/ai-lab
-  repository: harbor.apulis.cn:8443/develop/apulistech/ai-lab/amd64:master
-  pullPolicy: Always
+  repository: ai-lab:aistudio-v0.1.0
+  pullPolicy: Never
   toolbox:    busybox:1.28
 
 imagePullSecrets: []
@@ -23,7 +23,12 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations: {}
+podAnnotations:
+  vault.security.banzaicloud.io/vault-addr: https://vault.kube-system:8200
+  vault.security.banzaicloud.io/vault-tls-secret: vault-tls
+podEnvs:
+  - name:  POSTGRES_PASSWORD
+    value: vault:secret/data/postgres#POSTGRES_PASSWORD
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -41,13 +46,15 @@ service:
   port: 10000
 
 ingress:
-  enabled: false
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
   hosts:
-    - host: chart-example.local
-      paths: []
+    - host:
+      paths:
+        - path: /ai-lab(/|$)(.*)
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
@@ -72,18 +79,29 @@ config:
    db:
       serverType: postgres
       username:   postgres
-      password:   oeSCe3JCe87zWW1d
-      host:       postgres.kube-system
-      port: 5432
+      password:   root
+      host:       172.17.0.1
+      port:       5432
       database: ai_lab
       maxOpenConns: 10
       maxIdleConns: 2
       debug:        true
+   time:
+      timezoneStr: Asia/Shanghai # 时区名称
+
+   log:
+      writeFile: true #enable file logger
+      fileDir:
+      fileName:
+      level:
+      maxSize: 10 # 10MB , > 0 open file as rotate logger
+      maxAge: 30
+      maxBackups: 30
    rabbitmq:
       user:     admin
       password: uk5C7CvsbNlyLbQD
       host:     rabbitmq.default
-      port:     5672
+      port:     0
    resources:
       model:          http://apworkshop-backend-svc.default:80/api/v1                #模型管理接口
       dataset:        http://adhub-backend.default:80/api/v1                   #数据集管理接口
@@ -94,13 +112,17 @@ config:
    clusterId:  xxx-xxxx-xxxxxx
 
 storage:  
-    persistentVolumeType: nfs
+    persistentVolumeType: hostPath
     nfsServer: 192.168.3.9
     persistentVolumes:
       - name:     aiplatform-ailab-data-pvc
         capacity: 20Gi
         claimCapacity: 5Gi
-        path:     /mnt/disk-c/data/nfs/pvc/aiplatform-ailab-data-pvc
+        path:     /dev-d/app/ai-labs-data
+      - name:     gitea-data-pvc
+        capacity: 20Gi
+        claimCapacity: 5Gi
+        path:     /dev-host/gitea_data
     mounts: #first pvc mounted as main storage
         - name:       aiplatform-ailab-data-pvc
           mountPath:  /app/ai-labs-data
