@@ -75,7 +75,9 @@ func (d APWorkshopResourceSrv) PrepareResource (runId string, token string, reso
 		}
 
 		result := make(map[string]interface{})
-		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioPrepareModel","POST",nil,req, &result)
+		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioPrepareModel","POST",map[string]string{
+			"Authorization":"Bear " + token,
+		},req, &result)
 		if err != nil {
 			return nil,err
 		}
@@ -106,7 +108,9 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,token string,resour
 		if commitOrCancel == false {
 			status = "rollback"
 		}
-		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioCommitModel","PUT",nil,
+		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioCommitModel","PUT",map[string]string{
+			"Authorization":"Bear " + token,
+		},
 			map[string]interface{}{
 				"context" : runId,
 				"status":   status,
