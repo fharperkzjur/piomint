@@ -45,13 +45,11 @@ func sysGetRunList(c*gin.Context) (interface{},APIError){
 }
 
 func sysGetRunMetaInfo(c*gin.Context) (interface{},APIError){
-	 taskTypes:= []map[string]interface{}{
-	 	 {"label": "训练" ,"value": exports.AILAB_RUN_TRAINING },
-		 {"label": "评估" ,"value": exports.AILAB_RUN_EVALUATE },
-		 {"label": "代码开发" ,"value": exports.AILAB_RUN_CODE_DEVELOP },
-		 {"label": "模型注册" ,"value": exports.AILAB_RUN_MODEL_REGISTER },
-		 {"label": "可视化" ,"value": exports.AILAB_RUN_VISUALIZE },
-		 {"label": "保存镜像" ,"value": exports.AILAB_RUN_SCRATCH },
+	 taskTypes:= make([]map[string]interface{},0,len(exports.AILAB_JOB_TYPES_ZH))
+	 for k,v := range(exports.AILAB_JOB_TYPES_ZH) {
+	 	taskTypes=append(taskTypes,map[string]interface{}{
+		    "label": v ,"value": k,
+	    })
 	 }
 	 taskStatus := []map[string]interface{}{
 		{"label": "初始化" ,"value": exports.AILAB_RUN_STATUS_INIT },

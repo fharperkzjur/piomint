@@ -214,10 +214,16 @@ func InitServices() error {
 	 getBackendSyncer().AddTaskQueue(models.Evt_discard_run,DiscardProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_clear_lab,ClearLabProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_delete_repo,DeleteRepoProcessor,0,nil)
+
+	 if err := startMQConnector();err != nil {
+		 logger.Fatalf("start MQConnector error:%s",err.Error())
+		 return err
+	 }
 	 return nil
 }
 
 func QuitServices(){
+	 stopMQConnector()
      getBackendSyncer().QuitAllTask()
 }
 

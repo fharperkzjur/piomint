@@ -2,6 +2,7 @@ package utils
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -31,6 +32,12 @@ func GenerateRandomPasswd(n int) []byte {
 		b[i] = letterRunes[r.Intn(nletter)]
 	}
 	return b
+}
+
+func GenerateReqId() string{
+	seqno := time.Now().UTC().UnixNano()/1000
+	seqno = seqno*1000 + rand.Int63n(1000)
+	return strconv.FormatInt(seqno,0)
 }
 
 

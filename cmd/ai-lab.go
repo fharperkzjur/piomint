@@ -10,9 +10,6 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/routers"
 	"github.com/apulis/bmod/ai-lab-backend/internal/services"
 	pb "github.com/apulis/bmod/ai-lab-backend/pkg/api"
-	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
-	"github.com/apulis/sdk/go-utils/broker"
-	"github.com/apulis/sdk/go-utils/broker/rabbitmq"
 	_ "github.com/apulis/sdk/go-utils/logging"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -44,16 +41,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var httpSrv,grpcSrv,broker interface{}
+	var httpSrv,grpcSrv interface{}
 
 	if config.Port != 0 {
 		httpSrv=startHttpServer(config.Port)
 	}
 	if config.Grpc != 0 {
 		grpcSrv=startGrpcServer(config.Grpc)
-	}
-	if config.Rabbitmq.Port > 0 {
-		broker=startJobMonitor(config.Rabbitmq)
 	}
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
@@ -70,10 +64,6 @@ func main() {
 	if grpcSrv != nil {
 		stopGrpcServer(grpcSrv,5*time.Second)
 		grpcSrv = nil
-	}
-	if broker != nil{
-		stopJobMonitor(broker,5*time.Second)
-		broker = nil
 	}
 	logger.Println("Server exited !")
 
@@ -127,6 +117,7 @@ func stopGrpcServer(server interface{},ts time.Duration) {
 	srv.Stop()
 	//srv.GracefulStop()
 }
+/*
 func startJobMonitor(config configs.RabbitmqConfig) interface{}{
 	addr := fmt.Sprintf("amqp://%s:%s@%s:%d",config.User,config.Password,config.Host,config.Port)
 	b := rabbitmq.NewBroker(
@@ -147,4 +138,4 @@ func startJobMonitor(config configs.RabbitmqConfig) interface{}{
 func stopJobMonitor(listen interface{},ts time.Duration){
      broker := listen.(broker.Broker)
      broker.Disconnect()
-}
+}*/

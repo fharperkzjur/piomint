@@ -136,6 +136,15 @@ const (
 	AILAB_RUN_NNI_TRIAL = "nni-trial"    //  nni trails started by paltform
 )
 
+var AILAB_JOB_TYPES_ZH = map[string]string{
+	AILAB_RUN_TRAINING:"训练",
+	AILAB_RUN_EVALUATE:"评估",
+	AILAB_RUN_CODE_DEVELOP:"代码开发",
+	AILAB_RUN_MODEL_REGISTER:"模型注册",
+	AILAB_RUN_VISUALIZE:"可视化",
+	AILAB_RUN_SCRATCH:"保存镜像",
+}
+
 const (
 	AILAB_SYS_ENDPOINT_SSH = "$ssh"
 	AILAB_SYS_ENDPOINT_NNI = "$nni"          // nni reset service
@@ -150,6 +159,19 @@ const (
 	AILAB_USER_ENDPOINT_STATUS_READY= "ready"
 	AILAB_USER_ENDPOINT_STATUS_STOP = "stop"
 	AILAB_USER_ENDPOINT_STATUS_ERROR= "error"
+)
+
+const (
+	AILAB_NOTIFY_CMD_NEW_RUN    = "newRun"
+	AILAB_NOTIFY_CMD_DEL_RUN    = "delRun"
+	AILAB_NOTIFY_CMD_STATUS_RUN = "statusRun"
+	AILAB_NOTIFY_CMD_ENDPOINT   = "endpoint"
+)
+
+const (
+	AILAB_MCT_MESSAGE_TYPE_NEW      = "new"
+	AILAB_MCT_MESSAGE_TYPE_DEL      = "del"
+	AILAB_MCT_MESSAGE_TYPE_COMPLETE = "complete"
 )
 
 type SearchCond struct {

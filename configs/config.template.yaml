@@ -46,6 +46,7 @@ resources:
   apharbor:   http://apharbor-backend.default:80/api/v1
   apworkshop: http://apworkshop-backend.default:80/api/v1
   iam:        http://192.168.3.137:80/iam/api/v1                    # iam注册所有暴露的请求
+  wsconn:     http://wsconn.default:80/api/v1                       # websocket会话通知管理器
 
 storage: pvc://aiplatform-ailab-data-pvc
 

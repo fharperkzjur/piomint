@@ -55,6 +55,7 @@ type ResourceConfig struct{
 	ApWorkshop    string
 	Code          string
 	Iam           string
+	Wsconn        string
 }
 
 type TimeConfig struct {
