@@ -53,7 +53,7 @@ type Run struct{
 }
 
 const (
-	list_runs_fields="run_id,lab_id,runs.name,num,job_type,runs.creator,runs.created_at,runs.deleted_at,start_time,end_time,runs.description,status,runs.tags,runs.flags,msg,parent"
+	list_runs_fields="run_id,lab_id,runs.name,num,job_type,runs.creator,runs.user_id,runs.created_at,runs.deleted_at,start_time,end_time,runs.description,status,runs.tags,runs.flags,msg,parent"
 	select_run_status_change = "run_id,status,flags,job_type"
 )
 
