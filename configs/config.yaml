@@ -4,7 +4,7 @@ port: 6100
 
 grpc: 6101
 
-debug: true # gin debug模式
+debug: false # gin debug模式
 
 # 数据库设置
 db:
@@ -42,6 +42,7 @@ httpClient:
   maxIdleConnsPerHost: 100
   timeoutSeconds: 10
 
-
 gatewayUrl: https://123.60.231.101:80
+
+clusterId:  xxx-xxx-xxxxxx
 

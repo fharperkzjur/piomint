@@ -23,7 +23,7 @@ type AppConfig struct {
 	Storage     string
 	HttpClient  HttpClient
 	GatewayUrl  string
-
+	ClusterId   string
 }
 
 type DbConfig struct {

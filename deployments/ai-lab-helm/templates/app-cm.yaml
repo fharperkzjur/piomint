@@ -22,4 +22,5 @@ data:
              {{ .name }} : {{ .mountPath }}
           {{- end }}
         gatewayUrl: {{ .gatewayUrl }}
+        clusterId:  {{ .clusterId }}
     {{- end }}
