@@ -81,7 +81,6 @@ func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObje
 		   }
 
 		   result := make(map[string]interface{})
-		   logger.Infof("prepare store models:%+v",req)
 		   err := Request(configs.GetAppConfig().Resources.Model + "/prepareModel","POST",nil,req, &result)
 		   if err != nil {
 			  return nil,err

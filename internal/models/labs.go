@@ -35,6 +35,7 @@ type BasicLabInfo struct{
 	// track how many times lab run started
 	Starts    uint64
 	Location  string
+	Namespace string
 	Statistics*JsonMetaData
 
 	stats *   JobStats
@@ -188,7 +189,7 @@ func (lab*BasicLabInfo) Sum(stats*JsonMetaData) {
 
 const (
 	list_experiments_fields = "id,name,description,creator,created_at,updated_at,deleted_at,type,classify,statistics,tags"
-	select_lab_basic_info   = "id,starts,location,statistics"
+	select_lab_basic_info   = "id,starts,location,statistics,namespace"
 )
 
 func ListAllLabs(req*exports.SearchCond) (interface{} ,APIError){

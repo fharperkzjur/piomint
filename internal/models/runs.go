@@ -181,15 +181,13 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enable
 
 		mlrun ,err := getBasicMLRunInfoEx(tx,labId,runId,events)
 		if err == nil {
-			var old *JobStatusChange
-			old, err = preCheckCreateRun(tx,mlrun,req)
+			result, err = preCheckCreateRun(tx,mlrun,req)
 			if err != nil && err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {
 				if !enableRepace {
-					result = old
 					return err
 				}
 				//discard old run if possible
-				_,err = tryForceDeleteRun(tx,old,mlrun)
+				_,err = tryForceDeleteRun(tx,result.(*JobStatusChange),mlrun)
 			}
 		}
 		var run * Run

@@ -1,11 +1,11 @@
 # note: call scripts from /scripts
 
 image_name =ai-lab
-harbor_addr=harbor.apulis.cn:8443/huawei630/${image_name}
+harbor_addr=harbor.apulis.cn:8443/huawei630/apulistech/${image_name}
 tag        =v0.1.0
 arch       =$(shell arch)
 
-test:
+testarch:
 ifeq (${arch}, x86_64)
 	@echo "current build host is amd64 ..."
 	$(eval arch=amd64)
@@ -42,7 +42,7 @@ docker:
 gen-swagger:
 	swag init -g cmd/ai_lab.go -o api
 
-dist:test
+dist: testarch
 	docker build -t ${image_name} .
 	docker tag ${image_name} ${harbor_addr}/${arch}:${tag}
 	docker push ${harbor_addr}/${arch}:${tag}

@@ -202,10 +202,10 @@ func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (i
 
 	 req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_RESUMEABLE
 	 req.JobType  = exports.AILAB_RUN_VISUALIZE
-	 run, err := services.ReqCreateRun(labId,runId,req,false,false)
+	 run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	 if err == nil {// created new run
 	 	return nil,exports.RaiseReqWouldBlock("wait to start visual job ...")
-	 }else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {// exists old job
+	 }else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS || err.Errno() == exports.AILAB_STILL_ACTIVE{// exists old job
 	 	 job := run.(*models.JobStatusChange)
 	 	 run, err := models.ResumeLabRun(labId,job.RunId)
 	 	 if err == nil{

@@ -18,10 +18,10 @@ import (
 
 type APIError = exports.APIError
 
-func genEndpointsUrl(name string,service string,port int) string{
+func genEndpointsUrl(name  ,service ,namespace string,port int) string{
 	 url := configs.GetAppConfig().GatewayUrl
 	 jsonInfo := map[string]interface{}{
-	 	"service":service,
+	 	"service":service + "." + namespace,
 	 	"port":port,
 	 }
 	 vhost ,_:= json.Marshal(jsonInfo)
@@ -42,7 +42,7 @@ func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},API
 	     for _,v := range(endpoints) {
 	     	if strings.HasPrefix(v.ServiceName,name) {
 
-	     		return genEndpointsUrl(name,v.ServiceName,v.Port),nil
+	     		return genEndpointsUrl(name,v.ServiceName,mlrun.Namespace,v.Port),nil
 	        }
 	     }
 	     return nil,exports.NotFoundError()
