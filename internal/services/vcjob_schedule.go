@@ -148,6 +148,9 @@ func CreateVcWorkerTask(task*JOB.VcJobTask, node int,compactMaster bool ) []JOB.
 	 delete(worker.Container.Envs,"SSH_PASSWD")
 	 delete(worker.Container.Envs,"AILAB_NNI_ENDPOINT")
 	 worker.Container.Envs["VCJOB_TASK_NAME"] = worker.TaskName
+	 //@add: change container name when deal with vcjob ???
+	 task.Container.ContainerName   += "-" + task.TaskName
+	 worker.Container.ContainerName += "-" + worker.TaskName
 
 	 if task.InitContainer != nil {//copy init-container also
 	 	 task.InitContainer.Envs["VCJOB_TASK_NAME"] = task.TaskName
@@ -289,6 +292,7 @@ func SubmitSingleJob(run*models.Run,task * JOB.VcJobTask) (int,APIError){
 		job.SetContainerPorts(task.Container.Ports)
 	}
 	if exports.IsJobNeedAffinity(run.Flags) {
+		job.Envs[exports.AILAB_ENV_AFFINITY_JOB_ID] = run.Parent
 		if is,err := models.CheckIsDistributeJob(run.Parent) ;err != nil{
 			return exports.AILAB_RUN_STATUS_INVALID,err
 		}else if is {
@@ -296,6 +300,7 @@ func SubmitSingleJob(run*models.Run,task * JOB.VcJobTask) (int,APIError){
 				JobId:    run.Parent,
 				TaskName: "master",
 			})
+			job.Envs[exports.AILAB_ENV_AFFINITY_TASK_NAME] = "master"
 		}else{
 			job.SetAffinity(&JOB.JobAffinity{
 				JobId: run.Parent,
