@@ -44,6 +44,7 @@ func InitRouter() *gin.Engine {
 
     AddGroupAILab(r)
 	AddGroupTraining(r)
+	AddGroupAICode(r)
 
 	return r
 }

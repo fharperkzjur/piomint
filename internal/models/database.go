@@ -70,6 +70,8 @@ func initTables() error {
 		&Event{},
 		&System{},
 		&Link{},
+		&Code{},
+		&CodeBind{},
 	}
 
 	for _, modelType := range modelTypes {

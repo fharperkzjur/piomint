@@ -122,6 +122,9 @@ func RaiseServerError(code int,args ... string) APIError{
 		return NewAPIException(http.StatusInternalServerError, code, "")
 	}
 }
+func RaiseHttpError(statusCode int,code int ,status string)APIError{
+	return NewAPIException(statusCode,code,status)
+}
 
 
 func CheckWithError(err error,code int) APIError{

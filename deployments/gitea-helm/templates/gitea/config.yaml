@@ -58,9 +58,9 @@ stringData:
     {{- if not .Values.gitea.config.server.ROOT_URL -}}
     {{- if .Values.ingress.enabled -}}
     {{- if gt (len .Values.ingress.tls) 0 -}}
-    {{- $_ := set .Values.gitea.config.server "ROOT_URL" (printf "%s://%s%s" .Values.gitea.config.server.PROTOCOL (index (index .Values.ingress.tls 0).hosts 0) .Values.gitea.config.server.Prefix) -}}
+    {{- $_ := set .Values.gitea.config.server "ROOT_URL" (printf "%s://%s:%d" .Values.gitea.config.server.PROTOCOL (index (index .Values.ingress.tls 0).hosts 0) (.Values.service.http.port|int) .Values.gitea.config.server.STATIC_URL_PREFIX  ) -}}
     {{- else -}}
-    {{- $_ := set .Values.gitea.config.server "ROOT_URL" (printf "%s://%s%s" .Values.gitea.config.server.PROTOCOL (index .Values.ingress.hosts 0).host .Values.gitea.config.server.PREFIX) -}}
+    {{- $_ := set .Values.gitea.config.server "ROOT_URL" (printf "%s://%s:%d%s" .Values.gitea.config.server.PROTOCOL (index .Values.ingress.hosts 0).host (.Values.service.http.port|int) .Values.gitea.config.server.STATIC_URL_PREFIX  ) -}}
     {{- end -}}
     {{- else -}}
     {{- $_ := set .Values.gitea.config.server "ROOT_URL" (printf "%s://%s" .Values.gitea.config.server.PROTOCOL .Values.gitea.config.server.DOMAIN) -}}

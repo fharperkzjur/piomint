@@ -2,13 +2,12 @@ package configs
 
 import (
 	"errors"
+	loggerconfs "github.com/apulis/simple-gin-logger/pkg/configs"
+	"github.com/spf13/viper"
 	"os"
 	"path"
 	"strings"
 	"time"
-
-	loggerconfs "github.com/apulis/simple-gin-logger/pkg/configs"
-	"github.com/spf13/viper"
 )
 
 var appConfig *AppConfig
@@ -28,6 +27,7 @@ type AppConfig struct {
 	HttpClient  HttpClient
 	GatewayUrl  string
 	ClusterId   string
+	VersionControl VCSConfigTable
 }
 
 type DbConfig struct {
@@ -114,7 +114,8 @@ func InitConfig() (*AppConfig, error) {
 		}
 	}
 	//@modify: read postgres password from env
-	if pg_passwd , exists := os.LookupEnv("POSTGRES_PASSWORD");exists {
+
+	if pg_passwd , exists := os.LookupEnv("POSTGRES_PASSWORD");exists && !strings.HasPrefix(pg_passwd,"vault:") {
 		appConfig.Db.Password=pg_passwd
 	}
 	return appConfig, nil

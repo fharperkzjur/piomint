@@ -58,3 +58,15 @@ gatewayUrl: https://123.60.231.101:80
 
 clusterId:  xxx-xxx-xxxxxx
 
+#connector for version control system
+VersionControl:
+  gitea:
+    url:      http://dockerhost:88/gitea/api/v1 # API地址
+    user:     gitea       #管理员账号
+    passwd:   apulis123   #管理员密码
+    host:     gitea-http.default:3000
+    sshHost:  gitea-ssh.default
+    extranet:
+      host:     "dockerhost:88"
+      sshHost:  "dockerhost:89"
+      prefix:   /gitea

@@ -62,7 +62,7 @@ ingress:
     kubernetes.io/tls-acme: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
   hosts:
-    - host: dockerhost
+    - host:
       paths:
         - path: /gitea(/|$)(.*)
           pathType: Prefix
@@ -144,7 +144,7 @@ gitea:
   admin:
     #existingSecret: gitea-admin-secret
     username: gitea
-    password: r8sA8CPHD9!bt6d
+    password: apulis123
     email: "gitea@local.domain"
 
   metrics:
@@ -185,7 +185,9 @@ gitea:
 
   config:
     server:
-      PREFIX:    /gitea
+      STATIC_URL_PREFIX:    ""
+      DOMAIN:               gitea-ssh.default
+      ROOT_URL:             http://dockerhost:88/gitea
     database:
       DB_TYPE:    postgres
       HOST:       172.17.0.1:5432

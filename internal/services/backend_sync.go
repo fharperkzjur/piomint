@@ -189,6 +189,10 @@ func InitServices() error {
 	 logger = loggers.GetLogger()
 	 InitHttpClient()
 	 models.SetEventNotifier(getBackendSyncer())
+
+	 if err := InitVcsConnectors(); err != nil {
+	 	logger.Fatalf("init vcs connector failed:%s",err.Error())
+	 }
 	 if  err := getBackendSyncer().SyncMaxBackendEvent();err != nil {
 		 logger.Fatalf("sync max backend event id failed:%s",err.Error())
 	 	return err
@@ -208,6 +212,7 @@ func InitServices() error {
 	 getBackendSyncer().AddTaskQueue(models.Evt_clean_run,CleanProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_discard_run,DiscardProcessor,0,nil)
 	 getBackendSyncer().AddTaskQueue(models.Evt_clear_lab,ClearLabProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_delete_repo,DeleteRepoProcessor,0,nil)
 	 return nil
 }
 

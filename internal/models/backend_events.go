@@ -31,6 +31,8 @@ const (
 	Evt_clean_run       = "clean"
 	Evt_discard_run       = "discard"
 	Evt_clear_lab       = "clear"
+
+	Evt_delete_repo     = "deleteRepo"
 )
 
 const (

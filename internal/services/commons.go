@@ -57,7 +57,10 @@ func doHttpRequest(url, method string, headers map[string]string, rawBody interf
 			if err != nil {//should never happen
 				return nil, exports.ParameterError("doRequest marshal error:" + err.Error())
 			}
-
+			if headers==nil {
+				headers = make(map[string]string)
+			}
+			headers["Content-Type"] = "application/json"
 			body = bytes.NewReader(data)
 		}
 	}
@@ -86,7 +89,11 @@ func doHttpRequest(url, method string, headers map[string]string, rawBody interf
 		return nil,wrapHttpClientError(err)
 	}else if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		// record http status error if status code is not 200
-		return responseData, exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,resp.Status)
+		if resp.StatusCode < http.StatusInternalServerError{
+			return responseData, exports.RaiseHttpError(resp.StatusCode,exports.AILAB_REMOTE_REST_ERROR,resp.Status)
+		}else{
+			return responseData, exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,resp.Status)
+		}
 	}else{
 		return responseData, nil
 	}
@@ -100,6 +107,7 @@ func DoRequest(url, method string, headers map[string]string, rawBody interface{
 	}
 	//@todo: only accpet json response ???
 	if err := json.Unmarshal(rspData,output);err != nil {
+		logger.Warnf("[%s] :%s with req:%v invalid response json data !!!",method,url,rawBody)
 		return exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"invalid response data format")
 	}
 	return err

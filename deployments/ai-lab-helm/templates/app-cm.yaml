@@ -27,4 +27,6 @@ data:
           {{- end }}
         gatewayUrl: {{ .gatewayUrl }}
         clusterId:  {{ .clusterId }}
+        VersionControl:
+          {{- toYaml .VersionControl | nindent 10 }}
     {{- end }}
