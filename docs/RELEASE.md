@@ -14,7 +14,6 @@
 
     |服务名称|代码库|版本tag|
     |:----|:----|:---|
-    |组件名称|Gitee-repo|Gitee-branch
     |AAA 前端|git@gitee.com:apulisplatform/aaa-aistudio-frontend.git|1.6.0
     |AAA 后端|git@gitee.com:apulisplatform/aistudio-iam-backendaistudio-iam-backend.git|1.6.0
     |AIArts 前端|git@gitee.com:apulisplatform/aiarts-frontend.git|1.6.0
@@ -30,7 +29,6 @@
     |ADMagic前端|git@gitee.com:apulisplatform/ad-magic-frontend.git|1.6.0
     |ADMagic后端|git@gitee.com:apulisplatform/ad-magic-backend.git|1.6.0
     |ADMagic聚合层|git@gitee.com:apulisplatform/ad-magic-bff.git|1.6.0
-    |||1.6.0
     |镜像中心后端|git@gitee.com:apulisplatform/apharbor-backend.git|1.6.0
     |算法镜像仓库|git@gitee.com:apulisplatform/apharbor-backend.git|1.6.0
     |模型工厂后端|git@gitee.com:apulisplatform/ap-workshop-backend.git|1.6.0
@@ -42,7 +40,6 @@
     |模型工厂前端|git@gitee.com:apulisplatform/ap-workshop-frontend.git|1.6.0
     |推理中心前端|git@gitee.com:apulisplatform/apflow.git|1.6.0
     |模型工厂算法|git@gitee.com:apulisplatform/model-gallery.git|1.6.0
-    |||1.6.0
     |gitea|git@gitee.com:apulisplatform/apulis-gitea.git|1.6.0
     |job-scheduler|git@gitee.com:apulisplatform/job-scheduler.git|1.6.0
     |go-business|git@gitee.com:apulisplatform/go-business.git|1.6.0
