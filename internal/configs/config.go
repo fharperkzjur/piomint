@@ -27,6 +27,7 @@ type AppConfig struct {
 	InitToolImage    string
 	HttpClient  HttpClient
 	GatewayUrl  string
+	KubeVipAddress string
 	ClusterId   string
 	VersionControl VCSConfigTable
 }

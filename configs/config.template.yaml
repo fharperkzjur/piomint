@@ -51,7 +51,8 @@ mounts:
   aiplatform-ailab-data-pvc:   /app/ai-labs-data
 
 
-gatewayUrl: https://123.60.231.101:80
+gatewayUrl:     https://123.60.231.101:80
+kubeVipAddress: "192.168.3.137"
 
 clusterId:  xxx-xxx-xxxxxx
 

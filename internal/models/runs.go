@@ -186,7 +186,7 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 			endpoints :=[]UserEndpoint{}
 			for _,v := range(req.Endpoints) {
 				if v.Name[0] == '$' {//@mark: replace $ to 0 to make k8s compatible
-					v.Name="0" + v.Name[1:]
+					v.Name=v.Name[1:] + "-"
 				}
 				endpoints=append(endpoints,UserEndpoint{
 					ContainerPort:JOB.ContainerPort{

@@ -26,6 +26,7 @@ data:
              {{ .name }} : {{ .mountPath }}
           {{- end }}
         gatewayUrl: {{ .gatewayUrl }}
+        kubeVipAddress: {{ .kubeVipAddress  }}
         clusterId:  {{ .clusterId }}
         initToolImage:  {{ .initToolImage  }}
         VersionControl:

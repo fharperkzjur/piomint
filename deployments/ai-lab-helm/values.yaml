@@ -109,6 +109,7 @@ config:
       engine:                                                      #镜像管理接口
       code:                                                    #代码管理暂时由模型工厂托管
    gatewayUrl: https://123.60.231.101:80
+   kubeVipAddress: "192.168.3.137"
    clusterId:  xxx-xxxx-xxxxxx
    initToolImage:  harbor.apulis.cn:8443/aistudio/infra/init-container:aistudio-v0.1.0
   #connector for version control system
