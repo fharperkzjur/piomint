@@ -125,12 +125,12 @@ func checkNpuDriverMounts(quota * JOB.ResourceQuota,mounts []JOB.MountPoint) ( [
 
 	 if quota.Request.Device.ComputeType == "huawei_npu" {
 	 	 mounts = append(mounts,JOB.MountPoint{
-			 Path:          "/usr/local/Ascend/driver",
+			 Path:          "file:///usr/local/Ascend/driver",
 			 ContainerPath: "/usr/local/Ascend/driver",
 			 ReadOnly:      true,
 		 })
 		 mounts = append(mounts,JOB.MountPoint{
-			 Path:          "/usr/local/Ascend/add-ons",
+			 Path:          "file:///usr/local/Ascend/add-ons",
 			 ContainerPath: "/usr/local/Ascend/add-ons",
 			 ReadOnly:      true,
 		 })
