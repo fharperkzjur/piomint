@@ -11,6 +11,7 @@ import (
 )
 
 
+
 type Run struct{
 	 RunId   string `json:"runId" gorm:"primary_key;type:varchar(255)"`
 	 LabId   uint64 `json:"labId" gorm:"index;not null"`
@@ -120,6 +121,19 @@ func (ctx*BasicMLRunContext) ChangeStatusTo(status int){
 func (r*Run) EnableResume() bool{
 	 return exports.IsJobResumable(r.Flags)
 }
+func (r*Run) StatusIsRunning() bool {
+	return exports.IsRunStatusRunning(r.Status)
+}
+func (r*Run) StatusIsNonActive()bool {
+	return exports.IsRunStatusNonActive(r.Status)
+}
+
+//@add: wrapper for user endpoints
+type UserEndpoint struct{
+	 JOB.ContainerPort
+	 Name string       `json:"name"`
+}
+
 func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  run := &Run{
 		  RunId:       req.JobType + "-" + string(uuid.NewUUID()),
@@ -164,12 +178,16 @@ func  newLabRun(mlrun * BasicMLRunContext,req*exports.CreateJobRequest) *Run{
 	  if len(req.Endpoints) > 0{
 			run.Endpoints=&JsonMetaData{}
 			//@mark: convert user endpoints to k8s service
-			endpoints :=[]JOB.ContainerPort{}
+			endpoints :=[]UserEndpoint{}
 			for _,v := range(req.Endpoints) {
-				endpoints=append(endpoints,JOB.ContainerPort{
-					Port:        int(v.Port),
-					TargetPort:  int(v.Port),
-					ServiceName: v.Name + "-" + run.RunId,
+
+				endpoints=append(endpoints,UserEndpoint{
+					ContainerPort:JOB.ContainerPort{
+						Port:        int(v.Port),
+					    TargetPort:  int(v.Port),
+					    ServiceName: v.Name + "-" + run.RunId,
+					},
+					Name: v.Name,
 				})
 			}
 			run.Endpoints.Save(endpoints)
@@ -241,7 +259,8 @@ func  QueryRunDetail(runId string,unscoped bool,status int) (run*Run,err APIErro
 		inst = inst.Where("status=?",status)
 	}
 	err =  wrapDBQueryError(inst.First(run,"run_id=?",runId))
-	if err == nil && exports.IsRunStatusStarting(status) {
+	//if err == nil && exports.IsRunStatusStarting(status) {
+	if err == nil {
 		err = checkDBQueryError(db.Table("labs").Select("namespace").
 			Where("id=?",run.LabId).Row().Scan(&run.Namespace))
 	}

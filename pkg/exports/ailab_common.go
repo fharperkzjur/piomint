@@ -158,8 +158,11 @@ type JobDistribute struct{
 
 
 type ServiceEndpoint struct{
-	Name     string `json:"name"`    // service name
-	Port     uint32 `json:"port"` // service port
+	Name     string `json:"name"`        // service name
+	Port     uint32 `json:"port"`        // service port
+	Url      string `json:"url,omitempty"`
+	AccessKey string `json:"access_key,omitempty"`
+	SecretKey string `json:"secret_key,omitempty"`
 }
 
 

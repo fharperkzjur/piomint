@@ -8,7 +8,6 @@ import (
 	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/internal/models"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
-	JOB "github.com/apulis/go-business/pkg/jobscheduler"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -35,13 +34,17 @@ func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},API
 	 	 if mlrun.Endpoints == nil {
 	 	 	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"no endpoints created for run:"+mlrun.RunId)
 	     }
-	     endpoints := []JOB.ContainerPort{}
+	     endpoints := []models.UserEndpoint{}
 	     if err:=mlrun.Endpoints.Fetch(&endpoints);err != nil {
 	     	return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid endpoints data formats for run:"+mlrun.RunId)
 	     }
 	     for _,v := range(endpoints) {
-	     	if strings.HasPrefix(v.ServiceName,name) {
-
+		     if len(v.Name) == 0 {
+			     if idx := strings.IndexByte(v.ServiceName,'-');idx > 0 {
+				     v.Name=v.ServiceName[0:idx]
+			     }
+		     }
+	     	if v.Name == name {
 	     		return genEndpointsUrl(name,v.ServiceName,mlrun.Namespace,v.Port),nil
 	        }
 	     }
@@ -49,6 +52,43 @@ func GetEndpointUrl(mlrun*models.BasicMLRunContext,name string) (interface{},API
 	 }else{
 		 return "",exports.RaiseReqWouldBlock("wait to starting job ...")
 	 }
+}
+func GetLabRunEndpoints(labId uint64,runId string) (interface{},APIError){
+	run, err := models.QueryRunDetail(runId,false,-1)
+	if err != nil {
+		return nil,err
+	}
+	if run.LabId != labId {
+		return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid lab id passed for runs")
+	}
+	if run.StatusIsNonActive() {
+		return nil,exports.RaiseAPIError(exports.AILAB_INVALID_RUN_STATUS,"lab run is non-active yet !")
+	}else if run.StatusIsRunning() {
+		if run.Endpoints == nil {
+			return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"no endpoints created for run:"+run.RunId)
+		}
+		endpoints := []models.UserEndpoint{}
+		if err:=run.Endpoints.Fetch(&endpoints);err != nil {
+			return nil,exports.RaiseAPIError(exports.AILAB_LOGIC_ERROR,"invalid endpoints data formats for run:"+run.RunId)
+		}
+		response := []exports.ServiceEndpoint{}
+		for _,v := range(endpoints) {
+			if len(v.Name) == 0 {
+				if idx := strings.IndexByte(v.ServiceName,'-');idx > 0 {
+					v.Name=v.ServiceName[0:idx]
+				}
+			}
+			url := genEndpointsUrl(v.Name,v.ServiceName,run.Namespace,v.Port)
+			response = append(response,exports.ServiceEndpoint{
+				Name:      v.Name,
+				Port:      uint32(v.Port),
+				Url:       url,
+			})
+		}
+		return response,nil
+	}else{
+		return "",exports.RaiseReqWouldBlock("wait to starting job ...")
+	}
 }
 
 

@@ -154,7 +154,7 @@ func checkNpuDriverMounts(run*models.Run,job *JOB.Job)   {
 	     })
 		 job.PreStartScripts="*"
 	 }else if strings.HasSuffix(job.Cmd[0],"_launcher"){
-	 	 job.PreStartScripts="*"
+	 	 job.PreStartScripts="01.init_user.sh"
 	 }
 }
 

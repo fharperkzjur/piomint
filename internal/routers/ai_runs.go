@@ -24,6 +24,7 @@ func AddGroupTraining(r*gin.Engine){
     // support train&evaluate job list
 	group.GET("/runs", wrapper(getAllLabRuns))
 	group.GET("/runs/:runId",wrapper(queryLabRun))
+	group.GET("runs/:runId/endpoints",wrapper(queryLabRunEndpoints))
 	group.GET("/stats",wrapper(queryLabRunStats))
 	group.GET("/real-stats",wrapper(queryLabRunRealStats))
 
@@ -126,7 +127,7 @@ func scratchLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (in
 func queryLabRun(c*gin.Context) (interface{},APIError){
 	labId,runId := parseLabRunId(c)
 	if labId == 0 || len(runId) == 0 {
-		return nil,exports.ParameterError("create nest run invalid lab id or run id")
+		return nil,exports.ParameterError("queryLabRun invalid lab id or run id")
 	}
 	run, err := models.QueryRunDetail(runId,false,-1)
 	if err == nil && run.LabId != labId {
@@ -134,6 +135,14 @@ func queryLabRun(c*gin.Context) (interface{},APIError){
 	}
 	return run,err
 }
+func queryLabRunEndpoints(c*gin.Context)(interface{},APIError){
+	labId,runId := parseLabRunId(c)
+	if labId == 0 || len(runId) == 0 {
+		return nil,exports.ParameterError("queryLabRunEndpoints invalid lab id or run id")
+	}
+	return services.GetLabRunEndpoints(labId,runId)
+}
+
 func sysQueryLabRun(c*gin.Context)(interface{},APIError){
 	_,runId := parseLabRunId(c)
 	return models.QueryRunDetail(runId,true,-1)
