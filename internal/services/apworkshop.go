@@ -98,7 +98,7 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,token string,resour
 			ModelID:      safeToNumber(resource["id"]),
 			ModelVersion: safeToNumber(resource["version"]),
 		}
-		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioUnref","POST",nil,req, nil)
+		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioUnref?internal=1","POST",nil,req, nil)
 		if err != nil && (err.Errno() == APWORKSHOP_REF_NOT_EXISTS || err.Errno() == APWORKSHOP_MODEL_NOT_EXISTS){// unref not exists supress not found error
 			err = nil
 		}
@@ -108,7 +108,7 @@ func (d APWorkshopResourceSrv) CompleteResource(runId string,token string,resour
 		if commitOrCancel == false {
 			status = "rollback"
 		}
-		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioCommitModel","PUT",map[string]string{
+		err := Request(configs.GetAppConfig().Resources.ApWorkshop + "/studioCommitModel?internal=1","PUT",map[string]string{
 			"Authorization":"Bear " + token,
 		},
 			map[string]interface{}{
