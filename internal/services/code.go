@@ -42,7 +42,9 @@ func (d EngineResourceSrv) CompleteResource(runId string,resource exports.GObjec
 }
 
 func ValidateEngineUrl(token string, engine string,arch string)(string, string, APIError){
-	 if engine == exports.AILAB_ENGINE_DEFAULT {//use internal init-container engine
+	 if engine == "" {
+	 	return "","",exports.ParameterError("empty engine name !!!")
+	 }else if engine == exports.AILAB_ENGINE_DEFAULT {//use internal init-container engine
 	 	return engine,arch,nil
 	 }else if engineId,err := strconv.ParseUint(engine,10,64);err == nil && engineId > 0 {//resolve id to full name by apharbor
         return getAPHarborImageUrl(token,engineId,arch)

@@ -40,7 +40,7 @@ resources:
   model:          https://119.147.212.162:51080/apworkshop/api/v1         #模型管理接口
   dataset:        https://119.147.212.162:51080/iqi/api/v1/ad-hub         #数据集管理接口
   jobsched:       http://192.168.3.137:7000/api/v1       #job调度管理接口
-  engine:         http://adharbor.bmod:6140/api/v1                      #镜像管理接口
+  engine:         http://192.168.3.137:7100/api/v1                      #镜像管理接口
   code:                                                                 #代码管理暂时由实验管理厂托管
 
 storage: pvc://aiplatform-ailab-data-pvc
