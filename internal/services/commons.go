@@ -4,6 +4,7 @@ package services
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/apulis/bmod/ai-lab-backend/internal/configs"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -15,6 +16,25 @@ import (
 
 var logger *logrus.Logger
 
+var httpClient *http.Client
+
+func InitHttpClient() *http.Client {
+	appConfig := configs.GetAppConfig()
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConns = appConfig.HttpClient.MaxIdleConns
+	transport.MaxConnsPerHost = appConfig.HttpClient.MaxConnsPerHost
+	transport.MaxIdleConnsPerHost = appConfig.HttpClient.MaxIdleConnsPerHost
+
+	httpClient = &http.Client{
+		Timeout:   time.Duration(appConfig.HttpClient.TimeoutSeconds) * time.Second,
+		Transport: transport,
+	}
+	return httpClient
+}
+
+func GetHttpClient() *http.Client {
+	return httpClient
+}
 
 
 func wrapHttpClientError(err error) APIError{
@@ -52,9 +72,7 @@ func doHttpRequest(url, method string, headers map[string]string, rawBody interf
 		}
 	}
 
-	client := http.DefaultClient
-	client.Timeout= time.Duration(default_task_fail_delay)*time.Millisecond
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 
 	if err != nil {
 		return nil, wrapHttpClientError(err)
@@ -98,9 +116,11 @@ func Request(url, method string, headers map[string]string, rawBody interface{},
 		Data: output,
 	}
 	if err := json.Unmarshal(rspData,response);err != nil {
+		logger.Warnf("Request:%s with req:%v invalid response json data !!!",url,rawBody)
 		return exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"invalid response data format")
 	}
 	if response.Code != 0 {
+		logger.Warnf("Request:%s with req:%v error response:%v",url,rawBody,response)
         return exports.RaiseAPIError(response.Code,response.Msg)
 	}else{// may return http error code
 		return err

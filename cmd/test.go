@@ -34,6 +34,10 @@ func main(){
 
 	 var sss interface{}
 
+	 abc := make(map[string]int,10)
+
+	 fmt.Printf("map:%v",abc)
+
 	 sss = map[string]int{}
 
 	 vv ,_:= sss.(map[string]int)

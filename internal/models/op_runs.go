@@ -53,7 +53,7 @@ func tryDeleteRun(tx*gorm.DB,run*JobStatusChange,mlrun*BasicMLRunContext) (uint6
 	}
 	err := wrapDBUpdateError(tx.Delete(&Run{},"run_id=?",run.RunId),1)
 	if err == nil {
-		run.StatusTo = -1
+		run.StatusTo = exports.AILAB_RUN_STATUS_INVALID
 		mlrun.JobStatusChange(run)
 	}
 	return 1,err
@@ -135,7 +135,7 @@ func  ChangeJobStatus(runId string,from,to int,msg string) APIError{
 	return execDBTransaction(func(tx*gorm.DB,events EventsTrack)APIError{
 		mlrun ,err := getBasicMLRunInfoEx(tx,0,runId,events)
 		if err == nil{
-			if from != -1 && mlrun.Status != from || mlrun.Status == to {// status context changes
+			if from != exports.AILAB_RUN_STATUS_INVALID && mlrun.Status != from || mlrun.Status == to {// status context changes
 				return nil
 			}
 			//validate logic error

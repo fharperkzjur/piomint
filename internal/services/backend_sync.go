@@ -167,6 +167,7 @@ func getBackendSyncer() *BackendEventSync{
 
 func InitServices() error {
 	 logger = loggers.GetLogger()
+	 InitHttpClient()
 	 models.SetEventNotifier(getBackendSyncer())
 	 if  err := getBackendSyncer().SyncMaxBackendEvent();err != nil {
 		 logger.Fatalf("sync max backend event id failed:%s",err.Error())

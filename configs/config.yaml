@@ -36,6 +36,10 @@ storage: pvc://aiplatform-ailab-data-pvc
 mounts:
   aiplatform-ailab-data-pvc:   /app/ai-labs-data
 
-
+httpClient:
+  maxIdleConns: 100
+  maxConnsPerHost: 100
+  maxIdleConnsPerHost: 100
+  timeoutSeconds: 10
 
 

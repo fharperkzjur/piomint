@@ -43,6 +43,8 @@ type Run struct{
 	 Result     *JsonMetaData `json:"result,omitempty"`
 	 Flags      uint64        `json:"flags,omitempty"`   // some system defined attributes this run behaves
 	 Namespace  string        `json:"-" gorm:"-"`
+	 ViewStatus int           `json:"viewStatus,omitempty" gorm:"-"`
+	 SaveStatus int           `json:"saveStatus,omitempty" gorm:"-"`
 }
 
 const (
@@ -197,6 +199,8 @@ func  CreateLabRun(labId uint64,runId string,req*exports.CreateJobRequest,enable
                     run.StartTime = &UnixTime{time.Now()}
 				}else if syncPrepare {//@mark: synchronoulsy prepare create deleted run first , then change to starting when prepare success
 					run.DeletedAt = soft_delete.DeletedAt(time.Now().Unix())
+				}else{
+					run.Status = exports.AILAB_RUN_STATUS_INIT
 				}
 				err  = wrapDBUpdateError(tx.Create(&run),1)
 			}
@@ -315,25 +319,50 @@ func ResumeLabRun(labId uint64,runId string) (mlrun *BasicMLRunContext,err APIEr
 func PauseLabRun(labId uint64,runId string) APIError{
 	 return exports.NotImplementError("PauseLabRun: not implements")
 }
-func ListAllLabRuns(req*exports.SearchCond,labId uint64) (interface{} ,APIError){
+func ListAllLabRuns(req*exports.SearchCond,labId uint64,isNeedNestStatus bool) (data interface{} ,err APIError){
 
+	result := []Run{}
 	if len(req.Group) == 0 {//filter by lab id
-          return makePagedQuery(db.Select(list_runs_fields).Where("lab_id=?",labId),req,&[]Run{})
+          data,err = makePagedQuery(db.Select(list_runs_fields).Where("lab_id=?",labId),req,&result)
 	}else{//need filter by group
           group := req.Group
           req.Group = ""
-          return makePagedQuery(db.Select(list_runs_fields + ",labs.bind as bind").
+          data,err = makePagedQuery(db.Select(list_runs_fields + ",labs.bind as bind").
           	  Joins("left join labs on lab_id=labs.id").Where("labs.bind like ?",group+"%"),
-          	  req,&[]Run{})
+          	  req,&result)
 	}
+	if len(result) > 0 && isNeedNestStatus {//retrieve nest child tool runs also
+		jobIds :=make([]string,0,len(result))
+		jobData:=make(map[string]*Run,len(result))
 
+		for i:=0;i<len(result);i++{
+			run := &result[i]
+			jobIds=append(jobIds,run.RunId)
+			jobData[run.RunId]=run
+		}
+		err = execDBQuerRows(db.Table("runs").Where("parent in ? and deleted_at=0 and flags&? != 0 ").
+			Select("parent,status,job_type,run_id"), func(tx *gorm.DB, rows *sql.Rows) APIError {
+
+				parent := ""
+				status := 0
+				jobType := ""
+				if err:=checkDBQueryError(rows.Scan(&parent,&status,&jobType));err != nil{
+					return err
+				}
+				switch jobType {
+				case exports.AILAB_RUN_VISUALIZE: jobData[parent].ViewStatus=status
+				case exports.AILAB_RUN_SAVE:      jobData[parent].SaveStatus=status
+				}
+				return nil
+		})
+	}
+	return
 }
 func  RollBackAllPrepareFailed() (counts uint64,err APIError){
 
 	err= execDBTransaction(func(tx *gorm.DB, track EventsTrack) APIError {
 		   fail_runs := []string{}
-		   err := wrapDBQueryError(db.Table("runs").Where("deleted_at != 0 and status=?",
-		   	     exports.AILAB_RUN_STATUS_INIT).Find(&fail_runs))
+		   err := wrapDBQueryError(db.Table("runs").Where("deleted_at != 0 and status=0").Find(&fail_runs))
 		   if err != nil {
 		   	  return err
 		   }
@@ -374,7 +403,7 @@ func  PrepareRunSuccess(runId string,resource* JsonMetaData,isRollback bool) API
 					"flags": gorm.Expr("flags|?",exports.AILAB_RUN_FLAGS_PREPARE_OK),
 					"resource":resource,}) ,1)
 			if err == nil {
-				mlrun.Status=-1
+				mlrun.Status=exports.AILAB_RUN_STATUS_INVALID
 				mlrun.ChangeStatusTo(exports.AILAB_RUN_STATUS_STARTING)
 				err = mlrun.Save(tx)
 			}
@@ -684,7 +713,7 @@ func completeCreateRun(tx*gorm.DB, mlrun*BasicMLRunContext,req*exports.CreateJob
 	 if err == nil && run.DeletedAt == 0  {// asynchronously prepare data
 	 	mlrun.JobStatusChange(&JobStatusChange{
 			JobType:  req.JobType,
-			Status:   -1,
+			Status:   exports.AILAB_RUN_STATUS_INVALID,
 			StatusTo: run.Status,
 		})
 	 	if err == nil {

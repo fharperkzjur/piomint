@@ -101,7 +101,7 @@ func getAllLabRuns(c*gin.Context) (interface{},APIError){
 	if err != nil {
 		return nil,err
 	}
-	data,err := models.ListAllLabRuns(cond,labId)
+	data,err := models.ListAllLabRuns(cond,labId,true)
 	return makePagedQueryResult(cond,data,err)
 }
 func sysGetAllLabRuns(c*gin.Context)(interface{},APIError){
@@ -113,7 +113,7 @@ func sysGetAllLabRuns(c*gin.Context)(interface{},APIError){
 	if err != nil {
 		return nil,err
 	}
-	data,err := models.ListAllLabRuns(cond,0)
+	data,err := models.ListAllLabRuns(cond,0,true)
 	return makePagedQueryResult(cond,data,err)
 }
 

@@ -21,6 +21,7 @@ type AppConfig struct {
 	Debug       bool
 	Mounts      map[string]string
 	Storage     string
+	HttpClient  HttpClient
 }
 
 type DbConfig struct {
@@ -55,6 +56,13 @@ type RabbitmqConfig struct{
 	Port      int
 }
 
+type HttpClient struct {
+	MaxIdleConns        int
+	MaxConnsPerHost     int
+	MaxIdleConnsPerHost int
+	TimeoutSeconds      int
+}
+
 func InitConfig() (*AppConfig, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("configs")
@@ -64,7 +72,14 @@ func InitConfig() (*AppConfig, error) {
 		return nil, err
 	}
 
-	appConfig = &AppConfig{}
+	appConfig = &AppConfig{
+		HttpClient:  HttpClient{
+			MaxIdleConns :100,
+			MaxConnsPerHost:100,
+			MaxIdleConnsPerHost:100,
+			TimeoutSeconds:5,
+		},
+	}
 	err = viper.Unmarshal(&appConfig)
 	if err != nil {
 		return nil, err

@@ -19,7 +19,8 @@ const (
 	AISutdio_labs_discard = "**"
 )
 const (
-	AILAB_RUN_STATUS_INIT     = iota
+	AILAB_RUN_STATUS_INVALID  = iota
+	AILAB_RUN_STATUS_INIT
 	AILAB_RUN_STATUS_STARTING  // wait for started , can kill only
 	AILAB_RUN_STATUS_QUEUE
 	AILAB_RUN_STATUS_SCHEDULE
@@ -90,7 +91,7 @@ const (
 	AILAB_RUN_TRAINING = "train"
 	AILAB_RUN_EVALUATE = "eval"
 	AILAB_RUN_SAVE     = "save"
-	AILAB_RUN_VISUALIZE = "visual"
+	AILAB_RUN_VISUALIZE = "view"
 	//AILAB_RUN_MINDINSIGHT = "mindinsight"
 	//AILAB_RUN_TENSORBOARD = "tensorboard"
 )
@@ -246,7 +247,7 @@ func IsRunStatusError(status int) bool{
 	return status == AILAB_RUN_STATUS_ERROR
 }
 func  IsRunStatusActive(status int)      bool {
-	return status < AILAB_RUN_STATUS_MIN_NON_ACTIVE
+	return status > AILAB_RUN_STATUS_INVALID && status < AILAB_RUN_STATUS_MIN_NON_ACTIVE
 }
 func  IsRunStatusNonActive(status int)   bool{
 	return status >= AILAB_RUN_STATUS_MIN_NON_ACTIVE

@@ -41,7 +41,7 @@ func translateJobStatus(status JOB.JobStatus) int{
 	    case JOB.JOB_STATUS_ERROR:       return exports.AILAB_RUN_STATUS_ERROR
 	    default://should never happen
 	         logger.Warnf("invalid status return from job-sched:%v",status)
-	         return -1
+	         return exports.AILAB_RUN_STATUS_INVALID
 	}
 }
 
@@ -164,14 +164,14 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 }else if err.Errno() == JOB.ERR_CODE_RESOURCE_EXIST{// create job already exists
         //@todo: will return exists status also ???
 	 	status := translateJobStatus(resp.JobState.Status)
-	 	if status > 0 && exports.IsRunStatusActive(status) {// still active yet
+	 	if exports.IsRunStatusActive(status) {// still active yet
            return status,nil
 		}
         if run.EnableResume(){//try delete job and resume again
          	err = DeleteJob(run.RunId)
          	logger.Warnf("try submit resumable job:%s already exists , delete first ...",run.RunId)
          	if err != nil {
-         		return -1,err
+         		return exports.AILAB_RUN_STATUS_INVALID,err
 			}
 			//submit again
 			err = Request(url,"POST",nil,job,resp)
@@ -180,7 +180,7 @@ func SubmitJob(run*models.Run) (int, APIError) {
 			}else if err.Errno() == JOB.ERR_CODE_INVALID_PARAM{
 				return exports.AILAB_RUN_STATUS_FAIL,err
 			}else{
-				return -1,err
+				return exports.AILAB_RUN_STATUS_INVALID,err
 			}
 		 }else{//should not change run status here
 		 	logger.Warnf("try submit job:%s already exists!",run.RunId)
@@ -189,7 +189,7 @@ func SubmitJob(run*models.Run) (int, APIError) {
 	 }else if err.Errno() == JOB.ERR_CODE_INVALID_PARAM{
 	 	 return exports.AILAB_RUN_STATUS_FAIL,err
 	 }else{
-	 	 return -1,err
+	 	 return exports.AILAB_RUN_STATUS_INVALID,err
 	 }
 }
 
@@ -197,7 +197,7 @@ func KillJob(run*models.Run) (int,APIError) {
 	 if err := DeleteJob(run.RunId);err == nil{
 	 	return exports.AILAB_RUN_STATUS_ABORT,nil
 	 }else{
-	 	return -1,err
+	 	return exports.AILAB_RUN_STATUS_INVALID,err
 	 }
 }
 
@@ -212,7 +212,7 @@ func DeleteJob(runId string) APIError{
 }
 
 func  SyncJobStatus(runId string,statusFrom int, statusTo int,err APIError) APIError{
-	 if statusTo < 0 {//cancel this action
+	 if statusTo == exports.AILAB_RUN_STATUS_INVALID {//cancel this action
 	 	return err
 	 }
 	 msg := ""
@@ -226,11 +226,11 @@ func  MonitorJobStatus(event broker.Event) error{
 	  jobs := &JOB.JobMsg{}
 	  if json.Unmarshal(event.Message().Body,jobs) == nil {
 		  statusTo := translateJobStatus(jobs.JobState.Status)
-		  if statusTo < 0 {
+		  if statusTo == exports.AILAB_RUN_STATUS_INVALID {
 		  	logger.Warnf("receive unknown job state from mq:%s",string(event.Message().Body))
 		  }else{
 		  	logger.Info("receive mq message:%s",string(event.Message().Body))
-		  	return models.ChangeJobStatus(jobs.JobId,-1,statusTo,jobs.JobState.Msg)
+		  	return models.ChangeJobStatus(jobs.JobId,exports.AILAB_RUN_STATUS_INVALID,statusTo,jobs.JobState.Msg)
 		  }
 
 	  }
