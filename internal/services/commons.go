@@ -112,6 +112,9 @@ func DoRequest(url, method string, headers map[string]string, rawBody interface{
 	}
 	if err != nil {
 		logger.Warnf("[%s] :%s with req:%v error response:%v",method,url,rawBody,string(rspData))
+		if len(headers) > 0 {
+			logger.Warnf("with headers:%v",headers)
+		}
 	}
 
 	return err
@@ -133,6 +136,9 @@ func Request(url, method string, headers map[string]string, rawBody interface{},
 	}
 	if response.Code != 0 {
 		logger.Warnf("[%s] :%s with req:%v error response:%v",method,url,rawBody,response)
+		if len(headers) > 0 {
+			logger.Warnf("with headers:%v",headers)
+		}
         return exports.RaiseAPIError(response.Code,response.Msg)
 	}else{// may return http error code
 		return err
