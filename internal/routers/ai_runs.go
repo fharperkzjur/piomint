@@ -13,18 +13,18 @@ func AddGroupTraining(r*gin.Engine){
 	group := r.Group("/api/v1/labs/:lab")
 
 	group.POST("/runs", wrapper(submitLabRun))
-	group.POST("/:runId/evaluations", wrapper(submitLabEvaluate))
+	group.POST("/runs/:runId/evaluates", wrapper(submitLabEvaluate))
     // operates on lab runs : open_visual/close_visual  , pause|resume|kill|stop
 	group.POST("/runs/:runId", wrapper(postLabRuns))
     // support train&evaluate job list
 	group.GET("/runs", wrapper(getAllLabRuns))
 	group.GET("/runs/:runId",wrapper(queryLabRun))
-	group.GET("/runs/stats",wrapper(queryLabRunStats))
+	group.GET("/stats",wrapper(queryLabRunStats))
 
 	group.DELETE("/runs/:runId", wrapper(delLabRun))
     // following interfce should only be called by admin role users
 	group = r.Group("/api/v1/runs")
-	group.GET("/",wrapper(sysGetAllLabRuns))
+	group.GET("",wrapper(sysGetAllLabRuns))
 	group.GET("/:runId",wrapper(sysQueryLabRun))
 	group.GET("/stats",wrapper(sysQueryLabRunStats))
 	group.POST("/:runId", wrapper(sysPostLabRuns))
@@ -43,7 +43,7 @@ func submitLabRun(c*gin.Context) (interface{},APIError){
 	 	return nil,exports.ParameterError("invalid json data")
 	 }
 	 req.JobType = exports.AILAB_RUN_TRAINING
-	 return services.ReqCreateRun(labId,"",req,false,true)
+	 return services.ReqCreateRun(labId,"",req,false,false)
 }
 
 func submitLabEvaluate(c*gin.Context)(interface{},APIError){
@@ -56,13 +56,13 @@ func submitLabEvaluate(c*gin.Context)(interface{},APIError){
 		return nil,exports.ParameterError("invalid json data")
 	}
 	req.JobType = exports.AILAB_RUN_EVALUATE
-	return services.ReqCreateRun(labId,runId,req,false,true)
+	return services.ReqCreateRun(labId,runId,req,false,false)
 }
 
 func saveLabRun(labId uint64, runId string,req *exports.CreateJobRequest) (interface{},APIError){
 	req.JobType  = exports.AILAB_RUN_SAVE
-	req.JobFlags = exports.RUN_FLAGS_SINGLE_INSTANCE | exports.RUN_FLAGS_AUTO_DELETED
-	run, err := services.ReqCreateRun(labId,runId,req,true,true)
+	req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_AUTO_DELETED
+	run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	if err == nil {// created new run
 		return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start save job ...")
 	}else if err.Errno() == exports.AILAB_STILL_ACTIVE {// exists old job
@@ -105,7 +105,11 @@ func getAllLabRuns(c*gin.Context) (interface{},APIError){
 	return makePagedQueryResult(cond,data,err)
 }
 func sysGetAllLabRuns(c*gin.Context)(interface{},APIError){
-	cond,err := checkSearchCond(c,nil)
+	cond,err := checkSearchCond(c,exports.QueryFilterMap{
+		"jobType":"job_type",
+		"parent" :"parent",
+		"status" : "status",
+	})
 	if err != nil {
 		return nil,err
 	}
@@ -186,9 +190,9 @@ func delLabRun(c*gin.Context) (interface{},APIError){
 
 func openLabRunVisual(labId uint64,runId string,req*exports.CreateJobRequest) (interface{},APIError){
 
-	 req.JobFlags = exports.RUN_FLAGS_SINGLE_INSTANCE | exports.RUN_FLAGS_RESUMEABLE
+	 req.JobFlags = exports.AILAB_RUN_FLAGS_SINGLE_INSTANCE | exports.AILAB_RUN_FLAGS_RESUMEABLE
 	 req.JobType  = exports.AILAB_RUN_VISUALIZE
-	 run, err := services.ReqCreateRun(labId,runId,req,false,true)
+	 run, err := services.ReqCreateRun(labId,runId,req,true,false)
 	 if err == nil {// created new run
 	 	return nil,exports.RaiseAPIError(exports.AILAB_WOULD_BLOCK,"wait to start visual job ...")
 	 }else if err.Errno() == exports.AILAB_SINGLETON_RUN_EXISTS {// exists old job

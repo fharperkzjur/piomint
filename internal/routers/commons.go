@@ -34,6 +34,8 @@ func checkSearchCond(c*gin.Context,filters exports.QueryFilterMap) (cond*exports
 	 }
 	 if cond.PageSize > 100 {
 	 	cond.PageSize = 100
+	 }else if cond.PageSize == 0 {
+	 	cond.PageNum  = 0
 	 }
 	 if cond.PageNum >= 1{
 	 	cond.Offset = (cond.PageNum - 1) * cond.PageSize

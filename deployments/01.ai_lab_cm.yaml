@@ -1,0 +1,35 @@
+apiVersion: v1
+data:
+  config.yaml: |+
+    port: 10000
+    db:
+      serverType: postgres # 数据库服务器类型当前模板可选(postgres postgresql)
+      username: {{service["postgres"]["username"]}} # 用户名
+      password: {{service["postgres"]["password"]}} # 密码
+      host: postgres.kube-system # 服务器host
+      port: {{service["postgres"]["port"]}} # 服务端口
+      database: ai_lab # db名称
+      maxOpenConns: 10 # 数据库连接池最大数量
+      maxIdleConns: 2 # 数据库空闲连接池最大数量
+      debug: true
+
+    rabbitmq:
+      user: {{middleware["rabbitmq"]["username"]}} # 用户名
+      password: {{middleware["rabbitmq"]["password"]}} # 密码
+      host: {{middleware["rabbitmq"]["host"]}} # host地址
+      port: {{middleware["rabbitmq"]["port"]}} # mq端口
+
+    time:
+      timezoneStr: Asia/Shanghai # 时区名称
+
+    log:
+      writefile: true
+      filedir: logs
+      filename: ai_lab.log
+      level: 4
+
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: ai-lab-cm
+

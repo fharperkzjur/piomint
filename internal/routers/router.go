@@ -31,6 +31,7 @@ func InitRouter() *gin.Engine {
 	r.Use(sessions.Sessions("mysession", store))
 
 	r.Use(cors.Default())
+	r.RedirectTrailingSlash = false
 	//r.Use(Auth())
 
 	//r.NoMethod(HandleNotFound)

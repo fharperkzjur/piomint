@@ -22,10 +22,11 @@ RUN apk --no-cache add git pkgconfig build-base
 # Cache go modules
 COPY go.mod .
 COPY go.sum .
-RUN go mod download
 ADD . .
+RUN go mod download
+
 #RUN swag init --parseDependency --parseInternal && GO111MODULE=${GO111MODULE} go build cmd/ai_lab.go -o /go/bin/ai_lab
-RUN  GO111MODULE=${GO111MODULE} go build cmd/ai_lab.go -o /go/bin/ai_lab
+RUN  GO111MODULE=${GO111MODULE} go build  -o /go/bin/ai_lab cmd/ai_lab.go
 
 FROM alpine:3.11
 RUN apk --no-cache add ca-certificates libdrm

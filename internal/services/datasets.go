@@ -7,7 +7,7 @@ type DatasetResourceSrv struct{
 
 }
 //cannot error
-func (d DatasetResourceSrv) RefResource(runId string,  resourceId string ,versionId string) (interface{},APIError){
+func (d DatasetResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
 
 
 
@@ -15,7 +15,7 @@ func (d DatasetResourceSrv) RefResource(runId string,  resourceId string ,versio
 }
 
 // should never error
-func (d DatasetResourceSrv) UnRefResource(runId string,resourceId string, versionId string) APIError {
+func (d DatasetResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
 
 
 

@@ -7,7 +7,7 @@ type CodeResourceSrv struct{
 
 }
 //cannot error
-func (d CodeResourceSrv) RefResource(runId string,  resourceId string ,versionId string) (interface{},APIError){
+func (d CodeResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
 
 
 
@@ -15,7 +15,7 @@ func (d CodeResourceSrv) RefResource(runId string,  resourceId string ,versionId
 }
 
 // should never error
-func (d CodeResourceSrv) UnRefResource(runId string,resourceId string, versionId string) APIError {
+func (d CodeResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
 
 
 	return exports.NotImplementError("CodeResourceSrv")
@@ -25,13 +25,13 @@ type EngineResourceSrv struct{
 
 }
 //cannot error
-func (d EngineResourceSrv) RefResource(runId string,  resourceId string ,versionId string) (interface{},APIError){
+func (d EngineResourceSrv) PrepareResource(runId string,  resource exports.GObject) (interface{},APIError){
 
 	return nil,exports.NotImplementError("EngineResourceSrv")
 }
 
 // should never error
-func (d EngineResourceSrv) UnRefResource(runId string,resourceId string, versionId string) APIError {
+func (d EngineResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
     //@todo: engine no need to ref ???
 	return nil
 }

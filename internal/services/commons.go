@@ -75,6 +75,9 @@ func doHttpRequest(url, method string, headers map[string]string, rawBody interf
 func DoRequest(url, method string, headers map[string]string, rawBody interface{}, output interface{}) APIError {
 
 	rspData, err := doHttpRequest(url, method, headers, rawBody)
+	if len(rspData) == 0 {// no data return
+		return err
+	}
 	//@todo: only accpet json response ???
 	if err := json.Unmarshal(rspData,output);err != nil {
 		return exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"invalid response data format")
@@ -86,6 +89,9 @@ func DoRequest(url, method string, headers map[string]string, rawBody interface{
 func Request(url, method string, headers map[string]string, rawBody interface{}, output interface{}) APIError {
 
 	rspData, err := doHttpRequest(url, method, headers, rawBody)
+	if len(rspData) == 0 {// no data return
+		return err
+	}
 	response := &exports.CommResponse{
 		Data: output,
 	}

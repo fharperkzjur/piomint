@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/apulis/bmod/ai-lab-backend/pkg/exports"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 	"strconv"
 	"strings"
 	"time"
@@ -25,14 +26,20 @@ type JsonB map[string]interface{}
 
 // UnixTime implement gorm interfaces
 func (t UnixTime) MarshalJSON() ([]byte, error) {
+	if t.IsZero() {
+		return []byte("null"),nil
+	}
 	microSec := t.UnixNano() / int64(time.Millisecond)
 	return []byte(strconv.FormatInt(microSec, 10)), nil
 }
 
 func (t UnixTime) Value() (driver.Value, error) {
-	var zeroTime time.Time
-	if t.Time.UnixNano() == zeroTime.UnixNano() {
-		return nil, nil
+	//var zeroTime time.Time
+	//if t.Time.UnixNano() == zeroTime.UnixNano() {
+	//	return nil, nil
+	//}
+	if t.IsZero() {
+		return nil,nil
 	}
 	return t.Time, nil
 }
@@ -71,7 +78,7 @@ func (d*JsonMetaData)Empty()bool{
 }
 func (d*JsonMetaData)MarshalJSON()([]byte,error){
 	if len(d.data_str) == 0 {
-		return nil,nil
+		return []byte("null"),nil
 	}
 	return d.data_str,nil
 }
@@ -102,29 +109,72 @@ func (d *JsonMetaData) Scan(v interface{}) error {
 }
 
 func (d*JsonMetaData) Fetch(v interface{}) error{
+	if d == nil{
+		return nil
+	}
 	return json.Unmarshal([]byte(d.data_str),v)
 }
 func (d*JsonMetaData) Save(v interface{}){
 	d.data_str,_ =json.Marshal(v)
+}
+// GormDBDataType gorm db data type
+func (JsonMetaData) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	switch db.Dialector.Name() {
+	case "sqlite":
+		return "JSON"
+	case "mysql":
+		return "JSON"
+	case "postgres":
+		return "JSONB"
+	}
+	return ""
+}
+func TranslateJsonMeta(object exports.RequestObject, args...string)int{
+	cnt := 0
+	for _,key := range(args){
+		value,ok   := object[key]
+		if ok {
+			switch ty := value.(type){
+			case []interface{}:
+				json_str,_ :=json.Marshal(ty)
+				object[key] = JsonMetaData{json_str}
+				cnt++
+			case map[string]interface{}:
+				json_str,_ :=json.Marshal(ty)
+				object[key] = JsonMetaData{json_str}
+				cnt++
+			case []byte: if len(ty) >= 2 && (ty[0] == '{' || ty[0] == '['){
+				object[key] = JsonMetaData{ty}
+				cnt++
+			}
+			case string:
+				if len(ty) >= 2 && (ty[0] == '{' || ty[0] == '['){
+					object[key] = JsonMetaData{[]byte(ty)}
+					cnt++
+				}
+			}
+		}
+	}
+	return cnt
 }
 
 func checkCommonQuery(db*gorm.DB,req*exports.SearchCond)*gorm.DB{
 	if len(req.Sort) > 0 {
 		db = db.Order(req.Sort)
 	}
+	if len(req.Group) > 0 {
+		if !req.MatchAll {// extaly match group
+			db = db.Where("bind = ?",req.Group)
+		}else{// recursively match all items
+			db = db.Where("bind like ? ",req.Group + "%")
+		}
+	}
 	if len(req.SearchWord) > 0 {
 		db = db.Where("name like ? ","%"+req.SearchWord+"%")
 	}
-	if len(req.Group) > 0 {
-		if !req.MatchAll {// extaly match group
-			db = db.Where("group = ?",req.Group)
-		}else{// recursively match all items
-			db = db.Where("group like ? ",req.Group + "%")
-		}
-	}
 	switch req.Show{
 	case exports.SHOW_WITH_DELETED:       db = db.Unscoped()
-	case exports.SHOW_ONLY_DELETED:       db = db.Unscoped().Where("deleted_at is not null")
+	case exports.SHOW_ONLY_DELETED:       db = db.Unscoped().Where("deleted_at != 0")
 	}
 	if req.PageSize != 0 {
 		db = db.Limit(int(req.PageSize))
@@ -193,35 +243,42 @@ func checkDBUpdateError(err error)APIError{
 
 var notifier exports.NotifyBackendEvents
 
-func execDBTransaction( executor func(tx*gorm.DB) APIError  ) (err APIError) {
+func execDBTransaction( executor func(*gorm.DB, EventsTrack) APIError  ) (err APIError) {
 
-	 var events interface{}
+	 var events  EventsTrack=&[]JobEvent{}
 
 	 err1 := db.Transaction( func(tx *gorm.DB) error {
-	 	   err = executor(tx)
-	 	   if err == nil {
-			   events, _ = tx.Get(Log_Events_Multi)
-		   }
+	 	   err = executor(tx,events)
 	 	   return err
 	 })
 	 if err1 != nil && err == nil{//execute transaction error
 	 	err = checkDBUpdateError(err1)
 	 }
-	 if event,ok := events.(map[string]uint64);err == nil && ok {
-	 	for k,v := range(event){
-	 		notifier.NotifyWithEvent(k,v)
-		}
+	 if err1 == nil && events != nil{//notify async queue task work immediatley
+
+		 events_map :=make(BackendEvents)
+
+		 for _,v := range(*events){
+		 	 events_map[v.evtent]=v.eventID
+			 notifier.JobStatusChange(v.runId)
+		 }
+		 for k,v := range(events_map){
+		 	notifier.NotifyWithEvent(k,v)
+		 }
 	 }
 	 return
 }
 
-func execDBQuerRows(tx * gorm.DB,executor func(rows*sql.Rows) APIError ) APIError{
+func execDBQuerRows(tx * gorm.DB,executor func(tx*gorm.DB, rows*sql.Rows) APIError ) APIError{
 	   rows , err := tx.Rows()
+	   if rows == nil{
+	   	  return exports.RaiseAPIError(exports.AILAB_DB_QUERY_FAILED,err.Error())
+	   }
 	   defer rows.Close()
 
 	   for err == nil && rows.Next() {
 
-	   	 err = executor(rows)
+	   	 err = executor(tx,rows)
 
 	   }
 	   if err == nil {//check rows exit error code

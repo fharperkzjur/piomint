@@ -63,7 +63,11 @@ func InitDb()  error {
 func initTables() error {
 
 	modelTypes := []interface{}{
-		&Sample{},
+		&Lab{},
+		&Run{},
+		&Event{},
+		&System{},
+		&Link{},
 	}
 
 	for _, modelType := range modelTypes {
@@ -72,6 +76,8 @@ func initTables() error {
 			return err
 		}
 	}
+	//@mark:  check db version compatible, otherwise will exit service
+	CheckAiLabsDBVersion()
 	return nil
 }
 

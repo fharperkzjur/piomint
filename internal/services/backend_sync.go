@@ -37,6 +37,10 @@ func (d *BackendEventSync)NotifyWithEvent(evt string,lastId uint64){
 		log.Fatalf("no handler for event name:%s",evt)
 	}
 }
+func (d*BackendEventSync)JobStatusChange(runId string){
+	//@todo: notify status change to application ???
+
+}
 
 func (d*BackendEventSync)SetLastEventID(lastId uint64){
 	for{//keep last processed id increased
@@ -149,6 +153,7 @@ func (d*BackendTask) AlertableWait(ts int , format string , v...interface{}) {
 				continue
 			}
 		 case <- timer.C:
+		 	    return
 		}
 	}
 }
@@ -164,15 +169,22 @@ func InitServices() error {
 	 logger = loggers.GetLogger()
 	 models.SetEventNotifier(getBackendSyncer())
 	 if  err := getBackendSyncer().SyncMaxBackendEvent();err != nil {
-	 	log.Fatalf("sync max backend event id failed:%s",err.Error())
+		 logger.Fatalf("sync max backend event id failed:%s",err.Error())
 	 	return err
 	 }
-	 getBackendSyncer().AddTaskQueue(models.Log_evt_init_run, InitProcessor,0,nil)
-	 getBackendSyncer().AddTaskQueue(models.Log_evt_start_run,StartProcessor,0,nil)
-	 getBackendSyncer().AddTaskQueue(models.Log_evt_kill_run, KillProcessor,0,nil)
-	 getBackendSyncer().AddTaskQueue(models.Log_evt_pre_clean,PreCleanProcessor,0,nil)
-	 getBackendSyncer().AddTaskQueue(models.Log_evt_discard_run,DiscardProcessor,0,nil)
-	 getBackendSyncer().AddTaskQueue(models.Log_evt_clear_lab,ClearLabProcessor,0,nil)
+	 if rolls,err := models.RollBackAllPrepareFailed();err != nil {
+	 	logger.Fatalf("rollback all prepare failed runs error:%s",err.Error())
+	 	return err
+	 }else if rolls > 0{
+	 	logger.Warnf("rollback all prepare failed runs num :%d",rolls)
+	 }
+	 getBackendSyncer().AddTaskQueue(models.Evt_init_run, InitProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_start_run,StartProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_kill_run, KillProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_save_run, SaveProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_clean_run,CleanProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_discard_run,DiscardProcessor,0,nil)
+	 getBackendSyncer().AddTaskQueue(models.Evt_clear_lab,ClearLabProcessor,0,nil)
 	 return nil
 }
 

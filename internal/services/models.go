@@ -7,15 +7,14 @@ type ModelResourceSrv struct{
 
 }
 //cannot error
-func (d ModelResourceSrv) RefResource(runId string,  resourceId string ,versionId string) (interface{},APIError){
-
+func (d ModelResourceSrv) PrepareResource (runId string,  resource exports.GObject) (interface{},APIError){
 
 
       return nil,exports.NotImplementError("ModelResourceSrv")
 }
 
 // should never error
-func (d ModelResourceSrv) UnRefResource(runId string,resourceId string, versionId string) APIError {
+func (d ModelResourceSrv) CompleteResource(runId string,resource exports.GObject,commitOrCancel bool) APIError {
 
 
 

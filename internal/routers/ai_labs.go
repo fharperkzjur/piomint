@@ -12,10 +12,10 @@ func AddGroupAILab(r *gin.Engine){
 
 	group := r.Group("/api/v1/labs")
 
-	group.GET("/", wrapper(getAllLabs))
+	group.GET("", wrapper(getAllLabs))
 	group.GET("/:lab", wrapper(queryLab))
 	group.PUT("/:lab", wrapper(updateLab))
-	group.POST("/", wrapper(createLab))
+	group.POST("", wrapper(createLab))
 	group.POST("/batch", wrapper(batchCreateLab))
 	group.POST("/deletes",wrapper(batchDeleteLab))
 	group.POST("/kills",wrapper(batchKillLab))
@@ -44,7 +44,7 @@ func queryLab(c*gin.Context)(interface{},APIError){
 func updateLab(c*gin.Context)(interface{},APIError){
 	 if labId,err := strconv.ParseUint(c.Param("lab"),0,64);err == nil && labId > 0{
 		 labs := make(exports.RequestObject)
-		 if err := c.ShouldBindJSON(labs);err != nil{
+		 if err := c.ShouldBindJSON(&labs);err != nil{
 			 return nil,exports.ParameterError("invalid update lab information")
 		 }
 		 return nil,models.UpdateLabInfo(labId,labs)
@@ -117,7 +117,7 @@ func deleteLab(c*gin.Context) (interface{},APIError){
 
 func checkCreateLab(lab*models.Lab) APIError{
 	  lab.ID=0
-	  if len(lab.Group) == 0 || len(lab.Name) == 0{
+	  if len(lab.Bind) == 0 || len(lab.Name) == 0{
 	  	return exports.ParameterError("lab group name cannot be empty")
 	  }
 	  if len(lab.App) == 0 {
@@ -134,7 +134,7 @@ func checkCreateLab(lab*models.Lab) APIError{
 	  }
 	  lab.CreatedAt = models.UnixTime{}
 	  lab.UpdatedAt = models.UnixTime{}
-	  lab.DeletedAt = nil
+	  lab.DeletedAt = 0
 	  lab.Starts = 0
 	  lab.Statistics = nil
 	  return nil
@@ -159,7 +159,7 @@ func checkBatchCreateLab(req*exports.ReqBatchCreateLab)(labs []models.Lab,err AP
 	  for index,item:= range(req.Labs) {
 	  	 labs = append(labs,models.Lab{
 			 App:         req.App,
-			 Group:       req.Group,
+			 Bind:        req.Group,
 			 Creator:     req.Creator,
 			 Namespace:   req.Namespace,
 		 })

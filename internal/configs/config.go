@@ -16,7 +16,10 @@ type AppConfig struct {
 	ApiV1Prefix string
 	Db          DbConfig
 	Time        TimeConfig
+	Resources   ResourceConfig
+	Rabbitmq    RabbitmqConfig
 	Debug       bool
+	Mounts      map[string]string
 }
 
 type DbConfig struct {
@@ -42,6 +45,13 @@ type ResourceConfig struct{
 type TimeConfig struct {
 	TimeZoneStr string
 	TimeZone    *time.Location
+}
+
+type RabbitmqConfig struct{
+	User      string
+	Password  string
+	Host      string
+	Port      int
 }
 
 func InitConfig() (*AppConfig, error) {
