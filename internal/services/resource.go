@@ -53,7 +53,7 @@ func init(){
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_DATASET, DatasetResourceSrv{})
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_MLRUN,   MlrunResourceSrv{})
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_CODE,    CodeResourceSrv{})
-	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_ENGINE,  EngineResourceSrv{})
+	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_HARBOR,  HarborResourceSrv{})
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_OUTPUT, MlrunOutputSrv{} )
 	 g_resources_mgr.AddResource(exports.AILAB_RESOURCE_TYPE_STORE,  StoreResourceSrv{})
 }
