@@ -75,6 +75,9 @@ func getAPHarborImageUrl(token string, id uint64,arch string) (string,string,API
 	 if image.ImageVersion.Arch == "" {//@todo:  should join this two arch here ?
 	 	image.ImageVersion.Arch=arch
 	 }
+	 if image.ImageVersion.ImageFullPath == "" {
+	 	return "","",exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"getAPHarborImageUrl empty response !!!")
+	 }
 	 return image.ImageVersion.ImageFullPath,image.ImageVersion.Arch,nil
 }
 func getAPHarborImageUrlByName(token string,name string,arch string) (string,string,APIError){
@@ -95,6 +98,9 @@ func getAPHarborImageUrlByName(token string,name string,arch string) (string,str
 	}
 	if image.ImageVersion.Arch == "" {//@todo:  should join this two arch here ?
 		image.ImageVersion.Arch=arch
+	}
+	if image.ImageVersion.ImageFullPath == "" {
+		return "","",exports.RaiseAPIError(exports.AILAB_REMOTE_REST_ERROR,"getAPHarborImageUrlByName empty response !!!")
 	}
 	return image.ImageVersion.ImageFullPath,image.ImageVersion.Arch,nil
 }
